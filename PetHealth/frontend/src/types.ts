@@ -43,3 +43,31 @@ export type Reminder = {
   repeat: "none" | "daily" | "weekly" | "monthly";
   enabled: boolean;
 };
+
+export type Symptom = {
+  id: string;
+  petId: string;
+  name: string;
+  severity: "low" | "medium" | "high";
+  notes: string;
+  recordedAt: string;
+};
+
+export type WeightEntry = {
+  id: string;
+  petId: string;
+  weightKg: number;
+  recordedAt: string;
+  notes?: string;
+};
+
+export type PredictiveFlag = {
+  id: string;
+  petId: string;
+  type: string;
+  title: string;
+  message: string;
+  severity: "low" | "medium" | "high";
+  createdAt: string;
+  resolved: boolean;
+};
