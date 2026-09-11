@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Pet Health Profile",
+    "slug": "pet-health-profile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.pethealth.profile"
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}
