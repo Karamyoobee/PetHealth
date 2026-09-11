@@ -17,6 +17,9 @@ class Mongo:
         self.db.vet_visits.create_index([("petId", 1), ("appointmentDate", -1)])
         self.db.medications.create_index([("petId", 1), ("createdAt", -1)])
         self.db.reminders.create_index([("petId", 1), ("scheduledFor", 1)])
+        self.db.symptoms.create_index([("petId", 1), ("recordedAt", -1)])
+        self.db.weight_entries.create_index([("petId", 1), ("recordedAt", -1)])
+        self.db.predictive_flags.create_index([("petId", 1), ("createdAt", -1)])
 
 
 mongo = Mongo()

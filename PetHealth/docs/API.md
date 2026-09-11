@@ -93,4 +93,62 @@ Returns the signed-in user's pets.
 
 `GET /api/pets/:petId/report.pdf`
 
-Returns a vet-ready PDF with pet profile, vet visits, medication history, and reminders.
+Returns a vet-ready PDF with pet profile, vet visits, medication history, reminders, symptoms, weights, and predictive flags.
+
+## Symptoms
+
+`GET /api/pets/:petId/symptoms`
+
+`POST /api/pets/:petId/symptoms`
+
+```json
+{
+  "name": "Vomiting",
+  "severity": "medium",
+  "notes": "Twice after breakfast",
+  "recordedAt": "2026-09-10T20:00:00Z"
+}
+```
+
+## Weight Tracking
+
+`GET /api/pets/:petId/weights`
+
+`POST /api/pets/:petId/weights`
+
+```json
+{
+  "weightKg": 27.5,
+  "recordedAt": "2026-09-10T20:00:00Z",
+  "notes": "Evening weigh-in"
+}
+```
+
+## Predictive Flags
+
+`GET /api/pets/:petId/predictive-flags`
+
+`POST /api/pets/:petId/predictive-flags`
+
+```json
+{
+  "type": "trend",
+  "title": "Weight change",
+  "message": "Weight dropped over the latest entries",
+  "severity": "low",
+  "createdAt": "2026-09-10T20:00:00Z",
+  "resolved": false
+}
+```
+
+## Summary / Trends
+
+`GET /api/pets/:petId/summary`
+
+Returns the pet profile, feature record counts, and the latest weight entry for dashboard/trend screens.
+
+## Database Health
+
+`GET /health/db`
+
+Pings MongoDB and returns the configured database name when the backend can connect.
