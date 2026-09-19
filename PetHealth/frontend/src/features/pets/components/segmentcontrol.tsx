@@ -1,25 +1,85 @@
+//Imported React Libraries 
+import { Pressable, Text, View, StyleSheet } from 'react-native';
+import { colors, spacing, radius } from "@theme";
+
+//Segment Control for Pet Profile Form Components
+
+//Generic Type - one choice - Label (T) - placeholder
 type Option<T> = {label: string; value: T};
 
+//Options - list of pills to add 
+//Value - which pill is active
+//onChange - second option or pill that changes appearance for example choosing between dog / cat
 type Props<T> = {
-    options: Option<T>[];
+    options: Option<T>[];//reusable component
     value: T;
     onChange: (v: T) => void;
 };
 
+
+const styles = StyleSheet.create({
+    container:{
+        padding: 20, 
+    },
+
+    //Pill - isActive 
+    pillisActive: {
+        backgroundColor: '#1F7A6C',
+        borderRadius:999,
+        paddingVertical: 10,
+        paddingHorizontal: 20
+
+    },
+
+    pillActivetext: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+
+    //Pill - InActive
+    pillInactive: {
+        backgroundColor: '#fff',
+        borderRadius:999,
+        paddingVertical: 10,
+        paddingHorizontal: 20
+
+    },
+
+    //TextInactive
+    pillInactivetext: {
+        color: '#000',
+        fontWeight: '600',
+    },
+
+    //row
+    row: {
+        flexDirection: 'row',
+        gap: 8
+    }
+
+});
+
+
+//Object Type or function 
 export default function SegmentControl<T extends string>({
     options, value, onChange, 
 }:Props<T>){
     return(
-        //map options - Pressable pill section 
-        //active pill = teal fill color / white text 
-        //inactive pill = white bg, gray text, lighter border 
-        null
-    );
-}
-
-// Add Dog/Cat 
-
-//Male / Female 
-
-//Spaye / Intact 
-
+        <View style={styles.row}>
+            {options.map((opt) => {
+                const isActive = opt.value === value;
+                return(
+                    <Pressable 
+                        key={opt.value}
+                        onPress={() => onChange(opt.value)}
+                        style={isActive ? styles.pillisActive : styles.pillInactive}
+                        >
+                            <Text style={isActive ? styles.pillActivetext: styles.pillInactivetext}>
+                                {opt.label}
+                            </Text>
+                        </Pressable>
+                );
+            })}
+        </View>
+);
+} 
