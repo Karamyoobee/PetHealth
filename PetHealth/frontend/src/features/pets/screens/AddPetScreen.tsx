@@ -1,27 +1,50 @@
 import { useState } from "react";
 import {View, Text, StyleSheet, Button } from "react-native";
 import PetFormField from "../components/PetFormfield";
+import Header from "../components/header";
+import SegmentControl from "../components/segmentcontrol";
 //import PrimaryButton from "../components/primarybutton"; - once complete
 //import segmentcontrol from "../components/segmentcontrol";
 
 //Function Component - UI 
 const AddPetScreen = () => {
-    const [petName, setPetName] = useState('');
-    const [age, setAge] = useState('');
-    const [weight, setWeight] = useState('');
-    const [submitted, setSubmitted] = useState(false);
+    const [petName, setPetName] = useState('');//Pet Name
+    const [age, setAge] = useState('');//Age Entry Field
+    const [weight, setWeight] = useState(''); /// Weight Entry Field
+    const [submitted, setSubmitted] = useState(false); // Submit Button
+    const [species, setSpecies] = useState<'dog' | 'cat'>('dog'); // Toggle Button - Dog / Cat
+    const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
+    const [status, setStatus] = useState<'spayed/neutered' | 'Intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
 
     const handleSave = () =>{
         //ToDo: during the work of API call / local storage database 
         setSubmitted(true);
     }
 
+    //Species - Dog or Cat = Segment Options
+    const options = [
+        { label: 'Dog', value: 'dog' as const },
+        { label: 'Cat', value: 'cat' as const },
+    ];
+
+    //Male / Female Segment Option 
+    const genderoptions = [
+        {label: 'Female', value:'female' as const},
+        {label: 'Male', value: 'male' as const},
+    ];
+
+    //Pet_Status Options 
+    const statusoptions = [
+        {label: 'Spayed/Neutered', value: 'spayed/neutered'},
+        {label: 'Intact', value: 'intact'},
+    ];
+
     return(
         <View style={styles.container}>
-            <View style={styles.titleCard}>
-                <Text style={styles.title}>Add New Pet</Text>
-            </View>
+        {/*Header for Screen*/}
+        <Header />
 
+        {/*1. Add Pet Name - Entry Field */}
         <PetFormField 
             label="Pet Name"
             value={petName}
@@ -29,13 +52,58 @@ const AddPetScreen = () => {
             placeholder="e.g Bella"
         />
 
-        {/*2.Add Pet Specie (Togglet button - dog or cat) */}
-        {/*3. Add Breed Selection - based on chosen pet (dog/cat) */}
-        {/*4. Add Age */}
-        {/*5. Add Weight */}
-        {/*6. Add Gender */}
-        {/*7. Add Status - Spayed/Neutered or Intact */}
+        {/*2. Add Pet Species (Togglet button - dog or cat) */}
+        <Text style={styles.label}>Species</Text>
+        <SegmentControl 
+            options={options}
+            value={species}
+            onChange={setSpecies}
+        >
+        </SegmentControl>
 
+        {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
+        
+        {/*4. Add Age */}
+        <View style={styles.row}>
+            <View style={styles.halfEntryField}>
+            <PetFormField 
+                label = "Age"
+                value={age}
+                onChangeText={setAge}
+                placeholder="age"
+            >
+            </PetFormField>
+        </View>
+
+
+        {/*5. Add Weight */}
+        <View style={styles.halfEntryField}>
+            <PetFormField 
+                label = "Weight"
+                value={weight}
+                onChangeText={setWeight}
+                placeholder="e.g 45"
+            >
+            </PetFormField>
+        </View>
+        </View>
+
+        {/*6. Add Gender */}
+        <Text style={styles.label}>Gender</Text>
+        <SegmentControl 
+            options={genderoptions}
+            value={gender}
+            onChange={setGender}
+        >
+        </SegmentControl>
+        {/*7. Add Status - Spayed/Neutered or Intact */}
+        <Text style={styles.label}>Status</Text>
+        <SegmentControl 
+            options={statusoptions}
+            value={status}
+            onChange={setStatus}
+        >
+        </SegmentControl>
         <Button title="Save Pet" onPress={handleSave} color="#1B6A60"/>
         {submitted && <Text style={styles.result}>Your new pet has been saved!</Text>}
 
@@ -84,6 +152,17 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 16,
     },
+
+    //Half Entry Field for Pet Age & Weight 
+    halfEntryField: {
+        flex: 1,
+        },
+
+    //Row for Age & Weight User Entry 
+    row: { 
+        flexDirection: 'row',
+        gap: 12,
+    }
 });
 
 //Display Add Pet Screen - New Form 
