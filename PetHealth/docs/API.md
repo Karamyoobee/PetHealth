@@ -6,7 +6,51 @@ All feature routes use a development user header:
 
 ```http
 X-User-Id: demo-user
+X-User-Name: Demo Owner
+X-User-Email: demo@example.com
 ```
+
+## Database Model
+
+MongoDB Atlas shows each data type as a separate collection:
+
+```text
+pet_health
+  users
+  pets
+  vet_visits
+  medications
+  reminders
+  symptoms
+  weight_entries
+  predictive_flags
+```
+
+Owner records live in `users`. Pet records store `userId`, and pet health records store both `userId` and `petId`.
+
+## Users / Owners
+
+`GET /api/users`
+
+Returns owner profiles.
+
+`GET /api/users/me`
+
+Returns the current owner profile. If it does not exist yet, the backend creates it from the development headers.
+
+`PATCH /api/users/me`
+
+```json
+{
+  "name": "Karam",
+  "email": "karam@example.com",
+  "phone": "021000000"
+}
+```
+
+`GET /api/users/me/pets`
+
+Returns pets belonging to the current owner.
 
 ## Pets
 

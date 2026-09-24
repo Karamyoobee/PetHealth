@@ -6,6 +6,7 @@ from database import mongo
 from routes.health import health_bp
 from routes.pets import pets_bp
 from routes.reports import reports_bp
+from routes.users import users_bp
 
 
 def create_app():
@@ -16,6 +17,7 @@ def create_app():
     mongo.init_app(app)
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(users_bp)
     app.register_blueprint(pets_bp)
     app.register_blueprint(reports_bp)
 
