@@ -4,6 +4,7 @@ import { colors, spacing, radius } from "@theme";
 
 //Segment Control for Pet Profile Form Components
 
+
 //Generic Type - one choice - Label (T) - placeholder
 type Option<T> = {label: string; value: T};
 
@@ -24,37 +25,46 @@ const styles = StyleSheet.create({
 
     //Pill - isActive 
     pillisActive: {
+        flex: 1, 
+        height: 44, 
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: '#1F7A6C',
-        borderRadius:999,
-        paddingVertical: 10,
-        paddingHorizontal: 20
-
+        borderRadius:10,
+        borderWidth: 1,
+        borderColor: '#1F7A6C',
     },
 
     pillActivetext: {
         color: '#fff',
         fontWeight: '600',
+        fontSize: 15,
     },
 
     //Pill - InActive
     pillInactive: {
+        flex: 1,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: '#fff',
-        borderRadius:999,
-        paddingVertical: 10,
-        paddingHorizontal: 20
-
+        borderRadius:10,
+        borderWidth: 1,
+        borderColor: '#1F7A6C',
     },
 
     //TextInactive
     pillInactivetext: {
         color: '#000',
         fontWeight: '600',
+        fontSize: 15,
     },
 
     //row
     row: {
         flexDirection: 'row',
-        gap: 8
+        gap: 8,
+        width: '100%',
     }
 
 });
