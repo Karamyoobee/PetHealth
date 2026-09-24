@@ -1,4 +1,4 @@
-import type { Medication, Pet, PredictiveFlag, Reminder, Symptom, VetVisit, WeightEntry } from "../types";
+import type { Medication, Pet, PredictiveFlag, Reminder, Symptom, User, VetVisit, WeightEntry } from "../types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000";
 const USER_ID = process.env.EXPO_PUBLIC_USER_ID ?? "demo-user";
@@ -32,6 +32,12 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   health: () => requestJson<{ status: string }>("/health"),
   databaseHealth: () => requestJson<{ status: string; database?: string }>("/health/db"),
+
+  listUsers: () => requestJson<User[]>("/api/users"),
+  getCurrentUser: () => requestJson<User>("/api/users/me"),
+  updateCurrentUser: (user: Partial<Pick<User, "name" | "email" | "phone">>) =>
+    requestJson<User>("/api/users/me", { method: "PATCH", body: JSON.stringify(user) }),
+  listCurrentUserPets: () => requestJson<Pet[]>("/api/users/me/pets"),
 
   listPets: () => requestJson<Pet[]>("/api/pets"),
   createPet: (pet: Omit<Pet, "id">) => postJson<Pet>("/api/pets", pet),

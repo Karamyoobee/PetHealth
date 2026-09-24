@@ -1,5 +1,6 @@
 export type Pet = {
   id: string;
+  userId?: string;
   name: string;
   species: "Dog" | "Cat";
   breed: string;
@@ -7,6 +8,16 @@ export type Pet = {
   sex: string;
   weightKg: number;
   spayedNeutered: boolean;
+};
+
+export type User = {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type VetVisit = {

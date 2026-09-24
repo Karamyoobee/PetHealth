@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 from database import mongo
 from utils.auth import current_user_id
 from utils.mongo import serialize_doc, validate_object_id
+from utils.users import ensure_current_user
 
 pets_bp = Blueprint("pets", __name__, url_prefix="/api")
 
@@ -85,12 +86,14 @@ def create_collection_item(collection_name, pet_id, fields):
 
 @pets_bp.get("/pets")
 def list_pets():
+    ensure_current_user()
     docs = mongo.db.pets.find({"userId": current_user_id()}).sort("name", 1)
     return jsonify([serialize_doc(doc) for doc in docs])
 
 
 @pets_bp.post("/pets")
 def create_pet():
+    ensure_current_user()
     data = json_body()
     if not data.get("name"):
         return error("Pet name is required")
