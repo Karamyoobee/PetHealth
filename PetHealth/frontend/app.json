@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "Pet Health Profile",
-    "slug": "pet-health-profile",
+    "name": "Pet Health",
+    "slug": "pet-health",
+    "scheme": "pethealth.com",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "android": {
-      "package": "com.pethealth.profile"
+      "package": "pethealth.com"
     },
     "plugins": [
       "expo-notifications"

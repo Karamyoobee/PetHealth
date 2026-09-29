@@ -16,6 +16,8 @@ export type User = {
   name: string;
   email?: string;
   phone?: string;
+  picture?: string;
+  provider?: "google" | string;
   createdAt: string;
   updatedAt: string;
 };

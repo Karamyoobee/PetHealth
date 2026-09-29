@@ -10,8 +10,8 @@ users_bp = Blueprint("users", __name__, url_prefix="/api")
 
 @users_bp.get("/users")
 def list_users():
-    docs = mongo.db.users.find().sort("createdAt", -1)
-    return jsonify([serialize_doc(doc) for doc in docs])
+    user = ensure_current_user()
+    return jsonify([serialize_doc(user)])
 
 
 @users_bp.get("/users/me")

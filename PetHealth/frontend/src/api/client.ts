@@ -1,17 +1,27 @@
 import type { Medication, Pet, PredictiveFlag, Reminder, Symptom, User, VetVisit, WeightEntry } from "../types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000";
-const USER_ID = process.env.EXPO_PUBLIC_USER_ID ?? "demo-user";
+let sessionToken: string | null = null;
+
+export function setSessionToken(token: string | null) {
+  sessionToken = token;
+}
 
 async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-User-Id": USER_ID,
-      ...options.headers,
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Cannot reach backend at ${API_URL}. ${error instanceof Error ? error.message : ""}`.trim());
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
@@ -32,6 +42,11 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   health: () => requestJson<{ status: string }>("/health"),
   databaseHealth: () => requestJson<{ status: string; database?: string }>("/health/db"),
+
+  googleLogin: (idToken: string) =>
+    postJson<{ token: string; tokenType: "Bearer"; expiresAt: string; user: User }>("/api/auth/google", {
+      idToken,
+    }),
 
   listUsers: () => requestJson<User[]>("/api/users"),
   getCurrentUser: () => requestJson<User>("/api/users/me"),

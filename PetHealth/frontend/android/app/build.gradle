@@ -109,9 +109,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.pethealth.profile'
+    namespace 'pethealth.com'
     defaultConfig {
-        applicationId 'com.pethealth.profile'
+        applicationId 'pethealth.com'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
