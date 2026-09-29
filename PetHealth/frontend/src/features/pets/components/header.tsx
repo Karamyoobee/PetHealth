@@ -16,13 +16,13 @@ export default function Header() {
 const styles = StyleSheet.create({
     header: {
         width: '120%',
-        height: '15%',
+        height: '7%',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'white',
         borderColor: 'gray',
-        marginTop: 7,
+        marginTop: 24,
         marginLeft:-29,
     },
 
