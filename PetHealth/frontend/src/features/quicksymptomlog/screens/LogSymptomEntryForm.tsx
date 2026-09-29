@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {View, Text, StyleSheet, Button } from "react-native";
 import DescriptionSymptomInput from "../components/DescriptionSymptomInput";
-//import PrimaryButton from "../components/primarybutton"; - once complete
+import { SaveButton } from "../components/SaveButton";
 //import segmentcontrol from "../components/segmentcontrol";
 
 const LogSymptomEntryForm = () => {
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#000', 
         textAlign: 'center',
-    }
+    },
     titleCard: {
         backgroundColor:'#fff', 
         borderRadius: 12, 
@@ -70,4 +70,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoySymptomEntryForm;
+export default LogSymptomEntryForm;

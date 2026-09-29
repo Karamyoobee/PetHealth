@@ -9,7 +9,7 @@ type Props = {
     disabled?:boolean;
 };
 
-export function PrimaryButton({ label, onPress, disabled }: Props){
+export function SaveButton({ label, onPress, disabled }: Props){
 return (
     <Pressable
         onPress={onPress}
@@ -25,7 +25,7 @@ return (
     ); 
 }
 
-//Styles for Primary Button - Save Pet 
+//Styles for Save Entry Button - Save Symptom Logs 
 const styles = StyleSheet.create({
   button:{
     backgroundColor: colors.secondary, 

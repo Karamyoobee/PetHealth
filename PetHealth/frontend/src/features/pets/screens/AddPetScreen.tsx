@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, Button } from "react-native";
 import PetFormField from "../components/PetFormfield";
 import Header from "../components/header";
 import SegmentControl from "../components/segmentcontrol";
+import { PrimaryButton } from "../components/primarybutton";
 //import PrimaryButton from "../components/primarybutton"; - once complete
 //import segmentcontrol from "../components/segmentcontrol";
 
@@ -14,7 +15,7 @@ const AddPetScreen = () => {
     const [submitted, setSubmitted] = useState(false); // Submit Button
     const [species, setSpecies] = useState<'dog' | 'cat'>('dog'); // Toggle Button - Dog / Cat
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
-    const [status, setStatus] = useState<'spayed/neutered' | 'Intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
+    const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
 
     const handleSave = () =>{
         //ToDo: during the work of API call / local storage database 
@@ -34,9 +35,9 @@ const AddPetScreen = () => {
     ];
 
     //Pet_Status Options 
-    const statusoptions = [
-        {label: 'Spayed/Neutered', value: 'spayed/neutered'},
-        {label: 'Intact', value: 'intact'},
+    const pet_statusoptions = [
+        {label: 'Spayed/Neutered', value: 'spayed/neutered' as const},
+        {label: 'Intact', value: 'intact' as const},
     ];
 
     return(
@@ -52,7 +53,7 @@ const AddPetScreen = () => {
             placeholder="e.g Bella"
         />
 
-        {/*2. Add Pet Species (Togglet button - dog or cat) */}
+        {/*2. Add Pet Species (Toggle button - dog or cat) */}
         <Text style={styles.label}>Species</Text>
         <SegmentControl 
             options={options}
@@ -66,13 +67,12 @@ const AddPetScreen = () => {
         {/*4. Add Age */}
         <View style={styles.row}>
             <View style={styles.halfEntryField}>
-            <PetFormField 
+              <PetFormField 
                 label = "Age"
                 value={age}
                 onChangeText={setAge}
                 placeholder="age"
-            >
-            </PetFormField>
+              />
         </View>
 
 
@@ -83,9 +83,8 @@ const AddPetScreen = () => {
                 value={weight}
                 onChangeText={setWeight}
                 placeholder="e.g 45"
-            >
-            </PetFormField>
-        </View>
+            />
+          </View>
         </View>
 
         {/*6. Add Gender */}
@@ -96,15 +95,17 @@ const AddPetScreen = () => {
             onChange={setGender}
         >
         </SegmentControl>
+
         {/*7. Add Status - Spayed/Neutered or Intact */}
         <Text style={styles.label}>Status</Text>
         <SegmentControl 
-            options={statusoptions}
+            options={pet_statusoptions}
             value={status}
             onChange={setStatus}
         >
         </SegmentControl>
-        <Button title="Save Pet" onPress={handleSave} color="#1B6A60"/>
+
+        <PrimaryButton label="Save Pet" onPress={handleSave} />
         {submitted && <Text style={styles.result}>Your new pet has been saved!</Text>}
 
         </View>
@@ -114,8 +115,21 @@ const AddPetScreen = () => {
  //style sheet
 const styles = StyleSheet.create({
     container:{
-        padding: 20, 
+        flex: 1,
     },
+
+    //enable content scroll 
+    Contentscroll: {
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+
+    footer: {
+        paddingHorizontal: 20, 
+        paddingTop: 12,
+        paddingBottom: 24,
+    },
+
     //Main Title for Form Screen - 'Add New Pet'
     title: {
         fontSize: 20,
@@ -143,7 +157,8 @@ const styles = StyleSheet.create({
     result: {
         marginTop: 10, 
         fontSize: 16, 
-        fontWeight: '600'
+        fontWeight: '600',
+        textAlign: 'center',
     },
 
     //Form Card - behind Add New Pet 
@@ -156,12 +171,19 @@ const styles = StyleSheet.create({
     //Half Entry Field for Pet Age & Weight 
     halfEntryField: {
         flex: 1,
+        minWidth: 0,
         },
 
     //Row for Age & Weight User Entry 
     row: { 
         flexDirection: 'row',
         gap: 12,
+    },
+
+    //Input rectangle for Age & Weight
+    smallInput: {
+        height: 40,
+        width: 150,
     }
 });
 

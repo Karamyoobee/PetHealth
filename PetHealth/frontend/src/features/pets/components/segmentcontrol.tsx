@@ -2,8 +2,6 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { colors, spacing, radius } from "@theme";
 
-//Segment Control for Pet Profile Form Components
-
 
 //Generic Type - one choice - Label (T) - placeholder
 type Option<T> = {label: string; value: T};
