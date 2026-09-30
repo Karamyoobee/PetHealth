@@ -7,9 +7,12 @@ export default function Header() {
         <View style={styles.header}>
             {/*Icon */}
             <View>
+               {/*Add Back Arrow Icon*/} 
                 <Text style={styles.headerText}>Add New Pet</Text>
             </View>
         </View>
+
+
     )
 }
 

@@ -2,11 +2,11 @@ import React from "react";
 import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
 import { colors, spacing, radius } from "@theme";
 
-type DescriptionSymptomInputProps = TextInputProps & {
+type DescriptionSymptomInput = TextInputProps & {
   label: string;
 };
 
-export function TextField({ label, ...props }: DescriptionSymptomInputProps) {
+export function SymptomTextField({ label, ...props }: DescriptionSymptomInput) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>

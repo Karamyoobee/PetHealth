@@ -1,7 +1,8 @@
 import { useState } from "react";
-import {View, Text, StyleSheet, Button } from "react-native";
-import DescriptionSymptomInput from "../components/DescriptionSymptomInput";
-import { SaveButton } from "../components/SaveButton";
+import {View, Text, StyleSheet, Button } from "react-native";//React - Native Libraries
+import DescriptionSymptomInput from "../components/DescriptionSymptomInput";//Calling Main
+import { SymptomTextField } from "../components/DescriptionSymptomInput"; // Function or component for Text Field
+import { SaveButton } from "../components/SaveButton";//Component for 'Save Entry Button'
 //import segmentcontrol from "../components/segmentcontrol";
 
 const LogSymptomEntryForm = () => {
@@ -22,7 +23,7 @@ const LogSymptomEntryForm = () => {
             {/* 1. Pet Selector (select from their different pets) */}
             {/*2. Category selector () */}
 
-            <DescriptionSymptomInput
+            <SymptomTextField
               label="Describe Pet's Symptoms"
               multiline
               numberOfLines={4}
