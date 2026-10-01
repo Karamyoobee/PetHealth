@@ -1,3 +1,4 @@
+//Pet Form Field Data - Object Type 
 export type Pet = {
   id: string;
   userId?: string;
@@ -6,6 +7,7 @@ export type Pet = {
   breed: string;
   age: number;
   sex: string;
+  photoUri?:string;
   weightKg: number;
   spayedNeutered: boolean;
 };
