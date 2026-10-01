@@ -1,12 +1,95 @@
 # API Reference
 
-Base URL: `http://localhost:5000`
+Base URL for Android emulator development:
 
-All feature routes use a development user header:
+```text
+http://10.0.2.2:5000
+```
+
+Base URL on the backend machine:
+
+```text
+http://localhost:5000
+```
+
+## Authentication
+
+Google sign-in creates the application session.
+
+`POST /api/auth/google`
+
+```json
+{
+  "idToken": "google-id-token"
+}
+```
+
+Success response:
+
+```json
+{
+  "token": "jwt-session-token",
+  "tokenType": "Bearer",
+  "expiresAt": "2026-10-07T00:00:00+00:00",
+  "user": {
+    "userId": "google:...",
+    "email": "user@gmail.com",
+    "name": "User Name",
+    "provider": "google"
+  }
+}
+```
+
+All protected routes require:
 
 ```http
-X-User-Id: demo-user
+Authorization: Bearer <jwt-session-token>
 ```
+
+The default session lifetime is controlled by `JWT_EXPIRES_HOURS`; the current default is 168 hours, or 7 days.
+
+## Database Model
+
+MongoDB Atlas collections:
+
+```text
+pet_health
+  users
+  sessions
+  pets
+  vet_visits
+  medications
+  reminders
+  symptoms
+  weight_entries
+  predictive_flags
+```
+
+The `users` collection stores Google account identity and profile fields. Pet and health records are linked to the signed-in account by `userId`.
+
+## Users / Owners
+
+`GET /api/users`
+
+Returns the signed-in owner profile as a one-item list.
+
+`GET /api/users/me`
+
+Returns the signed-in owner profile. If it does not exist yet, the backend creates it from the JWT session.
+
+`PATCH /api/users/me`
+
+```json
+{
+  "name": "Karam",
+  "email": "karam@example.com",
+  "phone": "021000000"
+}
+```
+
+`GET /api/users/me/pets`
+
+Returns pets belonging to the signed-in owner.
 
 ## Pets
 
@@ -27,6 +110,12 @@ Returns the signed-in user's pets.
   "spayedNeutered": true
 }
 ```
+
+`GET /api/pets/:petId`
+
+`PATCH /api/pets/:petId`
+
+`DELETE /api/pets/:petId`
 
 ## Vet Visits
 
@@ -82,7 +171,7 @@ Returns the signed-in user's pets.
 ```json
 {
   "type": "medication",
-  "title": "Give antibiotic",
+  "title": "Give medication",
   "scheduledFor": "2026-09-10T08:00:00Z",
   "repeat": "daily",
   "enabled": true
@@ -93,61 +182,26 @@ Returns the signed-in user's pets.
 
 `GET /api/pets/:petId/report.pdf`
 
-Returns a vet-ready PDF with pet profile, vet visits, medication history, reminders, symptoms, weights, and predictive flags.
+Returns a vet-ready PDF for the selected pet.
 
-## Symptoms
+## Future Integration Endpoints
 
-`GET /api/pets/:petId/symptoms`
+The backend currently includes endpoints for symptoms, weight entries, predictive flags, and pet summaries so later project phases can connect to the same data model:
 
-`POST /api/pets/:petId/symptoms`
-
-```json
-{
-  "name": "Vomiting",
-  "severity": "medium",
-  "notes": "Twice after breakfast",
-  "recordedAt": "2026-09-10T20:00:00Z"
-}
+```text
+GET/POST /api/pets/:petId/symptoms
+GET/POST /api/pets/:petId/weights
+GET/POST /api/pets/:petId/predictive-flags
+GET      /api/pets/:petId/summary
 ```
 
-## Weight Tracking
+These should be treated as integration-ready backend endpoints until their frontend workflows are completed.
 
-`GET /api/pets/:petId/weights`
+## Health Checks
 
-`POST /api/pets/:petId/weights`
+`GET /health`
 
-```json
-{
-  "weightKg": 27.5,
-  "recordedAt": "2026-09-10T20:00:00Z",
-  "notes": "Evening weigh-in"
-}
-```
-
-## Predictive Flags
-
-`GET /api/pets/:petId/predictive-flags`
-
-`POST /api/pets/:petId/predictive-flags`
-
-```json
-{
-  "type": "trend",
-  "title": "Weight change",
-  "message": "Weight dropped over the latest entries",
-  "severity": "low",
-  "createdAt": "2026-09-10T20:00:00Z",
-  "resolved": false
-}
-```
-
-## Summary / Trends
-
-`GET /api/pets/:petId/summary`
-
-Returns the pet profile, feature record counts, and the latest weight entry for dashboard/trend screens.
-
-## Database Health
+Returns basic API status.
 
 `GET /health/db`
 

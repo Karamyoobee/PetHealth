@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'Pet Health Profile'
+rootProject.name = 'Pet Health'
 
 dependencyResolutionManagement {
   versionCatalogs {

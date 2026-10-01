@@ -1,4 +1,4 @@
-package com.pethealth.profile
+package pethealth.com
 
 import android.os.Build
 import android.os.Bundle

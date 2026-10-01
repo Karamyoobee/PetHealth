@@ -1,6 +1,7 @@
 //Pet Form Field Data - Object Type 
 export type Pet = {
   id: string;
+  userId?: string;
   name: string;
   species: "Dog" | "Cat";
   breed: string;
@@ -11,7 +12,18 @@ export type Pet = {
   spayedNeutered: boolean;
 };
 
-//Veterinary Visit Data - Object Type
+export type User = {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  picture?: string;
+  provider?: "google" | string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type VetVisit = {
   id: string;
   petId: string;
