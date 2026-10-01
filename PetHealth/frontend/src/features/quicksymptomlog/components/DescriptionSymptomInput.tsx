@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     minHeight: 44,
     paddingHorizontal: spacing.md,
+    marginTop: 250,
   },
   multiline:{
     minHeight: 100, 
