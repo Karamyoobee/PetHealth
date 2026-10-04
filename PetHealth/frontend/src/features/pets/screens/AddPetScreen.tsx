@@ -4,6 +4,7 @@ import PetFormField from "../components/PetFormfield";
 import Header from "../components/header";
 import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
+import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
 //import PrimaryButton from "../components/primarybutton"; 
 //import segmentcontrol from "../components/segmentcontrol";
 
@@ -16,6 +17,7 @@ const AddPetScreen = () => {
     const [species, setSpecies] = useState<'dog' | 'cat'>('dog'); // Toggle Button - Dog / Cat
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
+    const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
 
     const handleSave = () =>{
         //ToDo: during the work of API call / local storage database 
@@ -40,6 +42,12 @@ const AddPetScreen = () => {
         {label: 'Intact', value: 'intact' as const},
     ];
 
+    //Handler function for Pet Dog / Cat Dropdown select
+    const handleSpeciesChange = (newSpecies: 'dog' | 'cat') => {
+        (newSpecies);
+        ('');
+    };
+
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
@@ -63,7 +71,13 @@ const AddPetScreen = () => {
         </SegmentControl>
 
         {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
-        
+        <Text style={styles.label}>Select Breed</Text>
+        <RNTriggerPetBreedDropdownmenu
+            species={} //need to fix
+            breed={breed}
+            onBreedChange={}
+        />
+
         {/*4. Add Age */}
         <View style={styles.row}>
             <View style={styles.halfEntryField}>
