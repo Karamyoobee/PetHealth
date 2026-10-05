@@ -12,7 +12,9 @@ pets_bp = Blueprint("pets", __name__, url_prefix="/api")
 
 PET_FIELDS = ("name", "species", "breed", "age", "sex", "weightKg", "spayedNeutered")
 VET_VISIT_FIELDS = (
+    "reason",
     "appointmentDate",
+    "appointmentTime",
     "clinicName",
     "veterinarianName",
     "diagnosis",
@@ -22,6 +24,7 @@ VET_VISIT_FIELDS = (
 )
 MEDICATION_FIELDS = (
     "name",
+    "purpose",
     "dosage",
     "instructions",
     "schedule",

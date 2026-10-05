@@ -25,7 +25,9 @@ export type User = {
 export type VetVisit = {
   id: string;
   petId: string;
+  reason?: string;
   appointmentDate: string;
+  appointmentTime?: string;
   clinicName: string;
   veterinarianName: string;
   diagnosis: string;
@@ -38,6 +40,7 @@ export type Medication = {
   id: string;
   petId: string;
   name: string;
+  purpose?: string;
   dosage: string;
   instructions: string;
   schedule: string;
