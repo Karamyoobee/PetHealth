@@ -32,7 +32,7 @@ MEDICATION_FIELDS = (
     "endDate",
     "reminderTime",
 )
-REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled")
+REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled", "dismissedAt", "completedAt", "snoozedUntil")
 SYMPTOM_FIELDS = ("name", "severity", "notes", "recordedAt")
 WEIGHT_FIELDS = ("weightKg", "recordedAt", "notes")
 FLAG_FIELDS = ("type", "title", "message", "severity", "createdAt", "resolved")
@@ -218,6 +218,26 @@ def list_reminders(pet_id):
 @pets_bp.post("/pets/<pet_id>/reminders")
 def create_reminder(pet_id):
     return create_collection_item("reminders", pet_id, REMINDER_FIELDS)
+
+
+@pets_bp.patch("/reminders/<reminder_id>")
+def update_reminder(reminder_id):
+    if not validate_object_id(reminder_id):
+        return error("Reminder not found", 404)
+
+    update = pick(json_body(), REMINDER_FIELDS)
+    if not update:
+        return error("No valid reminder fields supplied")
+
+    update["updatedAt"] = utc_now()
+    result = mongo.db.reminders.update_one(
+        {"_id": ObjectId(reminder_id), "userId": current_user_id()},
+        {"$set": update},
+    )
+    if result.matched_count == 0:
+        return error("Reminder not found", 404)
+
+    return jsonify(serialize_doc(mongo.db.reminders.find_one({"_id": ObjectId(reminder_id)})))
 
 
 @pets_bp.get("/pets/<pet_id>/symptoms")

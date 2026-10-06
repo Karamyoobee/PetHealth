@@ -4,6 +4,7 @@ import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
+import PetSelector from "../../components/PetSelector";
 import type { Pet } from "../../types";
 
 type Props = {
@@ -43,7 +44,6 @@ function parseClockTime(time: string) {
 export function AddMedicationScreen({ onBack, onSubmit }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
-  const [petOpen, setPetOpen] = useState(false);
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [dosage, setDosage] = useState("");
@@ -161,42 +161,13 @@ export function AddMedicationScreen({ onBack, onSubmit }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Pet</Text>
-          <TouchableOpacity style={styles.fullSelect} onPress={() => setPetOpen((open) => !open)}>
-            <Ionicons name="paw-outline" size={17} color="#526066" />
-            <Text style={[styles.selectText, !selectedPetId && styles.placeholderText]}>
-              {pets.find((pet) => pet.id === selectedPetId)?.name || "Select pet"}
-            </Text>
-            <Ionicons name="chevron-down" size={18} color="#687076" />
-          </TouchableOpacity>
-          {petOpen ? (
-            <View style={[styles.optionMenu, styles.petMenu]}>
-              {pets.length > 0 ? (
-                pets.map((pet) => (
-                  <TouchableOpacity
-                    key={pet.id}
-                    style={styles.optionItem}
-                    onPress={() => {
-                      setSelectedPetId(pet.id);
-                      setPetOpen(false);
-                    }}
-                  >
-                    <Text style={styles.optionText}>{pet.name}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={styles.optionItem}>
-                  <Text style={styles.optionText}>No pets found</Text>
-                </View>
-              )}
-            </View>
-          ) : null}
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={setSelectedPetId} />
 
+        <View style={styles.formCard}>
           <Text style={styles.label}>Medication Name</Text>
           <TextInput
             placeholder="Medication name"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#3E4946"
             style={styles.input}
             value={name}
             onChangeText={setName}
@@ -205,7 +176,7 @@ export function AddMedicationScreen({ onBack, onSubmit }: Props) {
           <Text style={styles.label}>Purpose</Text>
           <TextInput
             placeholder="Treatment purpose"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#3E4946"
             style={styles.input}
             value={purpose}
             onChangeText={setPurpose}
@@ -216,7 +187,7 @@ export function AddMedicationScreen({ onBack, onSubmit }: Props) {
               <Text style={styles.label}>Dosage</Text>
               <TextInput
                 placeholder="Dosage"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor="#3E4946"
                 style={styles.input}
                 value={dosage}
                 onChangeText={setDosage}
@@ -296,7 +267,7 @@ export function AddMedicationScreen({ onBack, onSubmit }: Props) {
             multiline
             numberOfLines={5}
             placeholder="Any special instructions"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#3E4946"
             style={styles.notes}
             textAlignVertical="top"
             value={instructions}
@@ -455,7 +426,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   label: {
-    color: "#60666D",
+    color: "#3E4946",
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 7,
@@ -518,7 +489,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   placeholderText: {
-    color: "#6B7280",
+    color: "#3E4946",
   },
   optionMenu: {
     backgroundColor: "#FFFFFF",
@@ -560,7 +531,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reminderLabel: {
-    color: "#526066",
+    color: "#3E4946",
     fontSize: 14,
     fontWeight: "800",
   },

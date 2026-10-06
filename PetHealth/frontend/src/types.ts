@@ -2,6 +2,9 @@ export type Pet = {
   id: string;
   userId?: string;
   name: string;
+  imageUrl?: string;
+  photoUrl?: string;
+  avatarUrl?: string;
   species: "Dog" | "Cat";
   breed: string;
   age: number;
@@ -58,6 +61,9 @@ export type Reminder = {
   scheduledFor: string;
   repeat: "none" | "daily" | "weekly" | "monthly";
   enabled: boolean;
+  dismissedAt?: string;
+  completedAt?: string;
+  snoozedUntil?: string;
 };
 
 export type Symptom = {

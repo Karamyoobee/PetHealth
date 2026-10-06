@@ -76,6 +76,11 @@ export const api = {
   listReminders: (petId: string) => requestJson<Reminder[]>(`/api/pets/${petId}/reminders`),
   createReminder: (petId: string, reminder: Omit<Reminder, "id" | "petId">) =>
     postJson<Reminder>(`/api/pets/${petId}/reminders`, reminder),
+  updateReminder: (reminderId: string, reminder: Partial<Omit<Reminder, "id" | "petId">>) =>
+    requestJson<Reminder>(`/api/reminders/${reminderId}`, {
+      method: "PATCH",
+      body: JSON.stringify(reminder),
+    }),
 
   listSymptoms: (petId: string) => requestJson<Symptom[]>(`/api/pets/${petId}/symptoms`),
   createSymptom: (petId: string, symptom: Omit<Symptom, "id" | "petId">) =>

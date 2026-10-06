@@ -4,6 +4,7 @@ import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
+import PetSelector from "../../components/PetSelector";
 import type { Pet } from "../../types";
 
 type Props = {
@@ -53,7 +54,6 @@ function parseClockTime(time: string) {
 export function ScheduleVisitScreen({ onBack, onSubmit }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
-  const [petOpen, setPetOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const [reasonOpen, setReasonOpen] = useState(false);
@@ -168,35 +168,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>PET</Text>
-        <TouchableOpacity style={styles.selectBox} onPress={() => setPetOpen((open) => !open)}>
-          <Text style={[styles.selectText, !selectedPetId && styles.placeholderText]}>
-            {pets.find((pet) => pet.id === selectedPetId)?.name || "Select pet"}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color="#687076" />
-        </TouchableOpacity>
-        {petOpen ? (
-          <View style={styles.optionMenu}>
-            {pets.length > 0 ? (
-              pets.map((pet) => (
-                <TouchableOpacity
-                  key={pet.id}
-                  style={styles.optionItem}
-                  onPress={() => {
-                    setSelectedPetId(pet.id);
-                    setPetOpen(false);
-                  }}
-                >
-                  <Text style={styles.optionText}>{pet.name}</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.optionItem}>
-                <Text style={styles.optionText}>No pets found</Text>
-              </View>
-            )}
-          </View>
-        ) : null}
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={setSelectedPetId} />
 
         <Text style={styles.label}>TYPE OF VISIT</Text>
         <TouchableOpacity style={styles.selectBox} onPress={() => setReasonOpen((open) => !open)}>
@@ -422,14 +394,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noticeText: {
-    color: "#4B5563",
+    color: "#3E4946",
     fontSize: 13,
     lineHeight: 19,
     marginTop: 5,
     textAlign: "center",
   },
   label: {
-    color: "#6B6B6B",
+    color: "#3E4946",
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1,

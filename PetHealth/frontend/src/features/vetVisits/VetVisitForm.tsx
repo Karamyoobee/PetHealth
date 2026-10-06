@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { api } from "../../api/client";
+import PetSelector from "../../components/PetSelector";
 import type { Pet, VetVisit } from "../../types";
 
 type Props = {
@@ -13,7 +14,6 @@ type Props = {
 export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
-  const [petOpen, setPetOpen] = useState(false);
   const [visits, setVisits] = useState<VetVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -59,7 +59,6 @@ export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
 
   const selectPet = (petId: string) => {
     setSelectedPetId(petId);
-    setPetOpen(false);
     loadVisits(petId);
   };
 
@@ -94,27 +93,7 @@ export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
           <Text style={styles.scheduleText}>+ Schedule Visit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.petSelect} onPress={() => setPetOpen((open) => !open)}>
-          <Text style={[styles.petSelectText, !selectedPetId && styles.placeholderText]}>
-            {pets.find((pet) => pet.id === selectedPetId)?.name || "Select pet"}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color="#687076" />
-        </TouchableOpacity>
-        {petOpen ? (
-          <View style={styles.optionMenu}>
-            {pets.length > 0 ? (
-              pets.map((pet) => (
-                <TouchableOpacity key={pet.id} style={styles.optionItem} onPress={() => selectPet(pet.id)}>
-                  <Text style={styles.optionText}>{pet.name}</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.optionItem}>
-                <Text style={styles.optionText}>No pets found</Text>
-              </View>
-            )}
-          </View>
-        ) : null}
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={selectPet} />
 
         <Text style={styles.sectionTitle}>Upcoming</Text>
         {loading ? (
@@ -233,45 +212,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 12,
   },
-  petSelect: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DDD8D0",
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    height: 48,
-    justifyContent: "space-between",
-    marginBottom: 20,
-    paddingHorizontal: 14,
-  },
-  petSelectText: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  placeholderText: {
-    color: "#6B7280",
-  },
-  optionMenu: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DDD8D0",
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 18,
-    overflow: "hidden",
-  },
-  optionItem: {
-    borderBottomColor: "#ECE7DF",
-    borderBottomWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  optionText: {
-    color: "#111827",
-    fontSize: 13,
-    fontWeight: "700",
-  },
   pastTitle: {
     marginTop: 32,
   },
@@ -290,7 +230,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   emptyText: {
-    color: "#4B5563",
+    color: "#3E4946",
     fontSize: 13,
     lineHeight: 19,
     marginTop: 6,
@@ -319,12 +259,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   visitMeta: {
-    color: "#4B5563",
+    color: "#3E4946",
     fontSize: 13,
     marginTop: 2,
   },
   detailText: {
-    color: "#4B5563",
+    color: "#3E4946",
     fontSize: 13,
     lineHeight: 20,
   },
