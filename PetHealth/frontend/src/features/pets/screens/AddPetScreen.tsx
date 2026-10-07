@@ -73,9 +73,9 @@ const AddPetScreen = () => {
         {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
         <Text style={styles.label}>Select Breed</Text>
         <RNTriggerPetBreedDropdownmenu
-            species={} //need to fix
+            species={species} //need to fix
             breed={breed}
-            onBreedChange={}
+            onBreedChange={setBreed}
         />
 
         {/*4. Add Age */}
