@@ -23,6 +23,7 @@ import MedicationForm from "./src/features/medications/MedicationForm";
 import AddMedicationScreen from "./src/features/medications/AddMedicationScreen";
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
+import HomeScreenView from "./src/features/HomeScreen/screens/HomeScreen";
 
 type ScreenKey =
   | "home"
@@ -161,7 +162,7 @@ export default function App() {
               );
             })}
           </View>
-          <HomeScreen user={currentUser} onSignOut={handleSignOut} />
+          <HomeScreenView user={currentUser} onSignOut={handleSignOut} onNavigate={setActiveScreen} />
         </>
       ) : activeScreen === "vetVisits" ? (
         <VetVisitForm
@@ -192,19 +193,15 @@ export default function App() {
   );
 }
 
-function HomeScreen({ user, onSignOut }: { user: User; onSignOut: () => void }) {
+function HomeScreen({ user, onSignOut, onNavigate }: { user: User; onSignOut: () => void; onNavigate?: (screen: ScreenKey) => void; }) {
+  
   return (
-    <ScrollView contentContainerStyle={styles.home}>
-      <Text style={styles.title}>Pet Health</Text>
-      <Text style={styles.subtitle}>Signed in as {user.email ?? user.name}. Your records are connected to this Google account.</Text>
-      <View style={styles.previewCard}>
-        <Text style={styles.cardTitle}>Your health workspace</Text>
-        <Text style={styles.cardText}>Add pets, vet visits, medications, reminders, and export vet-ready reports from this account.</Text>
-      </View>
-      <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+  <HomeScreenView
+    user={user}
+    onSignOut={onSignOut}
+    onNavigate={onNavigate}
+  />
+
   );
 }
 
