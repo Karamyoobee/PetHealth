@@ -1,102 +1,173 @@
-import {
-    Host, DropdownMenu, DropdownMenuItem, Text as ComposeText, 
-    RNHostView, 
-} from '@expo/ui/jetpack-compose';
-import { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Picker } from "@react-native-picker/picker";
 
-//Dog and Cat Breeds
-//15 Popular NZ Dog Breeds 
-const Dog_Breeds = ['Labrador Retriever',
-                    'Huntaway',
-                    'Border Collie',
-                    'New Zealand Heading Dog',
-                    'Staffordshire Bull Terrier',
-                    'Miniature Schnauzer',
-                    'Jack Russell Terrier',
-                    'German Shepherd',
-                    'Golden Retriever',
-                    'Fox Terrier',
-                    'Cocker Spaniel',
-                    'Shih Tzu',
-                    'Rottweiler',
-                    'Bichon Frise',
-                    'Cavalier King Charles Spaniel'
-                    ]
+import { StyleSheet, View } from "react-native";
+ 
+const Dog_Breeds = [
 
-//15 Popular New Zealand Cat Breeds 
+  "Labrador Retriever",
+
+  "Huntaway",
+
+  "Border Collie",
+
+  "New Zealand Heading Dog",
+
+  "Staffordshire Bull Terrier",
+
+  "Miniature Schnauzer",
+
+  "Jack Russell Terrier",
+
+  "German Shepherd",
+
+  "Golden Retriever",
+
+  "Fox Terrier",
+
+  "Cocker Spaniel",
+
+  "Shih Tzu",
+
+  "Rottweiler",
+
+  "Bichon Frise",
+
+  "Cavalier King Charles Spaniel",
+
+];
+ 
 const Cat_Breeds = [
-                'Domestic Shorthair',
-                'Ragdoll',
-                'Maine Coon',
-                'Burmese',
-                'British Shorthair',
-                'Siamese',
-                'Persian',
-                'Devon Rex',
-                'Sphynx',
-                'Bengal',
-                'Russian Blue',
-                'Birman',
-                'Abyssinian',
-                'Norwegian Forest Cat',
-                'Exotic Shorthair'
-                ]
 
-                
+  "Domestic Shorthair",
+
+  "Ragdoll",
+
+  "Maine Coon",
+
+  "Burmese",
+
+  "British Shorthair",
+
+  "Siamese",
+
+  "Persian",
+
+  "Devon Rex",
+
+  "Sphynx",
+
+  "Bengal",
+
+  "Russian Blue",
+
+  "Birman",
+
+  "Abyssinian",
+
+  "Norwegian Forest Cat",
+
+  "Exotic Shorthair",
+
+];
+ 
 type Props = {
-    species: 'dog' | 'cat';
-    breed: string;
-    onBreedChange: (b: string) => void;
+
+  species: "dog" | "cat";
+
+  breed: string;
+
+  onBreedChange: (breed: string) => void;
+
+};
+ 
+export default function RNTriggerPetBreedDropdownmenu({
+
+  species,
+
+  breed,
+
+  onBreedChange,
+
+}: Props) {
+
+  const breeds = species === "dog" ? Dog_Breeds : Cat_Breeds;
+ 
+  return (
+<View style={styles.container}>
+<Picker
+
+        selectedValue={breed}
+
+        onValueChange={(value) => onBreedChange(String(value))}
+
+        mode="dropdown"
+
+        dropdownIconColor="#3E4946"
+
+        style={styles.picker}
+>
+<Picker.Item
+
+          label="Select Breed"
+
+          value=""
+
+          color="#6B7280"
+
+        />
+ 
+        {breeds.map((option) => (
+<Picker.Item
+
+            key={option}
+
+            label={option}
+
+            value={option}
+
+            color="#3E4946"
+
+          />
+
+        ))}
+</Picker>
+</View>
+
+  );
+
 }
+ 
+const styles = StyleSheet.create({
 
+  container: {
 
-export default function RNTriggerPetBreedDropdownmenu({species, breed, onBreedChange}: Props){
-    const [isExpanded, setIsExpanded] = useState(false);
+    width: "100%",
 
-    const breeds = species ===  'dog' ? Dog_Breeds : Cat_Breeds ;
+    minHeight: 52,
 
-    //Map Dog Breed into a new Array - JSX nodes 
-    const BreedList = breeds.map(dgbreed => 
-        <DropdownMenuItem key={dgbreed} onClick={() => {onBreedChange(dgbreed); setIsExpanded(false)}}>
-            <DropdownMenuItem.Text>
-                    <ComposeText>
-                        {dgbreed}
-                    </ComposeText>
-            </DropdownMenuItem.Text>
-            </DropdownMenuItem>
-    )
-    //const CatList = Cat_Breeds.map(Cat_Breeds => {CatList} )
-    //add species propos - dog/cat toggle from array to map
+    backgroundColor: "#FFFFFF",
 
-    return (
+    borderWidth: 1,
 
-        <Host matchContents>
-            <DropdownMenu
-                expanded={isExpanded}
-                onDismissRequest={() => setIsExpanded(false)}>
-                    <DropdownMenu.Trigger>
-                        <RNHostView matchContents>
-                            <Pressable 
-                                onPress={() => setIsExpanded(true)}
-                                style={{
-                                    alignSelf: 'flex-start',
-                                    paddingHorizontal: 20, 
-                                    paddingVertical: 15, 
-                                    borderRadius: 8,
-                                    backgroundColor: '#fff'
-                                }}>
-                               <Text style={{ color: 'black', fontWeight: '600'}}>
-                                        {breed || 'Select Breed'} 
-                               </Text>    
-                            </Pressable>
-                        </RNHostView>
-                    </DropdownMenu.Trigger>
-                <DropdownMenu.Items>
-                    {BreedList} {/*Display Dog Breed List */}
-                </DropdownMenu.Items>
-            </DropdownMenu>
-        </Host>
-    )
-}
+    borderColor: "#D1D5DB",
 
+    borderRadius: 8,
+
+    justifyContent: "center",
+
+    overflow: "hidden",
+
+  },
+
+  picker: {
+
+    width: "100%",
+
+    minHeight: 52,
+
+    color: "#3E4946",
+
+  },
+
+});
+ 
