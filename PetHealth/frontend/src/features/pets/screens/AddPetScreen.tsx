@@ -1,12 +1,12 @@
 import { useState } from "react";
-import {View, Text, StyleSheet, Button } from "react-native";
+import {ScrollView, View, Text, StyleSheet, Button } from "react-native";
 import PetFormField from "../components/PetFormfield";
-import Header from "../components/header";
+import PetHeader from "../components/petheader";
 import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
-//import PrimaryButton from "../components/primarybutton"; 
-//import segmentcontrol from "../components/segmentcontrol";
+import { api } from "../../../api/client";
+//Add Later: import Imagepicker from ""
 
 //Function Component - UI 
 const AddPetScreen = () => {
@@ -18,10 +18,30 @@ const AddPetScreen = () => {
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
+    const [saving, setSaving] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const handleSave = () =>{
-        //ToDo: during the work of API call / local storage database 
-        setSubmitted(true);
+    const handleSave = async () => {
+      
+      const petData = {
+        name: petName.trim(),
+        species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
+        breed: breed,
+        age: Number(age),
+        sex: gender,
+        weightKg: Number(weight),
+        spayedNeutered: status === 'spayed/neutered',
+
+      };
+
+        try{
+            await api.createPet(petData);
+            setSubmitted(true);
+          } catch(error){
+            console.error(error)
+      }
+
+
     }
 
     //Species - Dog or Cat = Segment Options
@@ -44,14 +64,25 @@ const AddPetScreen = () => {
 
     //Handler function for Pet Dog / Cat Dropdown select
     const handleSpeciesChange = (newSpecies: 'dog' | 'cat') => {
-        (newSpecies);
+        setSpecies(newSpecies);
         ('');
     };
+
+    //Handle home screen for pet profile
+    const [screen, setScreen] = useState('home');
 
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <Header />
+        <PetHeader  onBack={() => setScreen('home')}/>
+    <ScrollView 
+      style={styles.scrollView} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}>
+
+              <View style={{ alignItems: 'center', marginBottom: 20}}>
+
+        </View>
 
         {/*1. Add Pet Name - Entry Field */}
         <PetFormField 
@@ -60,27 +91,32 @@ const AddPetScreen = () => {
             onChangeText={setPetName}
             placeholder="e.g Bella"
         />
-
+        
         {/*2. Add Pet Species (Toggle button - dog or cat) */}
-        <Text style={styles.label}>Species</Text>
+        <View style={styles.sectionContainer}>
         <SegmentControl 
             options={options}
             value={species}
             onChange={setSpecies}
-        >
-        </SegmentControl>
+        />
+        </View>
+        <Text style={styles.label}>Species</Text>
+
+
 
         {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
+        <View style={styles.sectionContainer}>
         <Text style={styles.label}>Select Breed</Text>
         <RNTriggerPetBreedDropdownmenu
             species={species} //need to fix
             breed={breed}
             onBreedChange={setBreed}
         />
+        </View>
 
         {/*4. Add Age */}
-        <View style={styles.row}>
-            <View style={styles.halfEntryField}>
+        <View style={styles.halfRow}>
+            <View style={styles.halfInput}>
               <PetFormField 
                 label = "Age"
                 value={age}
@@ -89,9 +125,8 @@ const AddPetScreen = () => {
               />
         </View>
 
-
         {/*5. Add Weight */}
-        <View style={styles.halfEntryField}>
+        <View style={styles.halfInput}>
             <PetFormField 
                 label = "Weight"
                 value={weight}
@@ -122,52 +157,15 @@ const AddPetScreen = () => {
         <PrimaryButton label="Save Pet" onPress={handleSave} />
         {submitted && <Text style={styles.result}>Your new pet has been saved!</Text>}
 
+    </ScrollView>
+
         </View>
     );
  }
 
  //style sheet
 const styles = StyleSheet.create({
-    container:{
-        flex: 1,
-    },
-
-    //enable content scroll 
-    Contentscroll: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-    },
-
-    footer: {
-        paddingHorizontal: 20, 
-        paddingTop: 12,
-        paddingBottom: 24,
-    },
-
-    //Main Title for Form Screen - 'Add New Pet'
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#000',
-        textAlign: 'center',
-    },
-
-    //Title Card background only 
-    titleCard: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16, 
-        marginBottom: 12,
-    },
-
-    //label on top of 
-    label:{
-        fontSize: 14,
-        color: '#555', 
-        marginBottom: 6,
-    },
-
-    //Displayed Message for user
+      //Displayed Message for user
     result: {
         marginTop: 10, 
         fontSize: 16, 
@@ -175,30 +173,84 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    //Form Card - behind Add New Pet 
-    Card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-    },
-
-    //Half Entry Field for Pet Age & Weight 
-    halfEntryField: {
+    container:{
         flex: 1,
-        minWidth: 0,
-        },
-
-    //Row for Age & Weight User Entry 
-    row: { 
-        flexDirection: 'row',
-        gap: 12,
     },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40, // Space at the bottom so you can scroll past the last button
+    paddingTop: 10,
+  },
+  
+  // Standard Input Group
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8, // Pushes the input down so it doesn't overlap
+    fontWeight: '500',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E4E2DA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
 
-    //Input rectangle for Age & Weight
-    smallInput: {
-        height: 40,
-        width: 150,
-    }
+  // Section Wrapper (Species, Gender, etc.)
+  sectionContainer: {
+    marginBottom: 20,
+  },
+
+  // Row for Toggle Buttons (Dog/Cat, Male/Female)
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12, // Creates space between the two buttons
+  },
+  toggleButton: {
+    flex: 1, // CRUCIAL: Makes both buttons take up exactly 50% of the row
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  activeToggle: {
+    backgroundColor: '#1E7A6C', // Your teal color
+    borderColor: '#1E7A6C',
+  },
+  inactiveToggle: {
+    backgroundColor: '#fff',
+    borderColor: '#1E7A6C',
+  },
+  activeToggleText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  inactiveToggleText: {
+    color: '#1E7A6C',
+    fontWeight: '600',
+  },
+
+  // Age and Weight Half Row
+  halfRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 16,
+  },
+  halfInput: {
+    flex: 1, 
+  },
 });
 
 //Display Add Pet Screen - New Form 

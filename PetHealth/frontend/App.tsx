@@ -24,6 +24,7 @@ import AddMedicationScreen from "./src/features/medications/AddMedicationScreen"
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
 import HomeScreenView from "./src/features/HomeScreen/screens/HomeScreen";
+import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
 
 type ScreenKey =
   | "home"
@@ -32,7 +33,8 @@ type ScreenKey =
   | "medications"
   | "addMedication"
   | "reminders"
-  | "reports";
+  | "reports"
+  | "pets";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
@@ -45,6 +47,7 @@ const screens: { key: ScreenKey; label: string }[] = [
   { key: "medications", label: "Medications" },
   { key: "reminders", label: "Reminders" },
   { key: "reports", label: "Reports" },
+  { key: "pets", label: "Add Pet"}
 ];
 
 export default function App() {
@@ -188,6 +191,8 @@ export default function App() {
         <ReminderForm onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
+      ) : activeScreen === "pets" ? (
+        <AddPetScreen />
       ) : null}
     </SafeAreaView>
   );
