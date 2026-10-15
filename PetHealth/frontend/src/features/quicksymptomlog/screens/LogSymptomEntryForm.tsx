@@ -4,10 +4,13 @@ import DescriptionSymptomInput from "../components/DescriptionSymptomInput";//Ca
 import { SymptomTextField } from "../components/DescriptionSymptomInput"; // Function or component for Text Field
 import { SaveButton } from "../components/SaveButton";//Component for 'Save Entry Button'
 //import segmentcontrol from "../components/segmentcontrol";
+import Header from "../components/SectionHeader";
+import SymptomSegmentControl from "../components/SelectCategory";
 
 const LogSymptomEntryForm = () => {
     const [description, setDescription] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [category, setCategory] = useState<'Mild' | 'Moderate' | 'Severe' >('Mild'); //Toggle Button - Spayed/Neutured or Intact
 
     const handleSave = () => {
         //Add API call / local storage save
@@ -16,12 +19,13 @@ const LogSymptomEntryForm = () => {
 
     return(
         <View style={styles.container}>
-            <View style={styles.titleCard}>
-                <Text style={styles.title}>Quick Log Symptom</Text>
-            </View>
+            <Header/>
 
             {/* 1. Pet Selector (select from their different pets) */}
+            
+
             {/*2. Category selector () */}
+
 
             <SymptomTextField
               label="Describe Pet's Symptoms"
@@ -33,6 +37,7 @@ const LogSymptomEntryForm = () => {
               />
 
               {/*4. Severity (select from options) */}
+              
               {/*5. Duration dropdown */}
 
               <Button title="Save Symptom Log Entry" onPress={handleSave} color="#1B6A60"/>

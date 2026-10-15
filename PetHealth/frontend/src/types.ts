@@ -1,6 +1,6 @@
 //Pet Form Field Data - Object Type 
 export type Pet = {
-  id: string;
+  _id: string;
   userId?: string;
   name: string;
   species: "Dog" | "Cat";
