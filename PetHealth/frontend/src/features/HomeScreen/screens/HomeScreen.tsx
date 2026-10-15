@@ -1,16 +1,17 @@
 import React from 'react';
-import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, ScrollView, Pressable} from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import StatCard from '../components/Statcard';
 import QuickActions from '../components/Quickactions';
 import { User } from '../../../types';
+import BottomNavBar from '../components/TabBar';
 
 type Props = {
   user: User;
   onSignOut: () => void;
-  onNavigate?: (screen: "vetVisits" | "medications" | "reminders" | "reports") => void;
+  onNavigate?: (screen: "vetVisits" | "medications" | "reminders" | "reports" | "pets") => void;
 };
 
 //Function for Greeting Text - Display
@@ -18,7 +19,9 @@ type Props = {
 
 export default function HomeScreen({user, onSignOut, onNavigate}: Props){
     return (
-        <View style={styles.row}>
+        <View style={ {flex: 1}}>
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100}}>
+
             {/*Add User Greetings*/}
             <View style={styles.greetingBlock}>
                 <Text style={styles.greeting}>Hello, 👋 </Text>
@@ -71,11 +74,13 @@ export default function HomeScreen({user, onSignOut, onNavigate}: Props){
               onPress={() => {}} />
           </View>
 
-            <QuickActions 
+          <View style={styles.quickactionitem}>
+           <QuickActions 
             icon={<Text>⚖️</Text>} 
             tintcolor='#A1D99B'
             label="Weight Tracker"
             onPress={() => {}} />
+          </View>
 
           <View style={styles.quickactionitem}>
             <QuickActions 
@@ -86,19 +91,34 @@ export default function HomeScreen({user, onSignOut, onNavigate}: Props){
           </View>
           
           <View style={styles.quickactionitem}>
+            <Pressable>
             <QuickActions
             icon={<Text>💊</Text>}
             tintcolor='#FFC067' 
             label="Medications"
             onPress={() => {}} />
+            </Pressable>
           </View>
+
+        </View>
 
           <TouchableOpacity onPress={onSignOut}>
             <Text>Sign Out</Text>
           </TouchableOpacity>
+          
+        </ScrollView>
+
+          {/*Navigation Bar*/}
+          <BottomNavBar
+            active='home'
+            onHomePress={() => console.log("Home selected")}
+            onPetsPress={() => onNavigate?.("pets")}
+            onActionPress={() => console.log("AI pressed")}
+            onTimelinePress={() => console.log('Timeline selected')}
+            onAlertsPress={() => console.log('Alerts selected')}
+          />
 
         </View>
-    </View>
 )
 }
 
@@ -150,10 +170,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
+        justifyContent: 'space-between',
     },
 
     quickactionitem: {
         width: '48%',
+        marginBottom: 12,
     },
 
 });
