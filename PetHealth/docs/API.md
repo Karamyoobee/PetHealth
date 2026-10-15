@@ -184,6 +184,36 @@ Returns the signed-in user's pets.
 
 Returns a vet-ready PDF for the selected pet.
 
+## Health Assistant
+
+`POST /api/assistant/chat`
+
+Requires the signed-in user's JWT and a backend `GEMINI_API_KEY`.
+
+```json
+{
+  "petId": "selected-pet-id",
+  "message": "What should I monitor before our vet appointment?",
+  "history": [
+    {
+      "role": "assistant",
+      "text": "What would you like to review?"
+    }
+  ]
+}
+```
+
+Success response:
+
+```json
+{
+  "message": "Generated general guidance for the selected pet.",
+  "disclaimer": "AI guidance is general information and is not a veterinary diagnosis or treatment plan."
+}
+```
+
+The backend limits message and history length, verifies pet ownership, and sends only selected pet context to Gemini. The Gemini key must never be placed in the Expo environment.
+
 ## Future Integration Endpoints
 
 The backend currently includes endpoints for symptoms, weight entries, predictive flags, and pet summaries so later project phases can connect to the same data model:

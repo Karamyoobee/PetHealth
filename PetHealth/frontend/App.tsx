@@ -23,9 +23,11 @@ import MedicationForm from "./src/features/medications/MedicationForm";
 import AddMedicationScreen from "./src/features/medications/AddMedicationScreen";
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
+import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
 
 type ScreenKey =
   | "home"
+  | "assistant"
   | "vetVisits"
   | "scheduleVisit"
   | "medications"
@@ -40,6 +42,7 @@ const SESSION_USER_KEY = "petHealth.sessionUser";
 
 const screens: { key: ScreenKey; label: string }[] = [
   { key: "home", label: "Home" },
+  { key: "assistant", label: "Assistant" },
   { key: "vetVisits", label: "Vet Visits" },
   { key: "medications", label: "Medications" },
   { key: "reminders", label: "Reminders" },
@@ -147,7 +150,12 @@ export default function App() {
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
         <>
-          <View style={styles.nav}>
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.nav}
+            showsHorizontalScrollIndicator={false}
+            style={styles.navScroll}
+          >
             {screens.map((screen) => {
               const isActive = activeScreen === screen.key;
               return (
@@ -160,9 +168,11 @@ export default function App() {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
           <HomeScreen user={currentUser} onSignOut={handleSignOut} />
         </>
+      ) : activeScreen === "assistant" ? (
+        <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "vetVisits" ? (
         <VetVisitForm
           onBack={() => setActiveScreen("home")}
@@ -226,11 +236,15 @@ const styles = StyleSheet.create({
   },
   nav: {
     backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
     padding: spacing.md,
+  },
+  navScroll: {
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexGrow: 0,
   },
   navButton: {
     borderColor: colors.border,

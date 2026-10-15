@@ -93,3 +93,13 @@ export type PredictiveFlag = {
   createdAt: string;
   resolved: boolean;
 };
+
+export type AssistantHistoryMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+export type AssistantReply = {
+  message: string;
+  disclaimer: string;
+};

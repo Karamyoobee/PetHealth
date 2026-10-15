@@ -1,4 +1,15 @@
-import type { Medication, Pet, PredictiveFlag, Reminder, Symptom, User, VetVisit, WeightEntry } from "../types";
+import type {
+  AssistantHistoryMessage,
+  AssistantReply,
+  Medication,
+  Pet,
+  PredictiveFlag,
+  Reminder,
+  Symptom,
+  User,
+  VetVisit,
+  WeightEntry,
+} from "../types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000";
 let sessionToken: string | null = null;
@@ -96,5 +107,7 @@ export const api = {
     postJson<PredictiveFlag>(`/api/pets/${petId}/predictive-flags`, flag),
 
   getPetSummary: (petId: string) => requestJson<Record<string, unknown>>(`/api/pets/${petId}/summary`),
+  askHealthAssistant: (petId: string, message: string, history: AssistantHistoryMessage[]) =>
+    postJson<AssistantReply>("/api/assistant/chat", { petId, message, history }),
   reportUrl: (petId: string) => `${API_URL}/api/pets/${petId}/report.pdf`,
 };
