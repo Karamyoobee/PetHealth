@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {ScrollView, View, Text, StyleSheet, Button } from "react-native";
 import PetFormField from "../components/PetFormfield";
-import PetHeader from "../components/petheader";
+import PetHeader from "../components/header";
 import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
@@ -68,13 +68,10 @@ const AddPetScreen = () => {
         ('');
     };
 
-    //Handle home screen for pet profile
-    const [screen, setScreen] = useState('home');
-
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <PetHeader  onBack={() => setScreen('home')}/>
+        <PetHeader />
     <ScrollView 
       style={styles.scrollView} 
       contentContainerStyle={styles.scrollContent}
