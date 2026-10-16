@@ -1,14 +1,23 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function Header() { 
     return(
         <View style={styles.header}>
             {/*Icon */}
-            <View>
-               {/*Add Back Arrow Icon*/} 
-                <Text style={styles.headerText}>Add New Pet</Text>
+            <View style={styles.innerheader}>
+                <FontAwesome name="paw" size={24} color="#1F7A66" />
+                <Text style={styles.headerText}>PetHealth</Text>
+                
+                
             </View>
+                {/*Notification Button*/}
+                <TouchableOpacity>
+                </TouchableOpacity>
+
+            
         </View>
 
 
@@ -16,22 +25,28 @@ export default function Header() {
 }
 
 const styles = StyleSheet.create({
-    header: {
-        width: '120%',
-        height: '7%',
+
+
+    innerheader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 8,
+    },
+
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: 'white',
-        borderColor: 'gray',
-        marginTop: 24,
-        marginLeft:-29,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E4E2DA",
+        paddingVertical: 12,
     },
 
     headerText: {
-        fontWeight: 'bold',
-        fontSize: 20,
+        fontWeight: '600',
+        fontSize: 17,
         color: '#333',
-        letterSpacing: 1,
     }
 });

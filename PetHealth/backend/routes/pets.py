@@ -10,7 +10,7 @@ from utils.users import ensure_current_user
 
 pets_bp = Blueprint("pets", __name__, url_prefix="/api")
 
-PET_FIELDS = ("name", "species", "breed", "age", "sex", "weightKg", "spayedNeutered")
+PET_FIELDS = ("name", "species", "breed", "age", "sex", "weightKg", "spayedNeutered", "photoUri")
 VET_VISIT_FIELDS = (
     "appointmentDate",
     "clinicName",

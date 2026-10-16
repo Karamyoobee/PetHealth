@@ -5,6 +5,8 @@ import PetHeader from "../components/petheader";
 import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
+import Imagepicker from "../components/Imagepicker";
+import {Image} from "react-native";
 import { api } from "../../../api/client";
 //Add Later: import Imagepicker from ""
 
@@ -20,6 +22,7 @@ const AddPetScreen = () => {
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
     const [saving, setSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [photoUri, setPhotoUri] = useState<string|null>(null);
 
     const handleSave = async () => {
       
@@ -31,11 +34,15 @@ const AddPetScreen = () => {
         sex: gender,
         weightKg: Number(weight),
         spayedNeutered: status === 'spayed/neutered',
-
+        photoUri: photoUri || null,
       };
 
         try{
-            await api.createPet(petData);
+            console.log("Selected photo URI:", photoUri);      
+            console.log("Pet data being sent: ",JSON.stringify (petData));
+
+            const savedPet = await api.createPet(petData);
+            console.log("Pet returned by backend:", savedPet);
             setSubmitted(true);
           } catch(error){
             console.error(error)
@@ -81,7 +88,8 @@ const AddPetScreen = () => {
       showsVerticalScrollIndicator={false}>
 
               <View style={{ alignItems: 'center', marginBottom: 20}}>
-
+          <Imagepicker onImageSelected={setPhotoUri}/>
+          
         </View>
 
         {/*1. Add Pet Name - Entry Field */}

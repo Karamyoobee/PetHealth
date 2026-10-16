@@ -55,7 +55,7 @@ export const api = {
   listCurrentUserPets: () => requestJson<Pet[]>("/api/users/me/pets"),
 
   listPets: () => requestJson<Pet[]>("/api/pets"),
-  createPet: (pet: Omit<Pet, "id">) => postJson<Pet>("/api/pets", pet),
+  createPet: (pet: Omit<Pet, "id" | "status">) => postJson<Pet>("/api/pets", pet),
   updatePet: (petId: string, pet: Partial<Omit<Pet, "id">>) =>
     requestJson<Pet>(`/api/pets/${petId}`, { method: "PATCH", body: JSON.stringify(pet) }),
   deletePet: (petId: string) => requestJson<void>(`/api/pets/${petId}`, { method: "DELETE" }),
