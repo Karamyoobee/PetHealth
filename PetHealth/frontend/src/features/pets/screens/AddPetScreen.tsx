@@ -1,16 +1,35 @@
+//React Management State (required to use 'usestate')
 import { useState } from "react";
-import {ScrollView, View, Text, StyleSheet, Button } from "react-native";
-import PetFormField from "../components/PetFormfield";
-import PetHeader from "../components/petheader";
-import SegmentControl from "../components/segmentcontrol";
-import { PrimaryButton } from "../components/primarybutton";
-import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
-import Imagepicker from "../components/Imagepicker";
-import {Image} from "react-native";
-import { api } from "../../../api/client";
-//Add Later: import Imagepicker from ""
 
-//Function Component - UI 
+//React Native UI components and alerts
+import {ScrollView, View, Text, StyleSheet, Button , Alert} from "react-native";
+
+//Reusable access to Pet Form file  for (add new pet screen)
+import PetFormField from "../components/PetFormfield";
+
+//Access to Pet Header file  for (Add New Pet Screen)
+import PetHeader from "../components/petheader";
+
+//Access to Segment Control file  for (Add New Pet Screen)
+import SegmentControl from "../components/segmentcontrol";
+
+//Access to Primary Button file for (Add New Pet Screen)
+import { PrimaryButton } from "../components/primarybutton";
+
+//Access to dropdown menu file for (Add New Pet Screen)
+import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
+
+//Access to Image picker file for (Add New Pet Screen)
+import Imagepicker from "../components/Imagepicker";
+
+//Connect Backend database usage -> display and store frontend user input fields
+import { api } from "../../../api/client";
+
+//Connect local uri stored to cloud stored on Cloudinary (swap photoUri used to real live image link) - https://
+import { uploadImageToCloudinary } from "../../../api/cloudinary";
+
+
+//Function Component (Add Pet Screen) - UI (Add Net Pet Form)
 const AddPetScreen = () => {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
@@ -20,12 +39,27 @@ const AddPetScreen = () => {
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
-    const [saving, setSaving] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [photoUri, setPhotoUri] = useState<string|null>(null);
+    const [saving, setSaving] = useState(false);//Save pet profile image state
+    const [photoUri, setPhotoUri] = useState<string|null>(null);//Set Image photoUri link / file
 
+    //Handles: saving all pet's profile and uploading it's image 
     const handleSave = async () => {
       
+      //Avoid the conflict of duplicate save requests!
+      if (saving) return;
+
+
+        try{
+            setSaving(true);//Saving pet profile image
+            //Upload user selected file (image) + copy and send to Cloudinary + send back URL for Mongodb database
+            let finalPhotoUrl: string | null = null; //empty box for image final uri link
+
+            //if conidition check : for origin (photoUri) - image link (project owned) + collect and store image link inside Cloud (cloudinary)
+            if (photoUri){
+              finalPhotoUrl = await uploadImageToCloudinary(photoUri)
+            }
+          
+      //Prepare basic pet profile details & backend API connections
       const petData = {
         name: petName.trim(),
         species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
@@ -34,19 +68,26 @@ const AddPetScreen = () => {
         sex: gender,
         weightKg: Number(weight),
         spayedNeutered: status === 'spayed/neutered',
-        photoUri: photoUri || null,
+        photoUri: finalPhotoUrl,
       };
-
-        try{
+            //Verification Logs (development use) - debugging
             console.log("Selected photo URI:", photoUri);      
             console.log("Pet data being sent: ",JSON.stringify (petData));
 
+            //Pet profile being "Saved" and send through to Backend API & Mongodb Database
             const savedPet = await api.createPet(petData);
+
+            //Verify: Saved Pet Profile Details securely into database 
             console.log("Pet returned by backend:", savedPet);
-            setSubmitted(true);
-          } catch(error){
-            console.error(error)
-      }
+            setSubmitted(true);//Pet Profile confirmation - details saved!
+
+          } catch(error){//Inform and catch user input error
+            console.error(error)//error message
+            Alert.alert('Image was unable to be saved.', 'Please, try again!');
+          } finally{
+            //Restart saving 'state' once inital copmletion of each request for pet profile made
+            setSaving(false)
+          }
 
 
     }
