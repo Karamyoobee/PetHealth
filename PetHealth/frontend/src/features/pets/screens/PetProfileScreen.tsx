@@ -1,11 +1,14 @@
 import React from "react";
 import { useState } from "react";
 import { useEffect } from "react"; // check petId for pet being used here
-import { StyleSheet, Text, Pressable, View} from "react-native";
+import { StyleSheet, Text, ScrollView, View} from "react-native";
 //All Icons Set - For Statistic Cards and Quick Access Buttons
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'; //Age - Birthday
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';//Medical Box & Weight Icon
+import FontAwesome from '@expo/vector-icons/FontAwesome';//Vet Visits - Icon
+import Entypo from '@expo/vector-icons/Entypo';//Predictive Flagging - Icon
 
 //Reusable Components - UI
 import { QuickButton } from "../components/Quickaccess_buttons";//Quick Access Section Buttons File
@@ -62,7 +65,10 @@ export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
     },[petId]);//Repeat when selected pet changes
 
     return(
-        <View style={{ flex: 1}}>
+        <View style={styles.root}>
+        <ScrollView style={{ flex: 1}}
+            contentContainerStyle={{ paddingBottom: 114}}
+            >
 
             {/*Pet Photo Cover*/}
             <PhotoHeader
@@ -105,10 +111,45 @@ export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
             {/* Display Pet Quick Access Buttons*/}
             <Text style={styles.quickaccessheading}>Quick Access</Text>
             
-            {/*Bottom Navigation Bar*/}
-            <BottomNavBar/>
+            <View style={styles.Container}>
+            {/*Quick Access: Log Symptom Button*/}
+            <QuickButton
+                label="Log Symptom"
+                icon={<FontAwesome5 name="briefcase-medical" size={24} color="black" />}
+            />
+
+            {/*Quick Access: Weigh-in Button*/}
+            <QuickButton
+                label="Weigh-in"
+                icon={<FontAwesome5 name="weight" size={24} color="black" />}
+            />
+
+            {/*Quick Access: Vet Visits Button*/}
+            <QuickButton
+                label="Vet Visits"
+                icon={<FontAwesome name="calendar" size={24} color="black" />}
+            />
+
+            {/*Quick Access: Medications*/}
+            <QuickButton
+                label="Medications"
+                icon={<MaterialCommunityIcons name="pill" size={24} color="black" />}
+            />
+
+            {/*Quick Access: Predictive Flagging Engine Button*/}
+            <QuickButton
+                label="Predictive Flagging Engine"
+                icon={<Entypo name="flag" size={24} color="black" />}
+            />
         </View>
-    )
+           
+            
+        </ScrollView>
+                {/*Bottom Navigation Bar*/}
+            <BottomNavBar/>
+         </View>    
+)
+
 }
 
 
@@ -116,6 +157,13 @@ const styles = StyleSheet.create({
     root:{
         flex: 1,
         backgroundColor: '#F8F8F6',
+    },
+
+    //Quick Access Container
+    Container: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
 
     //Quick Access Heading
