@@ -8,8 +8,14 @@ import PetCard from '../components/PetCard';//PetCard to display Pet Owner Pet's
 import { Pet } from '../../../types';//Import Backend Pet (Types Set Structure) for Data Types Validation
 import { api } from '../../../api/client';//API connection for connection between pet details stored inside Mongodb Database
 
+//Props - Used to connect 
+type MyPetsScreenProps = {
+    onBack: () => void;
+    onSelectPet: (id: string) => void;
+}
+
 //Function for Backend 
-export default function MyPetsScreen({ onBack }: { onBack: () => void }){
+export default function MyPetsScreen({ onBack, onSelectPet }: MyPetsScreenProps){
     //State set for - display (pets lists), load flags and error messages
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,7 +60,10 @@ export default function MyPetsScreen({ onBack }: { onBack: () => void }){
                 <FlatList
                     data={pets}
                     keyExtractor={(item) => item.id}
-                    renderItem={( {item} ) => <PetCard pet={item}/>}
+                    renderItem={( {item} ) => <PetCard pet={item} onPress={ () => {
+                        console.log("You Tapped the Button!", item.id);
+                        onSelectPet(item.id);
+                    }}/>}
                 />
 
                 {/*Bottom Navigation Bar*/}
