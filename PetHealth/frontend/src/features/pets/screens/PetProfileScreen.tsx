@@ -3,9 +3,9 @@ import { useState } from "react";
 import { useEffect } from "react"; // check petId for pet being used here
 import { StyleSheet, Text, Pressable, View} from "react-native";
 //All Icons Set - For Statistic Cards and Quick Access Buttons
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Feather from '@expo/vector-icons/Feather';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'; //Age - Birthday
 
 //Reusable Components - UI
 import { QuickButton } from "../components/Quickaccess_buttons";//Quick Access Section Buttons File
@@ -78,9 +78,32 @@ export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
             <Text style={styles.otherpetdetails}>{`${pet?.breed ?? "-"} • ${pet?.age ?? "-"} years`}</Text>
 
             {/*Details Cards - Statistic of Pet*/}
+            <View style={styles.statistics}>
+
+            {/*Pet Weight*/}
+            <DetailCard
+                label="Weight"
+                value={`${pet?.weightKg ?? 0 } kg`}
+                icon={<FontAwesome6 name="weight-scale" size={24} color="black" />}
+            />
+
+            {/*Pet Age*/}
+            <DetailCard
+                label="Age"//Age Declared
+                value={`${pet?.age ?? 0 } yrs`}//Value Declared and collected from real database stored
+                icon={<MaterialCommunityIcons name="cake-variant-outline" size={24} color="black" />}
+            />
+
+            {/*Pet Health Status*/}
+            <DetailCard
+                label="Status"//Label for Health Stats
+                value={`${pet?.status ?? "Unknown" }`}//Not connected to backend yet!
+                icon={<Feather name="heart" size={24} color="#90EE90" />}
+            />
+            </View>
 
             {/* Display Pet Quick Access Buttons*/}
-            <Text>Quick Access</Text>
+            <Text style={styles.quickaccessheading}>Quick Access</Text>
             
             {/*Bottom Navigation Bar*/}
             <BottomNavBar/>
@@ -92,15 +115,40 @@ export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
 const styles = StyleSheet.create({
     root:{
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#F8F8F6',
+    },
+
+    //Quick Access Heading
+    quickaccessheading:{
+        marginLeft:10,
+        fontWeight: '500',
+        fontSize: 30,
+        top:20,
+        color:'black',
+        paddingHorizontal: 16,
     },
 
     //Main Style for Background Screen of PetProfile
-    main: {flex: 1, backgroundColor: '#FEFBEA'},
-    //Statistics - using DetailCard.tsx file Components (Style)
-    statistics: {flexDirection: 'row', gap: 8, paddingHorizontal: 16},
+    main: {
+        flex: 1, 
+        backgroundColor: '#FEFBEA',
+        borderWidth: 1,
+        borderColor:"#D3D3D3",
+    },
 
-    section1: {fontSize: 16, fontWeight:'600', margin: 16},
+    //Statistics - using DetailCard.tsx file Components (Style)
+    statistics: {
+        flexDirection: 'row',
+        gap: 8, 
+        paddingHorizontal: 16,
+        marginTop: 12,
+    },
+
+    section1: {
+        fontSize: 16, 
+        fontWeight:'600', 
+        margin: 16},
+
     grid:{
         flexDirection: "row",
         flexWrap: "wrap",
