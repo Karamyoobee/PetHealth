@@ -1,21 +1,24 @@
 import React from 'react';
-import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {StyleSheet, Text, View, Pressable} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import Feather from '@expo/vector-icons/Feather';
 
-export default function Header() { 
+export default function Header({ onBack }: { onBack: () => void }) { 
     return(
         <View style={styles.header}>
             {/*Icon */}
             <View style={styles.innerheader}>
-                <FontAwesome name="paw" size={24} color="#1F7A66" />
+                <Pressable>
+                <FontAwesome name="paw" size={24} color="#1F7A66" />                    
+                </Pressable>
                 <Text style={styles.headerText}>PetHealth</Text>
                 
                 
             </View>
                 {/*Notification Button*/}
-                <TouchableOpacity>
-                </TouchableOpacity>
+                <Pressable>
+                    <Feather name="bell" size={24} color="black" />
+                </Pressable>
 
             
         </View>

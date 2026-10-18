@@ -1,21 +1,27 @@
 import React from 'react';
-import {StyleSheet, Text, View, Pressable} from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import {StyleSheet, Text, View, Pressable} from 'react-native';//Essential React Native Components
+import FontAwesome from '@expo/vector-icons/FontAwesome';//Declear Icon set
+import AntDesign from '@expo/vector-icons/AntDesign';//Declear Icon - Back Arrow
 
+//Pet Header Props  - used to go back to previous screen
+type PetHeaderProps = {
+    onBack: () => void;
+    title?: string;
+}
 
-export default function PetHeader({ onBack }: { onBack: () => void }) { 
+//Frontend compnents Function - UI Build Screen
+export default function PetHeader({ onBack, title="Add New Pet" }: PetHeaderProps) { 
 
     return(
         <View style={styles.header}>
-            {/*Icon */}
+            {/*Main Style - Display Header for Screen*/}
             <View style={styles.innerheader}>
-                <Pressable onPress={onBack}>
-                    <AntDesign name="arrowleft" size={24} color="black" />
-                </Pressable>                
+                <Pressable onPress={onBack}>{/*Back Button - arrow triggered and returns to onBack Screen = Home Screen*/}
+                    <AntDesign name="arrowleft" size={24} color="black" />{/*Back Arrow - Icon */}
+                </Pressable>      
                 
-            </View>
-                <Text style={styles.headerText}>Add New Pet</Text>
+            </View>{/*Header Text - Text Centered inside Header Section */}
+                <Text style={styles.headerText}>{title}</Text>
         
         </View>
 
@@ -23,15 +29,16 @@ export default function PetHeader({ onBack }: { onBack: () => void }) {
     )
 }
 
+//Main Style Sheet
 const styles = StyleSheet.create({
-
-
+    //Row for Back Arrow Icon
     innerheader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
 
+    //Header Bar Style - White Background with thin bottom border
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -43,6 +50,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
 
+    //Title Text - stretched for full width and center position
     headerText: {
         fontWeight: '600',
         fontSize: 17,

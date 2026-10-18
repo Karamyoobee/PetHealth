@@ -1,66 +1,77 @@
-import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity,FlatList} from 'react-native';
+import React, {useEffect, useState} from 'react'; //React Use State Management
+import {StyleSheet, Text, View, Pressable, FlatList} from 'react-native';//React Essential Imports for Components of Screen
 import { StatusBar } from "expo-status-bar";
-import Header from '../components/Header';
+import Header from '../components/header'; //Header for MyPets Screen
 import StatusBadge from '../components/StatusBadge';
-import PetCard from '../components/PetCard';
-import { Pet } from '../../../types';
-import { api } from '../../../api/client';
+import BottomNavBar from '../components/Tabbar';//Bottom Navbar File 
+import PetCard from '../components/PetCard';//PetCard to display Pet Owner Pet's from 
+import { Pet } from '../../../types';//Import Backend Pet (Types Set Structure) for Data Types Validation
+import { api } from '../../../api/client';//API connection for connection between pet details stored inside Mongodb Database
 
-
-export default function App(){
-
+//Function for Backend 
+export default function MyPetsScreen({ onBack }: { onBack: () => void }){
+    //State set for - display (pets lists), load flags and error messages
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    //Load all pets from each ID , once screen displays succesfully first!
     useEffect(() => {
+        //Async function defines - effect, effects cannot be async directly
         const LoadPets = async () => {
                 try{
-                    const showpets = await api.listPets();
-                    console.log("Pets from backend: ", showpets);
-                    setPets(showpets);
+                    const showpets = await api.listPets();//Reuse pet list from backend (API client via Mongodb)
+                    console.log("Pets from backend: ", showpets);//Log for Debugging: backend response check only
+                    setPets(showpets);//Save response of Pets state -> Flatlis can render with this data set
                 }
+            //Handle Error: log failure 
             catch(error){
                 console.error(error)
             }
+            //Always load and final chekc after try/catch process - stops loading state
             finally{
                 setLoading(false);
             }
 
         };
+        //Enforce Trigger to fetch() details of all pets that match the user ID
         LoadPets();
     },[]);
 
     return (
             <View style={styles.container}>
-
-
-                <Header/>            
+                {/*Header for Mypets screen*/}
+                <Header onBack={onBack} />            
                    
- 
+                {/* Display Title for Users - Mypets screen */}
                 <View style={styles.greetingBlock}>
                     <Text style={styles.greeting}>My Pets</Text>
                 </View>
- 
+
+                {/*Add Pet - New Button*/}
+
+                {/*Pet List - Display only per UserId*/}
                 <FlatList
                     data={pets}
                     keyExtractor={(item) => item.id}
                     renderItem={( {item} ) => <PetCard pet={item}/>}
                 />
 
-                {/*Add My pets section here... */}
-
+                {/*Bottom Navigation Bar*/}
+                <BottomNavBar/>
             </View>   
  
    
     )
 }
- 
+
+//Main Styles Sheet for Mypets Screen
 const styles = StyleSheet.create({
+
+    //Main container for Mypets Screen
     container: {
         flex: 1,
-        backgroundColor: '#F7F4EC',
+        backgroundColor: '#FBF9F5',
     },
  
     //Greeting section
