@@ -10,12 +10,15 @@ import { Pet } from '../../../types';
 import { api } from '../../../api/client';
 
 // 2. PROPS: the card receives one pet (use the Pet type from data/pets.ts)
-type PetTypeProps = { pet: Pet }
+type PetTypeProps = { 
+    pet: Pet;
+    onPress: () => void;
+}
 
 
-export default function PetCard({ pet }: PetTypeProps){
+export default function PetCard({ pet, onPress }: PetTypeProps){
     return(
-        <Pressable style={styles.card}>
+        <Pressable style={styles.card} onPress={onPress}>
             <PhotoCover uri={pet.photoUri} size={80}/>
             <View style={styles.middleblock}>
                 <Text style={styles.petnametext}>{pet.name}</Text>

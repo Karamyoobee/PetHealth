@@ -3,7 +3,8 @@ import { Pressable, Text, StyleSheet, View, Image } from "react-native";
 import { colors, spacing, radius } from "@theme";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
-
+import { api } from "../../../api/client";
+import { Pet } from "../../../types";
 
 type PhotoProps = {
     photoUri? : string | null;
@@ -43,7 +44,7 @@ const styles = StyleSheet.create({
 
     container: {
         width: '100%',
-        height: 240,
+        height: 340,
     },
 
     photo: {
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
     },
 
     placeholder: {
-        backgroundColor: 'gray',
+        backgroundColor: 'light-gray',
     },
 
     button:{
@@ -60,9 +61,9 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'white',
         alignItems: 'center',
-        top: 16,
-        width: '40%',
-        height: '40%',
+        top: 48,
+        width: 40,
+        height: 40,
         justifyContent: 'center',
     },
 
