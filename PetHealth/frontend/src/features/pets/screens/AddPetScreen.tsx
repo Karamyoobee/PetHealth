@@ -28,9 +28,12 @@ import { api } from "../../../api/client";
 //Connect local uri stored to cloud stored on Cloudinary (swap photoUri used to real live image link) - https://
 import { uploadImageToCloudinary } from "../../../api/cloudinary";
 
+type AddPetProps = { 
+  onBack: () => void
+};
 
 //Function Component (Add Pet Screen) - UI (Add Net Pet Form)
-const AddPetScreen = () => {
+export default function AddPetScreen({ onBack }: AddPetProps) {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
     const [weight, setWeight] = useState(''); /// Weight Entry Field
@@ -122,7 +125,7 @@ const AddPetScreen = () => {
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <PetHeader  onBack={() => setScreen('home')}/>
+        <PetHeader  onBack={onBack}/>
     <ScrollView 
       style={styles.scrollView} 
       contentContainerStyle={styles.scrollContent}
@@ -301,6 +304,3 @@ const styles = StyleSheet.create({
     flex: 1, 
   },
 });
-
-//Display Add Pet Screen - New Form 
-export default AddPetScreen;

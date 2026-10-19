@@ -15,29 +15,25 @@ import { QuickButton } from "../components/Quickaccess_buttons";//Quick Access S
 import { DetailCard } from "../components/Detailcard";//Detail Card File - Used for Stats cards
 import BottomNavBar from "../components/Tabbar";//Bottom Navigation Bar
 import PetHeader from "../components/petheader";
+import UpdatePet from "../components/updatepetbutton";
 
 //Pet Data Type and API Client Files 
 import { Pet } from "../../../types";
 import { api } from "../../../api/client";
 
-//
-import { colors, spacing } from "@theme";
-import PhotoHeader from "../components/Photoheader";
 
-//Quick Access Shortcuts (Setups) 
-const QuickAccessActions = [
-    {label: "Log Symptom", icon:<Feather name="clipboard" size={20} />, route: "Log Symptom" },
-]
+import PhotoHeader from "../components/Photoheader";
 
 //Props - useful for Parent Screen Menu
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
     title?: string;
+    onUpdate: () => void;//connection for update button
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -76,7 +72,7 @@ export default function PetProfileScreen({ onBack, petId }: PetHeaderProps){
                 onBack={onBack}
                 onDelete={() => console.log("delete")}
             />
-
+            <UpdatePet onPress={onUpdate}/>
             {/*Display Pet Name*/}
             <Text style={styles.petname}>{pet?.name}</Text>
 

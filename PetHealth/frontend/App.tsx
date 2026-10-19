@@ -25,6 +25,9 @@ import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
 import HomeScreenView from "./src/features/HomeScreen/screens/HomeScreen";
 import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
+import MyPetsScreen from "./src/features/pets/screens/Mypets";
+import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
+import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
 
 type ScreenKey =
   | "home"
@@ -34,7 +37,11 @@ type ScreenKey =
   | "addMedication"
   | "reminders"
   | "reports"
-  | "pets";
+  | "pets"
+  | "myPets"
+  | "addPet"
+  | "petProfile"
+  | "updatePet";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
@@ -43,11 +50,11 @@ const SESSION_USER_KEY = "petHealth.sessionUser";
 
 const screens: { key: ScreenKey; label: string }[] = [
   { key: "home", label: "Home" },
-  { key: "vetVisits", label: "Vet Visits" },
-  { key: "medications", label: "Medications" },
+  { key: "updatePet", label: "My Pets"},
+  { key: "petProfile", label: "Pet Profile"},
   { key: "reminders", label: "Reminders" },
   { key: "reports", label: "Reports" },
-  { key: "pets", label: "Add Pet"}
+  { key: "pets", label: "Add Pet"},
 ];
 
 export default function App() {
@@ -57,6 +64,9 @@ export default function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  //Replace with real navigation lateron - once adding final connections for PetHealth screens 
+  const[selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -167,16 +177,25 @@ export default function App() {
           </View>
           <HomeScreenView user={currentUser} onSignOut={handleSignOut} onNavigate={setActiveScreen} />
         </>
-      ) : activeScreen === "vetVisits" ? (
-        <VetVisitForm
-          onBack={() => setActiveScreen("home")}
-          onScheduleVisit={() => setActiveScreen("scheduleVisit")}
-        />
-      ) : activeScreen === "scheduleVisit" ? (
-        <ScheduleVisitScreen
-          onBack={() => setActiveScreen("vetVisits")}
-          onSubmit={() => setActiveScreen("vetVisits")}
-        />
+      ) : activeScreen === "myPets" || activeScreen === "pets" ? (
+      <MyPetsScreen 
+      onBack={() => setActiveScreen("home")} 
+      onSelectPet={(id)=>{
+        setSelectedPetId(id);
+        setActiveScreen("petProfile");
+      }}
+      onAddNewPet={() => setActiveScreen('addPet')}
+      />
+      ) : activeScreen === "petProfile" ? (
+      <PetProfileScreen 
+      onBack={() => setActiveScreen("myPets")} 
+      petId={selectedPetId}
+      onUpdate={() => setActiveScreen("updatePet")}
+      />
+      ) : activeScreen === "addPet" ? (
+        <AddPetScreen
+         onBack={() => setActiveScreen("myPets")}
+         />
       ) : activeScreen === "medications" ? (
         <MedicationForm
           onBack={() => setActiveScreen("home")}
@@ -191,9 +210,12 @@ export default function App() {
         <ReminderForm onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "pets" ? (
-        <AddPetScreen />
-      ) : null}
+      ) : activeScreen === "updatePet" ? (
+        <UpdatePetProfile 
+         petId={selectedPetId}
+         onBack={() => setActiveScreen("petProfile")}
+         />
+      ): null}
     </SafeAreaView>
   );
 }

@@ -7,15 +7,17 @@ import BottomNavBar from '../components/Tabbar';//Bottom Navbar File
 import PetCard from '../components/PetCard';//PetCard to display Pet Owner Pet's from 
 import { Pet } from '../../../types';//Import Backend Pet (Types Set Structure) for Data Types Validation
 import { api } from '../../../api/client';//API connection for connection between pet details stored inside Mongodb Database
+import AddButton from '../components/Addnewpetbutton';
 
 //Props - Used to connect 
 type MyPetsScreenProps = {
     onBack: () => void;
     onSelectPet: (id: string) => void;
+    onAddNewPet: () => void;
 }
 
 //Function for Backend 
-export default function MyPetsScreen({ onBack, onSelectPet }: MyPetsScreenProps){
+export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet }: MyPetsScreenProps){
     //State set for - display (pets lists), load flags and error messages
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function MyPetsScreen({ onBack, onSelectPet }: MyPetsScreenProps)
                 </View>
 
                 {/*Add Pet - New Button*/}
-
+                <AddButton onPress={onAddNewPet} />
                 {/*Pet List - Display only per UserId*/}
                 <FlatList
                     data={pets}

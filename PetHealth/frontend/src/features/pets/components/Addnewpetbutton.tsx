@@ -1,30 +1,37 @@
 import React from "react";
 import {
-    View, Image, Text, TouchableOpacity, StyleSheet, 
+    View, Image, Text, Pressable, StyleSheet, 
 } from "react-native";
 import { Pet } from "../../../types";
 import { api } from "../../../api/client";
 
-export default function AddButton(){
+type AddButtonProps = {
+    onPress: () => void;
+}
+
+
+export default function AddButton({ onPress}: AddButtonProps){
     return (
-        <TouchableOpacity
-         style={style.button}
-         activeOpacity={0.8}
+        <Pressable
+        onPress={onPress}
+         style={({ pressed }) => [style.button, pressed && {opacity: 0.8}]}
         >
             <Text style={style.text}>+Add</Text>
-        </TouchableOpacity>
+        </Pressable>
     )
 }
 
 const style = StyleSheet.create({
     button: {
         backgroundColor: "orange",
-        borderRadius: 20,
-        width:60,
-        height:60,
+        borderRadius: 30,
+        width:100,
+        height:50,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: "flex-start",
+        marginLeft:280, 
+        marginTop: -60,
     },
 
     text: {

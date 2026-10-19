@@ -6,22 +6,21 @@ import AntDesign from '@expo/vector-icons/AntDesign';//Declear Icon - Back Arrow
 //Pet Header Props  - used to go back to previous screen
 type PetHeaderProps = {
     onBack: () => void;
-    title?: string;
-}
+};
 
 //Frontend compnents Function - UI Build Screen
-export default function PetHeader({ onBack, title="Add New Pet" }: PetHeaderProps) { 
+export default function PetHeader({ onBack }: PetHeaderProps) { 
 
     return(
         <View style={styles.header}>
             {/*Main Style - Display Header for Screen*/}
             <View style={styles.innerheader}>
-                <Pressable onPress={onBack}>{/*Back Button - arrow triggered and returns to onBack Screen = Home Screen*/}
-                    <AntDesign name="arrowleft" size={24} color="black" />{/*Back Arrow - Icon */}
-                </Pressable>      
+        <Pressable onPress={onBack}>
+            <AntDesign name="arrowleft" size={24} color="black" />
+        </Pressable>   
                 
             </View>{/*Header Text - Text Centered inside Header Section */}
-                <Text style={styles.headerText}>{title}</Text>
+                <Text style={styles.headerText}>Add New Pet</Text>
         
         </View>
 
@@ -31,6 +30,7 @@ export default function PetHeader({ onBack, title="Add New Pet" }: PetHeaderProp
 
 //Main Style Sheet
 const styles = StyleSheet.create({
+
     //Row for Back Arrow Icon
     innerheader: {
         flexDirection: 'row',

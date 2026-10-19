@@ -1,15 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {ScrollView, View, Text, StyleSheet, Button } from "react-native";
 import PetFormField from "../components/PetFormfield";
-import PetHeader from "../components/petheader";
+import UpdatePetHeader from "../components/updatepetheader";
 import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
+import Imagepicker from "../components/Imagepicker";
 import { api } from "../../../api/client";
-//Add Later: import Imagepicker from ""
+import { Pet } from "../../../types";
+
+//Props for 
+type updatepetProps = {
+  petId: string | null;
+  onBack: () => void;
+}
 
 //Function Component - UI 
-const AddPetScreen = () => {
+export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
     const [weight, setWeight] = useState(''); /// Weight Entry Field
@@ -20,9 +27,43 @@ const AddPetScreen = () => {
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
     const [saving, setSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [photoUri, setPhotoUri] = useState<string|null>(null);//Set Image photoUri link / file
+    const [pet, setPet]  = useState<Pet | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string|null>(null);//Display error message if fails to load
+
+    useEffect(() =>{
+        async function loadPet(){
+            //No Pet ID found: loads nothing, stops loading!
+            if(!petId) {setLoading(false); return;}
+            try{//Try : display Pet current list
+                const pets = await api.listCurrentUserPets(); //update pet details
+                const found = pets.find((p) => p.id === petId) //save details
+                console.log("found: ", found)
+                if(found){//Compare existing form details with pet details (stored in database)
+                  setPetName(found.name);//form Name vs Name(database stored)
+                  setGender(found.sex === 'female' ? 'female': 'male');//Form Gender vs Gender(database stored))
+                  setBreed(found.breed);//Form Breed vs Breed(database stored))
+                  setAge(String(found.age));//Form Age vs Age(database stored))
+                  setWeight(String(found.weightKg));//Form Weight vs Weight(database stored))
+                  setSpecies(found.species === 'Dog' ? 'dog' : 'cat');//Form Gender vs Gender(database stored))
+                  setStatus(found.spayedNeutered ? 'intact': 'spayed/neutered');//Form Gender vs Gender(database stored))
+                }
+            }
+            catch(e){//Catch Error: Display Error message if failed
+                setErrorMessage("Unable to load Pet!")
+            }
+            finally{//Runs: stop loading state
+                setLoading(false)
+            }
+
+        }
+        loadPet();//Fetch when Effect loads
+    },[petId]);//Repeat when selected pet changes
+
 
     const handleSave = async () => {
-      
+
       const petData = {
         name: petName.trim(),
         species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
@@ -33,8 +74,10 @@ const AddPetScreen = () => {
         spayedNeutered: status === 'spayed/neutered',
       };
 
+        if (!petId) return;
+
         try{
-            await api.createPet(petData);
+            await api.updatePet(petId, petData);
             setSubmitted(true);
           } catch(error){
             console.error(error)
@@ -73,15 +116,18 @@ const AddPetScreen = () => {
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <PetHeader  onBack={() => setScreen('home')}/>
+        <UpdatePetHeader onBack={() => setScreen('home')}/>
+
     <ScrollView 
       style={styles.scrollView} 
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}>
 
               <View style={{ alignItems: 'center', marginBottom: 20}}>
+                  <Imagepicker onImageSelected={setPhotoUri}/>
+              </View>
 
-        </View>
+
 
         {/*1. Add Pet Name - Entry Field */}
         <PetFormField 
@@ -252,5 +298,3 @@ const styles = StyleSheet.create({
   },
 });
 
-//Display Add Pet Screen - New Form 
-export default AddPetScreen;
