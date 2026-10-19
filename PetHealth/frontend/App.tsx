@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  BackHandler,
   Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar as NativeStatusBar,
   StyleSheet,
   Text,
@@ -13,7 +14,6 @@ import {
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { colors, spacing } from "./src/theme";
 import { api, setSessionToken } from "./src/api/client";
 import type { User } from "./src/types";
 import { AuthScreen } from "./src/features/auth/AuthScreens";
@@ -24,15 +24,14 @@ import AddMedicationScreen from "./src/features/medications/AddMedicationScreen"
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
 import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
+import HomeScreen, { type HomeDestination } from "./src/features/home/HomeScreen";
+import PetForm from "./src/features/pets/PetForm";
 
 type ScreenKey =
   | "home"
-  | "assistant"
-  | "vetVisits"
+  | HomeDestination
   | "scheduleVisit"
-  | "medications"
   | "addMedication"
-  | "reminders"
   | "reports";
 
 type AuthMode = "welcome" | "signup" | "signin";
@@ -40,22 +39,32 @@ type AuthMode = "welcome" | "signup" | "signin";
 const SESSION_TOKEN_KEY = "petHealth.sessionToken";
 const SESSION_USER_KEY = "petHealth.sessionUser";
 
-const screens: { key: ScreenKey; label: string }[] = [
-  { key: "home", label: "Home" },
-  { key: "assistant", label: "Assistant" },
-  { key: "vetVisits", label: "Vet Visits" },
-  { key: "medications", label: "Medications" },
-  { key: "reminders", label: "Reminders" },
-  { key: "reports", label: "Reports" },
-];
-
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
+  const navigateHome = (screen: HomeDestination) => {
+    const pendingScreens: Partial<Record<HomeDestination, string>> = {
+      addPet: "Add Pet", symptoms: "Log Symptom", weights: "Weight Tracker", vaccinations: "Vaccinations", timeline: "Health Timeline",
+    };
+    if (pendingScreens[screen]) {
+      Alert.alert(pendingScreens[screen]!, "This screen is not available in the current branch yet.");
+      return;
+    }
+    setActiveScreen(screen);
+  };
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!currentUser || activeScreen === "home") return false;
+      setActiveScreen(activeScreen === "addMedication" ? "medications" : activeScreen === "scheduleVisit" ? "vetVisits" : "home");
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, currentUser]);
 
   useEffect(() => {
     let mounted = true;
@@ -149,28 +158,15 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
-        <>
-          <ScrollView
-            horizontal
-            contentContainerStyle={styles.nav}
-            showsHorizontalScrollIndicator={false}
-            style={styles.navScroll}
-          >
-            {screens.map((screen) => {
-              const isActive = activeScreen === screen.key;
-              return (
-                <TouchableOpacity
-                  key={screen.key}
-                  onPress={() => setActiveScreen(screen.key)}
-                  style={[styles.navButton, isActive && styles.navButtonActive]}
-                >
-                  <Text style={[styles.navText, isActive && styles.navTextActive]}>{screen.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          <HomeScreen user={currentUser} onSignOut={handleSignOut} />
-        </>
+        <HomeScreen user={currentUser} onNavigate={navigateHome} />
+      ) : activeScreen === "pets" ? (
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 20 }}>
+            <TouchableOpacity onPress={() => setActiveScreen("home")}><Text>Back to Home</Text></TouchableOpacity>
+            <TouchableOpacity onPress={handleSignOut}><Text>Sign Out</Text></TouchableOpacity>
+          </View>
+          <PetForm />
+        </View>
       ) : activeScreen === "assistant" ? (
         <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "vetVisits" ? (
@@ -202,26 +198,10 @@ export default function App() {
   );
 }
 
-function HomeScreen({ user, onSignOut }: { user: User; onSignOut: () => void }) {
-  return (
-    <ScrollView contentContainerStyle={styles.home}>
-      <Text style={styles.title}>Pet Health</Text>
-      <Text style={styles.subtitle}>Signed in as {user.email ?? user.name}. Your records are connected to this Google account.</Text>
-      <View style={styles.previewCard}>
-        <Text style={styles.cardTitle}>Your health workspace</Text>
-        <Text style={styles.cardText}>Add pets, vet visits, medications, reminders, and export vet-ready reports from this account.</Text>
-      </View>
-      <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#FAF8F4",
     paddingTop: Platform.OS === "android" ? NativeStatusBar.currentHeight ?? 0 : 0,
   },
   authSafeArea: {
@@ -233,85 +213,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-  },
-  nav: {
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  navScroll: {
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexGrow: 0,
-  },
-  navButton: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  navButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  navText: {
-    color: colors.text,
-    fontWeight: "800",
-  },
-  navTextActive: {
-    color: colors.white,
-  },
-  home: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 15,
-    marginTop: spacing.sm,
-    textAlign: "center",
-  },
-  previewCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  cardText: {
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  signOutButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  signOutText: {
-    color: colors.text,
-    fontWeight: "800",
   },
 });
