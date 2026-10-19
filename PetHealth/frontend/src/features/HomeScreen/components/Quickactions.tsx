@@ -23,11 +23,19 @@ export default function QuickActions({icon, tintcolor, label, onPress}: QuickAct
 }
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+
+    
     card: {
-        width:'48%',
+        width:'100%',
         backgroundColor: 'white',
         borderRadius: 15, 
-        padding: 14, 
+        padding: 12, 
+        marginBottom: 10,
         flexDirection: 'row',//icon and label align side by side
         shadowColor: 'black',
         shadowOpacity: 0.1,
@@ -49,6 +57,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#6B7280',
+        flexShrink: 1,
     }
 
 })

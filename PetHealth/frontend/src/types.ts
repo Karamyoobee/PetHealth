@@ -1,15 +1,16 @@
 //Pet Form Field Data - Object Type 
 export type Pet = {
-  _id: string;
+  id: string;
   userId?: string;
   name: string;
   species: "Dog" | "Cat";
   breed: string;
   age: number;
   sex: string;
-  photoUri?:string;
+  photoUri?: string | null;
   weightKg: number;
   spayedNeutered: boolean;
+  status: 'Healthy' | 'Checkup Due';
 };
 
 export type User = {

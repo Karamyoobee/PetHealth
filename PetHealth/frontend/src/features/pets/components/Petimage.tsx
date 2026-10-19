@@ -1,23 +1,33 @@
-import React from "react";
-import { Pressable, Text, StyleSheet } from "react-native";
-import { colors, spacing, radius } from "@theme";
+import React from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 
-type Props = { 
-    uri?: string; 
-    onChange: (uri: string) => void; 
+type PetImageProps = {
+    uri?: string |null;
     size?: number;
 };
 
-export default function PetImage({ uri, onChange, size = 120 }: Props){
-    const pick = async() => { 
-        //ToDo - 
+
+export default function PhotoCover({uri, size=70 }: PetImageProps){
+    const measurement = {
+        width: size,
+        height: size, 
+        borderRadius: size/2,
     };
 
-    return (
-        //Add (Press button > Image + absolute position + badge on photo frame)
-        null
-    )
+    if (!uri) { 
+        return <View style={[styles.cover, measurement]}/>;
+    }
+    return(
+        <Image source={{ uri }} style={[styles.cover, measurement]}/>
+    );
+    
 }
 
-//Pet Profile - Circular photo frame 
-//+ Badge on photo frame 
+const styles = StyleSheet.create({
+    cover: {
+        backgroundColor: '#E4E2DA',
+        borderRadius: 10,
+        borderWidth: 1, 
+        borderColor: '#E4E2DA',
+    },
+});

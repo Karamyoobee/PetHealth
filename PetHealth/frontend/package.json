@@ -24,6 +24,7 @@
     "expo": "~51.0.28",
     "expo-auth-session": "~5.5.2",
     "expo-font": "~12.0.10",
+    "expo-image-picker": "~15.1.0",
     "expo-notifications": "~0.28.19",
     "expo-print": "~13.0.1",
     "expo-sharing": "~12.0.1",
@@ -34,6 +35,7 @@
     "react-native-calendars": "^1.1314.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "@types/react": "~18.2.79",
     "typescript": "~5.3.3"
   }
