@@ -1,4 +1,15 @@
-import type { Medication, Pet, PredictiveFlag, Reminder, Symptom, User, VetVisit, WeightEntry } from "../types";
+import type {
+  AssistantHistoryMessage,
+  AssistantReply,
+  Medication,
+  Pet,
+  PredictiveFlag,
+  Reminder,
+  Symptom,
+  User,
+  VetVisit,
+  WeightEntry,
+} from "../types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000";
 let sessionToken: string | null = null;
@@ -42,6 +53,10 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   health: () => requestJson<{ status: string }>("/health"),
   databaseHealth: () => requestJson<{ status: string; database?: string }>("/health/db"),
+  getTodaySummary: (date: string, timezoneOffset: number) =>
+    requestJson<{ date: string; counts: { vaccinations: number; medications: number; vetVisits: number } }>(
+      `/api/home/today?date=${encodeURIComponent(date)}&timezoneOffset=${timezoneOffset}`
+    ),
 
   googleLogin: (idToken: string) =>
     postJson<{ token: string; tokenType: "Bearer"; expiresAt: string; user: User }>("/api/auth/google", {
@@ -76,6 +91,11 @@ export const api = {
   listReminders: (petId: string) => requestJson<Reminder[]>(`/api/pets/${petId}/reminders`),
   createReminder: (petId: string, reminder: Omit<Reminder, "id" | "petId">) =>
     postJson<Reminder>(`/api/pets/${petId}/reminders`, reminder),
+  updateReminder: (reminderId: string, reminder: Partial<Omit<Reminder, "id" | "petId">>) =>
+    requestJson<Reminder>(`/api/reminders/${reminderId}`, {
+      method: "PATCH",
+      body: JSON.stringify(reminder),
+    }),
 
   listSymptoms: (petId: string) => requestJson<Symptom[]>(`/api/pets/${petId}/symptoms`),
   createSymptom: (petId: string, symptom: Omit<Symptom, "id" | "petId">) =>
@@ -91,5 +111,7 @@ export const api = {
     postJson<PredictiveFlag>(`/api/pets/${petId}/predictive-flags`, flag),
 
   getPetSummary: (petId: string) => requestJson<Record<string, unknown>>(`/api/pets/${petId}/summary`),
+  askHealthAssistant: (petId: string, message: string, history: AssistantHistoryMessage[]) =>
+    postJson<AssistantReply>("/api/assistant/chat", { petId, message, history }),
   reportUrl: (petId: string) => `${API_URL}/api/pets/${petId}/report.pdf`,
 };

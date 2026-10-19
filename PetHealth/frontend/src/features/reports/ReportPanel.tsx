@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { api } from "../../api/client";
+import PetSelector from "../../components/PetSelector";
+import type { Pet } from "../../types";
 
 type Props = {
   onBack?: () => void;
@@ -8,6 +12,32 @@ type Props = {
 };
 
 export function ReportPanel({ onBack, onExport }: Props) {
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPets() {
+      try {
+        const savedPets = await api.listCurrentUserPets();
+        if (!mounted) return;
+        setPets(savedPets);
+        setSelectedPetId((currentPetId) => currentPetId || savedPets[0]?.id || "");
+      } catch {
+        if (mounted) {
+          setPets([]);
+        }
+      }
+    }
+
+    loadPets();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -18,6 +48,8 @@ export function ReportPanel({ onBack, onExport }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={setSelectedPetId} />
+
         <View style={styles.emptyState}>
           <Ionicons name="document-text-outline" size={34} color="#00796B" />
           <Text style={styles.emptyTitle}>No report data yet</Text>
@@ -36,7 +68,11 @@ export function ReportPanel({ onBack, onExport }: Props) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity disabled style={[styles.exportButton, styles.disabledButton]} onPress={onExport}>
+        <TouchableOpacity
+          disabled={!selectedPetId}
+          style={[styles.exportButton, !selectedPetId && styles.disabledButton]}
+          onPress={onExport}
+        >
           <Ionicons name="download-outline" size={17} color="#FFFFFF" />
           <Text style={styles.exportText}>Export PDF</Text>
         </TouchableOpacity>
@@ -104,14 +140,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   emptyText: {
-    color: "#4B5563",
+    color: "#3E4946",
     fontSize: 13,
     lineHeight: 19,
     marginTop: 6,
     textAlign: "center",
   },
   label: {
-    color: "#60666D",
+    color: "#3E4946",
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 10,

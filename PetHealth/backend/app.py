@@ -4,6 +4,7 @@ from flask_cors import CORS
 from config import Config
 from database import mongo
 from routes.auth import auth_bp
+from routes.assistant import assistant_bp
 from routes.health import health_bp
 from routes.pets import pets_bp
 from routes.reports import reports_bp
@@ -18,6 +19,7 @@ def create_app():
     mongo.init_app(app)
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(assistant_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(pets_bp)

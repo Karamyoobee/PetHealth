@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar as NativeStatusBar,
   StyleSheet,
   Text,
@@ -13,7 +13,6 @@ import {
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { colors, spacing } from "./src/theme";
 import { api, setSessionToken } from "./src/api/client";
 import type { User } from "./src/types";
 import { AuthScreen } from "./src/features/auth/AuthScreens";
@@ -23,39 +22,23 @@ import MedicationForm from "./src/features/medications/MedicationForm";
 import AddMedicationScreen from "./src/features/medications/AddMedicationScreen";
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
-import HomeScreenView from "./src/features/HomeScreen/screens/HomeScreen";
-import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
-import MyPetsScreen from "./src/features/pets/screens/Mypets";
-import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
-import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
+import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
+import HomeScreen, { type HomeDestination } from "./src/features/home/HomeScreen";
+import PetForm from "./src/features/pets/PetForm";
 
 type ScreenKey =
   | "home"
-  | "vetVisits"
+  | HomeDestination
   | "scheduleVisit"
-  | "medications"
   | "addMedication"
-  | "reminders"
-  | "reports"
-  | "pets"
-  | "myPets"
-  | "addPet"
-  | "petProfile"
-  | "updatePet";
+  | "reports";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
 const SESSION_TOKEN_KEY = "petHealth.sessionToken";
 const SESSION_USER_KEY = "petHealth.sessionUser";
 
-const screens: { key: ScreenKey; label: string }[] = [
-  { key: "home", label: "Home" },
-  { key: "updatePet", label: "My Pets"},
-  { key: "petProfile", label: "Pet Profile"},
-  { key: "reminders", label: "Reminders" },
-  { key: "reports", label: "Reports" },
-  { key: "pets", label: "Add Pet"},
-];
+const availableHomeScreens: HomeDestination[] = ["pets", "medications", "vetVisits", "assistant", "reminders"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
@@ -65,8 +48,29 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  //Replace with real navigation lateron - once adding final connections for PetHealth screens 
-  const[selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const navigateHome = (screen: HomeDestination) => {
+    if (availableHomeScreens.includes(screen)) {
+      setActiveScreen(screen);
+    }
+  };
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!currentUser || activeScreen === "home") {
+        return false;
+      }
+
+      if (activeScreen === "addMedication") {
+        setActiveScreen("medications");
+      } else if (activeScreen === "scheduleVisit") {
+        setActiveScreen("vetVisits");
+      } else {
+        setActiveScreen("home");
+      }
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, currentUser]);
 
   useEffect(() => {
     let mounted = true;
@@ -160,42 +164,31 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
-        <>
-          <View style={styles.nav}>
-            {screens.map((screen) => {
-              const isActive = activeScreen === screen.key;
-              return (
-                <TouchableOpacity
-                  key={screen.key}
-                  onPress={() => setActiveScreen(screen.key)}
-                  style={[styles.navButton, isActive && styles.navButtonActive]}
-                >
-                  <Text style={[styles.navText, isActive && styles.navTextActive]}>{screen.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+        <HomeScreen user={currentUser} availableScreens={availableHomeScreens} onNavigate={navigateHome} />
+      ) : activeScreen === "pets" ? (
+        <View style={styles.petScreen}>
+          <View style={styles.petNavigation}>
+            <TouchableOpacity onPress={() => setActiveScreen("home")}>
+              <Text>Back to Home</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSignOut}>
+              <Text>Sign Out</Text>
+            </TouchableOpacity>
           </View>
-          <HomeScreenView user={currentUser} onSignOut={handleSignOut} onNavigate={setActiveScreen} />
-        </>
-      ) : activeScreen === "myPets" || activeScreen === "pets" ? (
-      <MyPetsScreen 
-      onBack={() => setActiveScreen("home")} 
-      onSelectPet={(id)=>{
-        setSelectedPetId(id);
-        setActiveScreen("petProfile");
-      }}
-      onAddNewPet={() => setActiveScreen('addPet')}
-      />
-      ) : activeScreen === "petProfile" ? (
-      <PetProfileScreen 
-      onBack={() => setActiveScreen("myPets")} 
-      petId={selectedPetId}
-      onUpdate={() => setActiveScreen("updatePet")}
-      />
-      ) : activeScreen === "addPet" ? (
-        <AddPetScreen
-         onBack={() => setActiveScreen("myPets")}
-         />
+          <PetForm />
+        </View>
+      ) : activeScreen === "assistant" ? (
+        <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
+      ) : activeScreen === "vetVisits" ? (
+        <VetVisitForm
+          onBack={() => setActiveScreen("home")}
+          onScheduleVisit={() => setActiveScreen("scheduleVisit")}
+        />
+      ) : activeScreen === "scheduleVisit" ? (
+        <ScheduleVisitScreen
+          onBack={() => setActiveScreen("vetVisits")}
+          onSubmit={() => setActiveScreen("vetVisits")}
+        />
       ) : activeScreen === "medications" ? (
         <MedicationForm
           onBack={() => setActiveScreen("home")}
@@ -210,32 +203,23 @@ export default function App() {
         <ReminderForm onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "updatePet" ? (
-        <UpdatePetProfile 
-         petId={selectedPetId}
-         onBack={() => setActiveScreen("petProfile")}
-         />
-      ): null}
+      ) : null}
     </SafeAreaView>
   );
 }
 
-function HomeScreen({ user, onSignOut, onNavigate }: { user: User; onSignOut: () => void; onNavigate?: (screen: ScreenKey) => void; }) {
-  
-  return (
-  <HomeScreenView
-    user={user}
-    onSignOut={onSignOut}
-    onNavigate={onNavigate}
-  />
-
-  );
-}
-
 const styles = StyleSheet.create({
+  petScreen: {
+    flex: 1,
+  },
+  petNavigation: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 20,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#FAF8F4",
     paddingTop: Platform.OS === "android" ? NativeStatusBar.currentHeight ?? 0 : 0,
   },
   authSafeArea: {
@@ -247,81 +231,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-  },
-  nav: {
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  navButton: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  navButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  navText: {
-    color: colors.text,
-    fontWeight: "800",
-  },
-  navTextActive: {
-    color: colors.white,
-  },
-  home: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 15,
-    marginTop: spacing.sm,
-    textAlign: "center",
-  },
-  previewCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  cardText: {
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  signOutButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  signOutText: {
-    color: colors.text,
-    fontWeight: "800",
   },
 });

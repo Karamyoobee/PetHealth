@@ -3,6 +3,9 @@ export type Pet = {
   id: string;
   userId?: string;
   name: string;
+  imageUrl?: string;
+  photoUrl?: string;
+  avatarUrl?: string;
   species: "Dog" | "Cat";
   breed: string;
   age: number;
@@ -28,7 +31,9 @@ export type User = {
 export type VetVisit = {
   id: string;
   petId: string;
+  reason?: string;
   appointmentDate: string;
+  appointmentTime?: string;
   clinicName: string;
   veterinarianName: string;
   diagnosis: string;
@@ -41,6 +46,7 @@ export type Medication = {
   id: string;
   petId: string;
   name: string;
+  purpose?: string;
   dosage: string;
   instructions: string;
   schedule: string;
@@ -58,6 +64,9 @@ export type Reminder = {
   scheduledFor: string;
   repeat: "none" | "daily" | "weekly" | "monthly";
   enabled: boolean;
+  dismissedAt?: string;
+  completedAt?: string;
+  snoozedUntil?: string;
 };
 
 export type Symptom = {
@@ -86,4 +95,14 @@ export type PredictiveFlag = {
   severity: "low" | "medium" | "high";
   createdAt: string;
   resolved: boolean;
+};
+
+export type AssistantHistoryMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+export type AssistantReply = {
+  message: string;
+  disclaimer: string;
 };
