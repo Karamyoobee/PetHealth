@@ -48,6 +48,19 @@ Authorization: Bearer <jwt-session-token>
 
 The default session lifetime is controlled by `JWT_EXPIRES_HOURS`; the current default is 168 hours, or 7 days.
 
+## Home Daily Summary
+
+`GET /api/home/today?date=2026-10-19&timezoneOffset=-780`
+
+Requires a session token. The frontend sends its local date and JavaScript timezone offset in minutes.
+The response contains `date` and `counts` for `vaccinations`, `medications`, and `vetVisits`, using only pets owned by the signed-in user.
+
+- Medications: remaining doses today within the inclusive `startDate` / `endDate` range. Supports the form's Once a day, Twice a day, and Three times a day schedules, plus Daily. Taken dose logs for the local date reduce the count.
+- Vet visits: records whose `appointmentDate` falls on the local date, excluding completed or cancelled visits.
+- Vaccinations: records in `vaccinations` with a `petId` referencing the pet's MongoDB ObjectId and a `dueDate` of today (YYYY-MM-DD), excluding completed or cancelled records. An administered date alone is not a future vaccination schedule.
+
+An empty day returns zero for all three counts. These cards display today's counts and do not navigate to another screen.
+
 ## Database Model
 
 MongoDB Atlas collections:

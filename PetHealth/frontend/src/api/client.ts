@@ -53,6 +53,10 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   health: () => requestJson<{ status: string }>("/health"),
   databaseHealth: () => requestJson<{ status: string; database?: string }>("/health/db"),
+  getTodaySummary: (date: string, timezoneOffset: number) =>
+    requestJson<{ date: string; counts: { vaccinations: number; medications: number; vetVisits: number } }>(
+      `/api/home/today?date=${encodeURIComponent(date)}&timezoneOffset=${timezoneOffset}`
+    ),
 
   googleLogin: (idToken: string) =>
     postJson<{ token: string; tokenType: "Bearer"; expiresAt: string; user: User }>("/api/auth/google", {

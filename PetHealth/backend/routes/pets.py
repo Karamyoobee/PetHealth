@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from bson import ObjectId
 from flask import Blueprint, jsonify, request
@@ -106,6 +106,69 @@ def create_pet():
     result = mongo.db.pets.insert_one(doc)
     saved = mongo.db.pets.find_one({"_id": result.inserted_id})
     return jsonify(serialize_doc(saved)), 201
+
+
+@pets_bp.get("/home/today")
+def home_today():
+    user_id = current_user_id()
+    try:
+        today = date.fromisoformat(request.args.get("date", ""))
+        offset = int(request.args.get("timezoneOffset", "0"))
+        if not -840 <= offset <= 840:
+            raise ValueError()
+    except (ValueError, TypeError):
+        return error("A valid date and timezone offset are required")
+
+    local_timezone = timezone(timedelta(minutes=-offset))
+
+    def local_date(value):
+        if isinstance(value, datetime):
+            parsed = value
+        elif isinstance(value, date):
+            return value
+        elif isinstance(value, str) and value:
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                return None
+        else:
+            return None
+
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(local_timezone)
+        return parsed.date()
+
+    pet_ids = [pet["_id"] for pet in mongo.db.pets.find({"userId": user_id})]
+    query = {"petId": {"$in": pet_ids}}
+    counts = {"vaccinations": 0, "medications": 0, "vetVisits": 0}
+    daily_doses = {"once a day": 1, "twice a day": 2, "three times a day": 3, "daily": 1}
+
+    for medication in mongo.db.medications.find(query):
+        start = local_date(medication.get("startDate"))
+        end = local_date(medication.get("endDate"))
+        if start is None or start > today or (end is not None and end < today):
+            continue
+
+        scheduled = daily_doses.get(str(medication.get("schedule", "")).strip().lower(), 0)
+        taken = sum(
+            dose.get("status") == "taken" and local_date(dose.get("takenAt")) == today
+            for dose in medication.get("doseLog", [])
+        )
+        counts["medications"] += max(scheduled - taken, 0)
+
+    for visit in mongo.db.vet_visits.find(query):
+        if visit.get("status") in ("completed", "cancelled") or visit.get("completedAt"):
+            continue
+        if local_date(visit.get("appointmentDate")) == today:
+            counts["vetVisits"] += 1
+
+    for vaccination in mongo.db.vaccinations.find(query):
+        if vaccination.get("status") in ("completed", "cancelled") or vaccination.get("completedAt"):
+            continue
+        if local_date(vaccination.get("dueDate")) == today:
+            counts["vaccinations"] += 1
+
+    return jsonify({"date": today.isoformat(), "counts": counts})
 
 
 @pets_bp.get("/pets/<pet_id>")
