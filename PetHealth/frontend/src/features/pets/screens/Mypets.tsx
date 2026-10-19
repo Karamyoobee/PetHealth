@@ -14,10 +14,11 @@ type MyPetsScreenProps = {
     onBack: () => void;
     onSelectPet: (id: string) => void;
     onAddNewPet: () => void;
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders') => void;
 }
 
 //Function for Backend 
-export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet }: MyPetsScreenProps){
+export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavigate }: MyPetsScreenProps){
     //State set for - display (pets lists), load flags and error messages
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,7 +70,13 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet }: MyPet
                 />
 
                 {/*Bottom Navigation Bar*/}
-                <BottomNavBar/>
+                <BottomNavBar
+                    active="pets"
+                    onHomePress={onBack}
+                    onPetsPress={() => onNavigate?.('pets')}
+                    onActionPress={() => onNavigate?.('assistant')}
+                    onAlertsPress={() => onNavigate?.('reminders')}
+                />
             </View>   
  
    

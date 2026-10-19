@@ -30,10 +30,11 @@ type PetHeaderProps = {
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
     title?: string;
     onUpdate: () => void;//connection for update button
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders') => void;
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate, onNavigate }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -142,7 +143,13 @@ export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderP
             
         </ScrollView>
                 {/*Bottom Navigation Bar*/}
-            <BottomNavBar/>
+            <BottomNavBar
+                active="pets"
+                onHomePress={() => onNavigate?.('home')}
+                onPetsPress={onBack}
+                onActionPress={() => onNavigate?.('assistant')}
+                onAlertsPress={() => onNavigate?.('reminders')}
+            />
          </View>    
 )
 

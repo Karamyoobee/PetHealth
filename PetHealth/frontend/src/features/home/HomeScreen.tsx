@@ -31,7 +31,7 @@ export type HomeDestination =
 type Props = {
   user: User;
   availableScreens: readonly HomeDestination[];
-  onNavigate: (screen: HomeDestination) => void;
+  onNavigate: (screen: HomeDestination, petId?: string) => void;
 };
 
 type HomeCounts = {
@@ -194,10 +194,10 @@ export default function HomeScreen({ user, availableScreens, onNavigate }: Props
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pets}>
           {pets.map((pet) => {
-            const imageUrl = pet.imageUrl || pet.photoUrl || pet.avatarUrl;
+            const imageUrl = pet.photoUri || pet.imageUrl || pet.photoUrl || pet.avatarUrl;
 
             return (
-              <TouchableOpacity key={pet.id} style={styles.pet} onPress={() => onNavigate("pets")}>
+              <TouchableOpacity key={pet.id} style={styles.pet} onPress={() => onNavigate("pets", pet.id)}>
                 <View style={styles.avatarRing}>
                   {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.avatar} />

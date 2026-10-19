@@ -6,8 +6,6 @@ import {
   SafeAreaView,
   StatusBar as NativeStatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -24,11 +22,16 @@ import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
 import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
 import HomeScreen, { type HomeDestination } from "./src/features/home/HomeScreen";
-import PetForm from "./src/features/pets/PetForm";
+import MyPetsScreen from "./src/features/pets/screens/Mypets";
+import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
+import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
+import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
 
 type ScreenKey =
   | "home"
   | HomeDestination
+  | "petProfile"
+  | "updatePet"
   | "scheduleVisit"
   | "addMedication"
   | "reports";
@@ -38,18 +41,28 @@ type AuthMode = "welcome" | "signup" | "signin";
 const SESSION_TOKEN_KEY = "petHealth.sessionToken";
 const SESSION_USER_KEY = "petHealth.sessionUser";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "medications", "vetVisits", "assistant", "reminders"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "medications", "vetVisits", "assistant", "reminders"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const navigateHome = (screen: HomeDestination) => {
-    if (availableHomeScreens.includes(screen)) {
+  const navigateHome = (screen: HomeDestination | "home", petId?: string) => {
+    if (screen === "home" || availableHomeScreens.includes(screen)) {
+      if (screen === "pets" && petId) {
+        setSelectedPetId(petId);
+        setActiveScreen("petProfile");
+        return;
+      }
+      if (screen === "addPet") {
+        setAddPetReturnScreen("home");
+      }
       setActiveScreen(screen);
     }
   };
@@ -64,13 +77,19 @@ export default function App() {
         setActiveScreen("medications");
       } else if (activeScreen === "scheduleVisit") {
         setActiveScreen("vetVisits");
+      } else if (activeScreen === "addPet") {
+        setActiveScreen(addPetReturnScreen);
+      } else if (activeScreen === "petProfile") {
+        setActiveScreen("pets");
+      } else if (activeScreen === "updatePet") {
+        setActiveScreen("petProfile");
       } else {
         setActiveScreen("home");
       }
       return true;
     });
     return () => subscription.remove();
-  }, [activeScreen, currentUser]);
+  }, [activeScreen, addPetReturnScreen, currentUser]);
 
   useEffect(() => {
     let mounted = true;
@@ -166,17 +185,32 @@ export default function App() {
       {activeScreen === "home" ? (
         <HomeScreen user={currentUser} availableScreens={availableHomeScreens} onNavigate={navigateHome} />
       ) : activeScreen === "pets" ? (
-        <View style={styles.petScreen}>
-          <View style={styles.petNavigation}>
-            <TouchableOpacity onPress={() => setActiveScreen("home")}>
-              <Text>Back to Home</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSignOut}>
-              <Text>Sign Out</Text>
-            </TouchableOpacity>
-          </View>
-          <PetForm />
-        </View>
+        <MyPetsScreen
+          onBack={() => setActiveScreen("home")}
+          onSelectPet={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("petProfile");
+          }}
+          onAddNewPet={() => {
+            setAddPetReturnScreen("pets");
+            setActiveScreen("addPet");
+          }}
+          onNavigate={navigateHome}
+        />
+      ) : activeScreen === "addPet" ? (
+        <AddPetScreen
+          onBack={() => setActiveScreen(addPetReturnScreen)}
+          onSaved={() => setActiveScreen("pets")}
+        />
+      ) : activeScreen === "petProfile" ? (
+        <PetProfileScreen
+          petId={selectedPetId}
+          onBack={() => setActiveScreen("pets")}
+          onUpdate={() => setActiveScreen("updatePet")}
+          onNavigate={navigateHome}
+        />
+      ) : activeScreen === "updatePet" ? (
+        <UpdatePetProfile petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : activeScreen === "assistant" ? (
         <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "vetVisits" ? (
@@ -209,14 +243,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  petScreen: {
-    flex: 1,
-  },
-  petNavigation: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 20,
-  },
   safeArea: {
     flex: 1,
     backgroundColor: "#FAF8F4",
