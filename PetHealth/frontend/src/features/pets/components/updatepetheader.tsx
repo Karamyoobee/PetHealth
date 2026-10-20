@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, Text, View, Pressable, TouchableOpacity} from 'react-native';//Essential React Native Components
+import {StyleSheet, Text, View, Pressable} from 'react-native';//Essential React Native Components
 import FontAwesome from '@expo/vector-icons/FontAwesome';//Declear Icon set
 import AntDesign from '@expo/vector-icons/AntDesign';//Declear Icon - Back Arrow
 
@@ -14,14 +14,14 @@ export default function UpdatePetHeader({ onBack }: PetHeaderProps) {
     return(
         <View style={styles.header}>
             {/*Main Style - Display Header for Screen*/}
+                            <Text style={styles.headerText}>Update Pet Details</Text>
+
             <View style={styles.innerheader}>
-                <TouchableOpacity onPress={onBack}>{/*Back Button - arrow triggered and returns to onBack Screen = Home Screen*/}
+                <Pressable onPress={onBack}>{/*Back Button - arrow triggered and returns to onBack Screen = Home Screen*/}
                     <AntDesign name="arrowleft" size={24} color="black" />{/*Back Arrow - Icon */}
-                </TouchableOpacity>      
+                </Pressable>      
                 
-            </View>{/*Header Text - Text Centered inside Header Section */}
-                <Text style={styles.headerText}>Update Pet Details</Text>
-        
+            </View>{/*Header Text - Text Centered inside Header Section */}        
         </View>
 
 
@@ -57,5 +57,7 @@ const styles = StyleSheet.create({
         position:'absolute',
         width: '100%',
         textAlign: 'center',
+        pointerEvents: 'none',
+
     }
 });
