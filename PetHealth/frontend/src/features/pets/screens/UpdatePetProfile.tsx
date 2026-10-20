@@ -116,7 +116,7 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <UpdatePetHeader onBack={() => setScreen('home')}/>
+        <UpdatePetHeader onBack={onBack}/>
 
     <ScrollView 
       style={styles.scrollView} 
