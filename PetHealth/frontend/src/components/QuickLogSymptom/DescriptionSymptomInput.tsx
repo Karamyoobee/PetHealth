@@ -9,6 +9,7 @@ type DescriptionSymptomInput = TextInputProps & {
 export function SymptomTextField({ label, ...props }: DescriptionSymptomInput) {
   return (
     <View style={styles.wrap}>
+      <Text style={styles.title}>Describe Symptoms</Text>
       <Text style={styles.label}>{label}</Text>
       <TextInput placeholderTextColor={colors.muted} style={styles.input} {...props} />
     </View>
@@ -16,6 +17,13 @@ export function SymptomTextField({ label, ...props }: DescriptionSymptomInput) {
 }
 
 const styles = StyleSheet.create({
+
+  title: {
+    fontSize: 20,
+    fontStyle: 'normal',
+    fontWeight:'600',
+  },
+
   wrap: { gap: spacing.xs },
   label: { color: colors.text, fontSize: 13, fontWeight: "700" },
   input: {
@@ -24,15 +32,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     color: colors.text,
-    minHeight: 44,
+    minHeight: 120,
     paddingHorizontal: spacing.md,
-    marginTop: 250,
-  },
-  multiline:{
-    minHeight: 100, 
-    paddingTop: spacing.sm,
-    textAlignVertical: "top",
-  },
+  }
 });
 
 export default DescriptionSymptomInput;
