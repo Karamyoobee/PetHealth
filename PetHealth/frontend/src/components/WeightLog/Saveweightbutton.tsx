@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
-import { colors, spacing, radius } from "@theme";
+import { colors} from "@theme";
 
 
 type Props = {
@@ -34,7 +34,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: 'center',
     width: '100%',
-    marginTop: 340,
+    marginTop: 'auto',
+    paddingBottom: 16,
   },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
