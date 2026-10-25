@@ -1,15 +1,19 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 import { colors} from "@theme";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import {ReactNode} from 'react';
 
-
-type Props = {
+//Button Props
+type SaveButtonProps = {
     label: string;
     onPress?: () => void;
     disabled?:boolean;
+    icon: ReactNode;
 };
 
-export function SaveWeight({ label, onPress, disabled }: Props){
+//Main Function - Save Weight Button
+export function SaveWeight({ label, onPress, disabled, icon }: SaveButtonProps){
 return (
     <Pressable
         onPress={onPress}
@@ -20,6 +24,7 @@ return (
         disabled && styles.disabled,
         ]}
         >
+          {icon}
           <Text style={styles.label}>{label}</Text>
        </Pressable>  
     ); 
@@ -27,6 +32,7 @@ return (
 
 //Styles for Save Entry Button - Save Weight Log
 const styles = StyleSheet.create({
+  //Main Button Style
   button:{
     backgroundColor: colors.secondary, 
     borderRadius: 10, 
@@ -34,11 +40,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: 'center',
     width: '100%',
-    marginTop: 'auto',
-    paddingBottom: 16,
+    marginTop: 20,
+    flexDirection: 'row',
+    gap: 8,
   },
+
+  //Button: Pressed
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
+
+  //Label Style
   label: {
     color: colors.white,
     fontWeight: "700", 

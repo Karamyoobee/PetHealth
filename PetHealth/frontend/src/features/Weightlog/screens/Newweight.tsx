@@ -1,17 +1,20 @@
+//New Log Weight Screen Form - Pet Owners can record their pet's weight (weight, unit, date, time, notes)
+
+//Essential Import for react
 import { useState } from "react";
-import {View, Text, StyleSheet, TextInput, Pressable } from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet, TextInput, Pressable, ScrollView } from "react-native";//React - Native Libraries
 import { SaveWeight } from "../../../components/WeightLog/Saveweightbutton";
-import Feather from '@expo/vector-icons/Feather';//Calendar Icon Import 
+
+//Icon's from @expo/vector-icons
+import Feather from '@expo/vector-icons/Feather'; 
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 import WeightHeader from "../../../components/WeightLog/Weight_header";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import Weightformfield from "../../../components/WeightLog/Newweightform";
 
-//<Feather name="calendar" size={24} color="black" /> = use for after
-
-//<AntDesign name="clock-circle" size={24} color="black" /> use later on
-
-//<MaterialIcons name="notes" size={24} color="black" /> - Notes Icon
-
+//Types: Unit
 type Unit = 'kg' | 'lb'
 
 //Weight Props
@@ -19,13 +22,33 @@ type WeightProps = {
   onBack: () => void;
 }; 
 
+//Main Function [local date returned] (display current date (to be fixed on full calendar display!))
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const monthText = String(month).padStart(2, '0');
+    const dayText = String(day).padStart(2, '0');
+
+    return(
+       `${year}-${monthText}-${dayText}`
+    )
+}
+
 //Function - Log Weight
 export default function LogWeight({onBack}:WeightProps){
+    //State - Form Field
     const [notes, setNotes] = useState('');//State - use for Note Text Input Field
     const [submitted, setSubmitted] = useState(false);//State - use for Button
     const [unit, setUnit] = useState<Unit>('kg');//declaring unit (kg,lb)
     const [weight, setWeight] = useState('');//Weight State
     
+    const [date, setDate] = useState(getTodayDate());//Date State declared 
+    const [showCalendar, setShowCalendar] =  useState(false);//Calendar State
+    const [time, setTime] = useState<Date|null>(null);//Display current time
+    const [showTime, setShowTime] = useState(false);//Time
+
     //Save Button - Store New Weight Entry into database (to be connected)
     const handleSave = () => {
         //Add API call / local storage save
@@ -33,14 +56,15 @@ export default function LogWeight({onBack}:WeightProps){
     };
 
     return(
+        //Scrollable Form - including Header & Save Button
+        <ScrollView contentContainerStyle={styles.contentContainerstyle}>
         <View style={styles.container}>
 
             {/*Header for New Weight Form Screen */}
             <WeightHeader onBack={onBack} label="Log Weight"/>
         
             <View style={styles.content_style}>
-{/* Weight Text Input Field*/}
-
+            {/*Section 1: Weight Input */}
             <View style={styles.Weight_InputStyle}>
                 <TextInput style={styles.Weight_TextInput}
                     value={weight}
@@ -52,7 +76,7 @@ export default function LogWeight({onBack}:WeightProps){
     
             </View>
 
-            {/*Toggle Button (KG/LB) for Text Input - Weight*/}
+            {/*Section 2: Toggle Button (KG/LB) for Text Input - Weight*/}
             <View style={styles.weight_toggle}>
                     <Pressable style={[styles.main_togglebutton, unit == 'kg' && styles.Chip]} onPress={() => setUnit('kg')}>
                         <Text style={unit == 'kg' ? styles.toggle_buttontext_active: styles.toggle_buttontext_inactive}>KG</Text>
@@ -63,31 +87,115 @@ export default function LogWeight({onBack}:WeightProps){
                     </Pressable>
             </View>
 
-            {/*Add Calendar Import here*/}
-            
+            {/*Section 3: Date | Time | Notes Field Input Form */}
+            <View style={styles.UserInputField}>
+                {/*Date Field - User Input*/}
+                <Weightformfield
+                    icon = {<Feather name="calendar" size={16} color="#4A6B64" />}
+                    label={"Date"}>
+                    <Pressable style={styles.fieldBox}>
+                            <Text style={styles.Textfield}>{date}</Text>
+                    </Pressable>
+                </Weightformfield>
 
+                {/*Time Field - User Input*/}
+                <Weightformfield
+                    icon = {<AntDesign name="clockcircle" size={16} color="#4A6B64" />}
+                    label={"Time (Optional)"}>
+                        <Pressable style={styles.fieldBox}>
+                            <Text style={styles.placholederTextStyle}>--:-- --</Text>
+                        </Pressable>
+                </Weightformfield>
 
-            {/*Notes - Tex Input */}
-
-                {/*Weigh-in Entry Field*/}
-              <View style={styles.Button}>
-                    <SaveWeight label="Save Entry" onPress={handleSave}/>
-                    {submitted && <Text style={styles.result}>Entry Saved!</Text>}
-
-              </View>
+                {/*Notes Text Field - User Input*/}
+                <Weightformfield
+                    icon = {<MaterialIcons name="notes" size={16} color="#4A6B64" /> }
+                    label={"Notes"}>
+                    <TextInput
+                        multiline
+                        maxLength={250}
+                        placeholder="Add details about your weigh-in (e.g time of day, feeling)"
+                        style={styles.NoteInputField}
+                        value={notes}
+                        onChangeText={setNotes}
+                    >
+                    </TextInput>
+                </Weightformfield>
 
             </View>
-            
-        </View>
+
+            </View>
+        
+        {/*Section 4: Save Weight Entry Button and Success Message*/}
+         <View style={styles.Button}>
+                    <SaveWeight icon  = {<AntDesign name="checkcircle" size={20} color="white" />} label="Save Entry" onPress={handleSave}/>
+                    {submitted && <Text style={styles.Success_Message}>Entry Saved!</Text>}
+
+         </View>
+    </View>
+    </ScrollView>
+
+
     );
 }
 
 //Styles Sheet 
 const styles = StyleSheet.create({
    
+    //Date Text Field Style 
+    Textfield:{
+        fontSize: 16,
+        color:'#1F2D2A',
+    },
+
+    //Weight Form Components - User Input Field (container)
+    fieldBox:{
+        minHeight: 48,
+        borderRadius: 8,
+        paddingHorizontal:12,
+        borderWidth: 1,
+        borderColor:'#EBEBEB',
+        justifyContent :'center',
+    },
+
+    //Time Style
+    placholederTextStyle:{
+        fontSize:16,
+        color:'#B5C5C0',
+    },
+
+    //Notes Input Field Style
+    NoteInputField:{
+        minHeight:100,
+        borderColor:'#EBEBEB',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 15,
+        color: '#1F2D2A',
+        textAlignVertical: 'top',
+        borderWidth:1,
+    },
+
+    //Container Style - Main User Input Field 
+    UserInputField:{
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#EBEBEB',
+        padding: 16,
+        gap: 14,
+        marginTop: 20,
+    },
+
+    //Main Layout style for Container - wrapping all form field and user input sections
     content_style:{
         flex: 1,
+    },
+
+    //Scroll View - Container Style
+    contentContainerstyle:{
         padding: 20,
+        backgroundColor: '#FDFCF9',
     },
 
     //Weight Log - Toggle Chip (tracking switching button)
@@ -100,6 +208,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
 
+    //Toggle Button 
     main_togglebutton:{
         paddingHorizontal: 16,
         paddingVertical: 6,
@@ -140,36 +249,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#FDFCF9',
     },
 
-    
-    main_card:{
-        backgroundColor:'#fff',
-        borderRadius: 14,
-        padding: 16,
-        height:130,//Adjust while testing
-        width: 130,//Adjust while Testing
-    },
-
+    //Detail Card Style
     Card: {
         borderRadius: 12,
         padding:16,
         gap:12,
     },
 
-    Text_Field:{
-        height:48,
-        borderColor:'#EBEBEB',
-        borderRadius: 8,
-    },
-
+    //Save Weight Button - Container
     Button: {
-        marginTop: 340,
+        marginTop: 100,
     },
 
-    Pet:{
-        marginBottom: 16,
-    },
-
-    result: {
+    //Success Message User Input Style
+    Success_Message: {
         marginTop: 10, 
         fontSize: 16, 
         fontWeight: '600'
@@ -179,9 +272,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#167D6B',
     },
     
-    label_style:{
-        fontWeight: '100',
-        color: '#808080',
-    }
 });
 
