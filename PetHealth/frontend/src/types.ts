@@ -64,7 +64,7 @@ export type Symptom = {
   id: string;
   petId: string;
   name: string;
-  severity: "low" | "medium" | "high";
+  severity: "mild" | "moderate" | "severe";
   category: "Digestive" | "Skin" | "Mobility" | "Appetite";
   notes: string;
   recordedAt: string;
