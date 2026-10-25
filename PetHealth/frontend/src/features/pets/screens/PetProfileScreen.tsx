@@ -30,10 +30,12 @@ type PetHeaderProps = {
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
     title?: string;
     onUpdate: () => void;//connection for update button
+    onQuickLog: () => void; // connect to Quick Log Screen
+    onWeightLog: ()=> void;//Button to connect to Add New Weight Log Screen
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -72,6 +74,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderP
                 onBack={onBack}
                 onDelete={() => console.log("delete")}
             />
+
             <UpdatePet onPress={onUpdate}/>
             {/*Display Pet Name*/}
             <Text style={styles.petname}>{pet?.name}</Text>
@@ -109,13 +112,13 @@ export default function PetProfileScreen({ onBack, petId, onUpdate }: PetHeaderP
             
             <View style={styles.Container}>
             {/*Quick Access: Log Symptom Button*/}
-            <QuickButton
+            <QuickButton onPress={onQuickLog}
                 label="Log Symptom"
                 icon={<FontAwesome5 name="briefcase-medical" size={24} color="black" />}
             />
 
             {/*Quick Access: Weigh-in Button*/}
-            <QuickButton
+            <QuickButton onPress={onWeightLog}
                 label="Weigh-in"
                 icon={<FontAwesome5 name="weight" size={24} color="black" />}
             />
