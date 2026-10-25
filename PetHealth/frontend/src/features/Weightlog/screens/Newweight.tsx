@@ -2,6 +2,7 @@
 
 //Essential Import for react
 import { useState } from "react";
+import { Alert } from "react-native";//Import to display clear Alert buttons...
 import {View, Text, StyleSheet, TextInput, Pressable, ScrollView } from "react-native";//React - Native Libraries
 import { SaveWeight } from "../../../components/WeightLog/Saveweightbutton";
 
@@ -14,12 +15,16 @@ import WeightHeader from "../../../components/WeightLog/Weight_header";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import Weightformfield from "../../../components/WeightLog/Newweightform";
 
+import WeightEntry from "../../../components/WeightLog/weightentry";
+import { api } from "../../../api/client";
+
 //Types: Unit
 type Unit = 'kg' | 'lb'
 
 //Weight Props
 type WeightProps = { 
   onBack: () => void;
+  petId: string |null;
 }; 
 
 //Main Function [local date returned] (display current date (to be fixed on full calendar display!))
@@ -37,7 +42,7 @@ function getTodayDate() {
 }
 
 //Function - Log Weight
-export default function LogWeight({onBack}:WeightProps){
+export default function LogWeight({onBack, petId}:WeightProps){
     //State - Form Field
     const [notes, setNotes] = useState('');//State - use for Note Text Input Field
     const [submitted, setSubmitted] = useState(false);//State - use for Button
@@ -49,10 +54,51 @@ export default function LogWeight({onBack}:WeightProps){
     const [time, setTime] = useState<Date|null>(null);//Display current time
     const [showTime, setShowTime] = useState(false);//Time
 
-    //Save Button - Store New Weight Entry into database (to be connected)
-    const handleSave = () => {
-        //Add API call / local storage save
-        setSubmitted(true);
+
+    //State - Save Pet Weight 
+    const [savingweight, setSavingWeight] = useState(false);
+
+    //Save Weight Entry (Button Connection) - validtes user input & send's to backend (api.createWeight) - database 
+    const handleSave =  async () => {
+        //Avoiding duplicate save requests (made by user to save weight of pet)
+        if (savingweight) return;
+
+            //Check Pet Profile Id
+            if (!petId) {
+                Alert.alert('No pet selected', 'Please open from a pet profile only!')
+                return;
+            }
+
+        //Text Weigh - convert to number (accepts numbers and commas) e.g 11,5
+        const weightNumber = parseFloat(weight.replace(',','.'));
+        if(!Number.isFinite(weightNumber) || weightNumber <= 0){//Convert user inputed weight to a number
+            Alert.alert('Check the weight', 'Please, enter a valid weight entry:');//Error Message
+            return;
+        }
+
+        try{//Save entered weight - prepare data and send it to backend
+            setSavingWeight(true)
+            console.log('petId being used is: ', petId)
+
+            const weightData = {//Weight Data  - matching backend data stored 
+                weightKg: Math.round((unit === 'kg' ? weightNumber: weightNumber * 0.45359237) * 100) / 100,
+                recordedAt: new Date(`${date}T12:00:00`).toISOString(),
+                notes: notes.trim(),
+            };
+            //Send Saved Weight data to backend API and mongodb database
+            console.log("Date for Weight has been sent to database: ", JSON.stringify(weightData));
+            const savedWeight = await api.createWeight(petId, weightData);
+
+            console.log("Weight has been returned by backend", savedWeight);
+            
+            setSubmitted(true);//handl errors - inform user if saved fails
+        } catch(error){
+            console.error(error);
+            Alert.alert('Weight was unable to be saved.', 'Please, try again!');
+        }finally{
+            setSavingWeight(false);
+        }//Always reset on new saving state
+    
     };
 
     return(
