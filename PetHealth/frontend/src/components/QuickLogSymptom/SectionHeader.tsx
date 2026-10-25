@@ -6,10 +6,11 @@ import AntDesign from '@expo/vector-icons/AntDesign';//Declear Icon - Back Arrow
 //Pet Header Props  - used to go back to previous screen
 type PetHeaderProps = {
     onBack: () => void;
+    title:string,
 };
 
 //Frontend compnents Function - UI Build Screen
-export default function SectionHeader({ onBack }: PetHeaderProps) { 
+export default function SectionHeader({ onBack, title }: PetHeaderProps) { 
 
     return(
         <View style={styles.header}>
@@ -19,6 +20,7 @@ export default function SectionHeader({ onBack }: PetHeaderProps) {
             <View style={styles.innerheader}>
         <Pressable onPress={onBack} >
             <AntDesign name="arrowleft" size={24} color="black" />
+            {title}
         </Pressable>   
                 
             </View>{/*Header Text - Text Centered inside Header Section */}        
