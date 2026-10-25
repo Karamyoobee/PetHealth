@@ -14,13 +14,12 @@ export default function SectionHeader({ onBack, title }: PetHeaderProps) {
 
     return(
         <View style={styles.header}>
-                    <Text style={styles.headerText}>Log Symptom</Text>
+                    <Text style={styles.headerText}>{title}</Text>
 
             {/*Main Style - Display Header for Screen*/}
             <View style={styles.innerheader}>
         <Pressable onPress={onBack} >
             <AntDesign name="arrowleft" size={24} color="black" />
-            {title}
         </Pressable>   
                 
             </View>{/*Header Text - Text Centered inside Header Section */}        
