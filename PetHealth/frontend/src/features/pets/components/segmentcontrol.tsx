@@ -3,7 +3,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { colors, spacing, radius } from "@theme";
 
 
-//Generic Type - one choice - Label (T) - placeholder
+//Props - Segment Control Button
 type Option<T> = {label: string; value: T};
 
 //Options - list of pills to add 

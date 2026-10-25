@@ -160,7 +160,7 @@ export default function AddPetScreen({ onBack }: AddPetProps) {
         <View style={styles.sectionContainer}>
         <Text style={styles.label}>Select Breed</Text>
         <RNTriggerPetBreedDropdownmenu
-            species={species} //need to fix
+            species={species}
             breed={breed}
             onBreedChange={setBreed}
         />
