@@ -23,16 +23,16 @@ type Unit = 'kg' | 'lb'
 
 //Weight Props
 type WeightProps = { 
-  onBack: () => void;
-  petId: string |null;
+  onBack: () => void;//return to preivous screen (main - PetProfile screen)
+  petId: string |null;//Declare pet id
 }; 
 
 //Main Function [local date returned] (display current date (to be fixed on full calendar display!))
 function getTodayDate() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
+    const now = new Date();//Collect real date
+    const year = now.getFullYear();//Collect Real Year
+    const month = now.getMonth() + 1;//Current Month
+    const day = now.getDate();//Full Date (day)
     const monthText = String(month).padStart(2, '0');
     const dayText = String(day).padStart(2, '0');
 
@@ -91,6 +91,8 @@ export default function LogWeight({onBack, petId}:WeightProps){
 
             console.log("Weight has been returned by backend", savedWeight);
             
+            Alert.alert('Saved', 'Weight entry saved!', [{ text: 'OK', onPress: onBack}]);
+
             setSubmitted(true);//handl errors - inform user if saved fails
         } catch(error){
             console.error(error);

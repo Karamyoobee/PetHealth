@@ -1,5 +1,5 @@
-import { useState } from "react";
-import {View, Text, StyleSheet, Button } from "react-native";//React - Native Libraries
+import { useState, useEffect } from "react";
+import {View, Text, StyleSheet, Alert } from "react-native";//React - Native Libraries
 import DescriptionSymptomInput from "../../../components/QuickLogSymptom/DescriptionSymptomInput";
 import { SaveLog } from "../../../components/QuickLogSymptom/SaveLogButton";
 import { SymptomTextField } from "../../../components/QuickLogSymptom/DescriptionSymptomInput";
@@ -8,38 +8,89 @@ import PetDurationDropdownmenu from "../../../components/QuickLogSymptom/Duratio
 import SelectPet from "../../../components/QuickLogSymptom/SelectPet";
 import SelectCategory from "../../../components/QuickLogSymptom/SelectCategory";
 import SeveritySegmentButton from "../../../components/QuickLogSymptom/Severity";
-import { Symptom } from "../../../types";
+import { Pet,Symptom } from "../../../types";
+import { api } from "../../../api/client";
 
+//Log Symptom Props
 type LogSymptomProps = { 
   onBack: () => void;
+  petId: string | null;
 }; 
 
 const CategoryOptions:Symptom['category'][] = ['Digestive', 'Skin', 'Mobility', 'Appetite'];
 
-export default function LogSymptom({onBack}:LogSymptomProps){
+//Covert duration text to number to store for ideal database storage
+const durationtoDaysformat = (d: string): number => {
+    const n = parseInt(d, 10);//what does this mean..
+    if (!Number.isFinite(n)) return 0;
+    const text = d.toLocaleLowerCase();
+    if(text.includes('week')) return n * 7;//7 Days a week
+    if(text.includes('month')) return n * 30; //30 Days a month
+    return n;//days variable count
+
+}
+
+export default function LogSymptom({onBack, petId}:LogSymptomProps){
     const [description, setDescription] = useState('');
-    const [submitted, setSubmitted] = useState(false);
     const [category, setCategory] = useState<'Digestive' | 'Skin' | 'Mobility' | 'Appetite'>('Digestive');
     const [severity, setSeverity] = useState<'Mild' | 'Moderate' | 'Severe' >('Mild'); //Toggle Button - Spayed/Neutured or Intact
-    const [pet, setPet] = useState('');
+    const [pets, setPets] = useState<Pet[]>([]);
+    const [duration, setDuration] = useState('');
     
-    const pets=['Luna','Max']
+    const [selectedPetId, setSelectedPetId] = useState<string | null>(petId);
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        //Add API call / local storage save
-        setSubmitted(true);
-    };
+    //Handle Save Button 
+    const handleSave = async () => {
+        if (saving) return;// if pet symptom log is saved 
+        if (!selectedPetId){
+            Alert.alert('No pet has been selected','Please choose a pet');
+            return;
+        }
+        if(!description.trim()){
+            Alert.alert('Add a descrption here: ', 'Please describe the symptoms');
+            return;
+        }
+        try{
+            setSaving(true);
+            const symptomData = {
+                name: category, //Display Title on Log Card
+                category,
+                severity:severity.toLowerCase() as Symptom['severity'],
+                notes: duration
+                    ? `${description.trim()} (Duration: ${duration})`
+                    :description.trim(),
+                durationDays: durationtoDaysformat(duration),
+                recordedAt: new Date().toISOString(),
+            };
+            console.log('Quick Log Symptom sent', JSON.stringify(symptomData));
+            const saved = await api.createSymptom(selectedPetId, symptomData);
+            console.log('Quick Log Symptom returned to backend: ', saved);
+            Alert.alert('Saved', 'Symptom logged!', [{text: 'OK', onPress: onBack}]);
+        } catch(error){
+            console.error(error);
+            Alert.alert('Symptom was unable to be saved!','Please, try again !');
+        }finally{
+            setSaving(false);
+        }
+    }
+
+    useEffect(() => {
+        api.listCurrentUserPets().then(setPets).catch(console.error);
+    }, []);
+
+    const selectedName = pets.find((p) => p.id === selectedPetId)?.name ?? '';
 
     return(
         <View style={styles.container}>
-            <SectionHeader onBack={onBack}/>
+            <SectionHeader onBack={onBack} title="Log New Symptom"/>
 
             {/* 1. Pet Selector (select from their different pets) */}
             <View style={styles.Pet}>
             <SelectPet
-                options={pets}
-                value={pet}
-                onChange={setPet}//Button
+                options={pets.map((p) => p.name)}
+                value={selectedName}
+                onChange={(name) => setSelectedPetId(pets.find((p) => p.name === name)?.id??null)}//Button
             />
             </View>
 
@@ -78,12 +129,17 @@ export default function LogSymptom({onBack}:LogSymptomProps){
             />
 
             {/*5. Duration dropdown */}
-            {/*Add below...*/}
+            <View style={styles.Duration_style}>
+                <Text>Duration</Text>
+                <PetDurationDropdownmenu
+                    duration={duration}
+                    onDurationChange={setDuration}
+                />
+
+            </View>
 
             <View style={styles.Button}>
                     <SaveLog label="Save Entry" onPress={handleSave}/>
-                    {submitted && <Text style={styles.result}>Symptom Saved!</Text>}
-
             </View>
 
         </View>
@@ -92,13 +148,20 @@ export default function LogSymptom({onBack}:LogSymptomProps){
 
 //Styles Sheet 
 const styles = StyleSheet.create({
+
+    //Duration style
+    Duration_style:{
+        marginTop: 16,
+    },
+
     container: {
         padding: 20,
         backgroundColor: '#FDFCF9',
     },
     
+    //Main Save Button Style
     Button: {
-        marginTop: 340,
+        marginTop: 20,
     },
 
     Category_title:{
