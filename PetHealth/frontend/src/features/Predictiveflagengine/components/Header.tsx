@@ -13,13 +13,13 @@ export default function MainHeader({onBack, title}: headerprops) {
         <View style={styles.header}>
             {/*Icon */}
             <View style={styles.innerheader}>
-                <TouchableOpacity>
+                {/*Back Button - return to previous screen*/}
+                <TouchableOpacity onPress={onBack}>
                     <AntDesign name="arrowleft" size={24} color="black" />
                 </TouchableOpacity>                
                 
             </View>
-                <Text style={styles.headerText}></Text>
-                {title}
+                <Text style={styles.headerText}>{title}</Text>
         </View>
 
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {View, Text, StyleSheet,Alert, ScrollView} from "react-native";//React - Native Libraries
 import NewAnalysis from "../components/RunNewAnalysisButton";
 import MainHeader from "../components/Header";
+import PredictiveFlaggingEngine from "./PredictiveFlagEngine";
 
 //Predictive Flagging Engine Props
 type PredictiveFlaggProps = { 
@@ -13,9 +14,18 @@ type PredictiveFlaggProps = {
 //Main Function - Predictive Flagging Engine 
 export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps){
 
+    const [showEngine, setShowEngine] = useState(false);
+
     //Placeholder for Template of Predictive Flagging Engine First Screen.
     const handleRunAnalysis = () =>{
-        Alert.alert("Run Analysis", "Running new analysis:...");
+       if(showEngine){
+        return(
+            <PredictiveFlagging
+             petId={petId}
+             onBack={() => setShowEngine(false)}
+            />
+        )
+       }
     }
 
     return(
