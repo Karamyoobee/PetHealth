@@ -32,10 +32,11 @@ type PetHeaderProps = {
     onUpdate: () => void;//connection for update button
     onQuickLog: () => void; // connect to Quick Log Screen
     onWeightLog: ()=> void;//Button to connect to Add New Weight Log Screen
+    onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -136,7 +137,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             />
 
             {/*Quick Access: Predictive Flagging Engine Button*/}
-            <QuickButton
+            <QuickButton onPress={onPredictiveFlag}
                 label="Predictive Flagging Engine"
                 icon={<Entypo name="flag" size={24} color="black" />}
             />

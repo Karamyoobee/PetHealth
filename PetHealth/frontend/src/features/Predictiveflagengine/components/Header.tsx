@@ -3,8 +3,12 @@ import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
+type headerprops = {
+    onBack: () => void;
+    title: string;
+}
 
-export default function PetHeader() { 
+export default function MainHeader({onBack, title}: headerprops) { 
     return(
         <View style={styles.header}>
             {/*Icon */}
@@ -14,8 +18,8 @@ export default function PetHeader() {
                 </TouchableOpacity>                
                 
             </View>
-                <Text style={styles.headerText}>Predictive Flagging</Text>
-        
+                <Text style={styles.headerText}></Text>
+                {title}
         </View>
 
 
