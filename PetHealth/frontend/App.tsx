@@ -28,6 +28,12 @@ import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
 import MyPetsScreen from "./src/features/pets/screens/Mypets";
 import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
 import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
+import LogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomForm";
+import AddWeightLog from "./src/components/WeightLog/Weightlogform";
+import LogWeight from "./src/features/Weightlog/screens/Newweight";
+import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
+import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
+import PredictiveFlagging from "./src/features/Predictiveflagengine/screens/PredictiveFlag";
 
 type ScreenKey =
   | "home"
@@ -41,7 +47,12 @@ type ScreenKey =
   | "myPets"
   | "addPet"
   | "petProfile"
-  | "updatePet";
+  | "updatePet"
+  | "quickLog"
+  | "weightLog"
+  | "weightDashboard"
+  | "mylogSymptom"
+  | "predictiveFlagging";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
@@ -50,8 +61,11 @@ const SESSION_USER_KEY = "petHealth.sessionUser";
 
 const screens: { key: ScreenKey; label: string }[] = [
   { key: "home", label: "Home" },
-  { key: "updatePet", label: "My Pets"},
-  { key: "petProfile", label: "Pet Profile"},
+  { key: 'weightLog', label: 'weightLog'},
+  { key: 'weightDashboard', label:'Weight Dashboard'},
+  { key:'mylogSymptom', label: 'My Log Symptom'},
+  { key: "updatePet", label: "Update Pet"},
+  { key: "quickLog", label: "Quick Log"},
   { key: "reminders", label: "Reminders" },
   { key: "reports", label: "Reports" },
   { key: "pets", label: "Add Pet"},
@@ -65,7 +79,7 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  //Replace with real navigation lateron - once adding final connections for PetHealth screens 
+  //PetHealth Screen Connection - to search and find real Pet Id and details to retrieve from database
   const[selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -190,7 +204,10 @@ export default function App() {
       <PetProfileScreen 
       onBack={() => setActiveScreen("myPets")} 
       petId={selectedPetId}
-      onUpdate={() => setActiveScreen("updatePet")}
+      onUpdate={() => setActiveScreen("updatePet")} 
+      onQuickLog={() => setActiveScreen('quickLog')}
+      onWeightLog={() => setActiveScreen('weightDashboard')}
+      onPredictiveFlag={() => setActiveScreen('predictiveFlagging')}
       />
       ) : activeScreen === "addPet" ? (
         <AddPetScreen
@@ -215,7 +232,35 @@ export default function App() {
          petId={selectedPetId}
          onBack={() => setActiveScreen("petProfile")}
          />
-      ): null}
+      ) : activeScreen == "quickLog" ? (
+        <LogSymptom
+         onBack={() => setActiveScreen("mylogSymptom")}
+         petId={selectedPetId}
+        />
+      ): activeScreen == 'weightLog'?(
+        <LogWeight
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}//connect to real data = petId (from real backend database)
+        />
+      ):activeScreen == 'weightDashboard' ? (
+        <WeightDashboard
+          onBack={() => setActiveScreen('petProfile')}
+          onLogNew={() => setActiveScreen('weightLog')}
+          petId ={selectedPetId}
+        />
+      ): activeScreen == 'mylogSymptom' ? (
+        <MyLogSymptom
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}
+        />
+      ): activeScreen == 'predictiveFlagging' ? (
+        <PredictiveFlagging
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}
+        />
+      ) :null
+      }
+
     </SafeAreaView>
   );
 }
