@@ -3,3 +3,8 @@ import { StyleSheet, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 import { colors, spacing } from "@theme";
+
+
+const styles = StyleSheet.create({
+    
+})

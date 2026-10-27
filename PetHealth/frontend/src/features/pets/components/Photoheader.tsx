@@ -3,8 +3,11 @@ import { Pressable, Text, StyleSheet, View, Image } from "react-native";
 import { colors, spacing, radius } from "@theme";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Feather from '@expo/vector-icons/Feather';
+import Entypo from '@expo/vector-icons/Entypo';
 import { api } from "../../../api/client";
 import { Pet } from "../../../types";
+
 
 type PhotoProps = {
     photoUri? : string | null;
@@ -31,9 +34,10 @@ export default function PhotoHeader({photoUri, onBack, onDelete }: PhotoProps) {
 
         {/*Delete Icon */}
         <Pressable style={[styles.button, styles.right]} onPress={onDelete}>
-            <Ionicons name="trash-bin" size={24} color="black" />            
+           <Entypo name="dots-three-vertical" size={24} color="black" />        
         </Pressable>
 
+ 
         </View>
 
 

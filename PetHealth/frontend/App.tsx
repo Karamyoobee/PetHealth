@@ -30,6 +30,11 @@ import MyPetsScreen from "./src/features/pets/screens/Mypets";
 import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
 import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
 import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
+import LogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomForm";
+import LogWeight from "./src/features/Weightlog/screens/Newweight";
+import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
+import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
+import PredictiveFlagging from "./src/features/Predictiveflagengine/screens/PredictiveFlag";
 
 type ScreenKey =
   | "home"
@@ -38,7 +43,12 @@ type ScreenKey =
   | "updatePet"
   | "scheduleVisit"
   | "addMedication"
-  | "reports";
+  | "reports"
+  | "quickLog"
+  | "weightLog"
+  | "weightDashboard"
+  | "mylogSymptom"
+  | "predictiveFlagging";
 
 type AuthMode = "welcome" | "signin" | "register";
 
@@ -86,6 +96,12 @@ export default function App() {
       } else if (activeScreen === "petProfile") {
         setActiveScreen("pets");
       } else if (activeScreen === "updatePet") {
+        setActiveScreen("petProfile");
+      } else if (activeScreen === "quickLog") {
+        setActiveScreen("mylogSymptom");
+      } else if (activeScreen === "weightLog") {
+        setActiveScreen("weightDashboard");
+      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging"].includes(activeScreen)) {
         setActiveScreen("petProfile");
       } else {
         setActiveScreen("home");
@@ -269,6 +285,9 @@ export default function App() {
           petId={selectedPetId}
           onBack={() => setActiveScreen("pets")}
           onUpdate={() => setActiveScreen("updatePet")}
+          onQuickLog={() => setActiveScreen("quickLog")}
+          onWeightLog={() => setActiveScreen("weightDashboard")}
+          onPredictiveFlag={() => setActiveScreen("predictiveFlagging")}
           onNavigate={navigateHome}
         />
       ) : activeScreen === "updatePet" ? (
@@ -299,6 +318,20 @@ export default function App() {
         <ReminderForm onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
+      ) : activeScreen === "quickLog" ? (
+        <LogSymptom petId={selectedPetId} onBack={() => setActiveScreen("mylogSymptom")} />
+      ) : activeScreen === "weightLog" ? (
+        <LogWeight petId={selectedPetId} onBack={() => setActiveScreen("weightDashboard")} />
+      ) : activeScreen === "weightDashboard" ? (
+        <WeightDashboard
+          petId={selectedPetId}
+          onBack={() => setActiveScreen("petProfile")}
+          onLogNew={() => setActiveScreen("weightLog")}
+        />
+      ) : activeScreen === "mylogSymptom" ? (
+        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
+      ) : activeScreen === "predictiveFlagging" ? (
+        <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : null}
     </SafeAreaView>
   );

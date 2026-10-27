@@ -9,7 +9,7 @@ type Props = {
     disabled?:boolean;
 };
 
-export function SaveButton({ label, onPress, disabled }: Props){
+export function SaveLog({ label, onPress, disabled }: Props){
 return (
     <Pressable
         onPress={onPress}
@@ -34,7 +34,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: 'center',
     width: '100%',
-    marginTop: 390,
   },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
@@ -44,12 +43,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  saveButton: {
-    height: 50, 
-    backgroundColor: '#1F7A6C',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
 });
 
