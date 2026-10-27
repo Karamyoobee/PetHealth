@@ -28,6 +28,13 @@ export type User = {
   updatedAt: string;
 };
 
+export type AuthSession = {
+  token: string;
+  tokenType: "Bearer";
+  expiresAt: string;
+  user: User;
+};
+
 export type VetVisit = {
   id: string;
   petId: string;

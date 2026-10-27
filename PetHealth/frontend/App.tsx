@@ -1,18 +1,22 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   BackHandler,
   Platform,
   SafeAreaView,
   StatusBar as NativeStatusBar,
   StyleSheet,
+  Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { api, setSessionToken } from "./src/api/client";
-import type { User } from "./src/types";
+import { clearSavedSession, restoreSavedSession, SESSION_TOKEN_KEY, SESSION_USER_KEY } from "./src/auth/session";
+import type { AuthSession, User } from "./src/types";
 import { AuthScreen } from "./src/features/auth/AuthScreens";
 import VetVisitForm from "./src/features/vetVisits/VetVisitForm";
 import ScheduleVisitScreen from "./src/features/vetVisits/ScheduleVisitScreen";
@@ -36,12 +40,9 @@ type ScreenKey =
   | "addMedication"
   | "reports";
 
-type AuthMode = "welcome" | "signup" | "signin";
+type AuthMode = "welcome" | "signin" | "register";
 
-const SESSION_TOKEN_KEY = "petHealth.sessionToken";
-const SESSION_USER_KEY = "petHealth.sessionUser";
-
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "medications", "vetVisits", "assistant", "reminders"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "medications", "vetVisits", "assistant", "reminders", "reports"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
@@ -49,6 +50,9 @@ export default function App() {
   const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -95,62 +99,91 @@ export default function App() {
     let mounted = true;
 
     async function loadSession() {
-      const token = await AsyncStorage.getItem(SESSION_TOKEN_KEY);
-
-      if (!mounted) return;
-
-      if (token) {
-        setSessionToken(token);
-        try {
-          const user = await api.getCurrentUser();
-          if (!mounted) return;
-          setCurrentUser(user);
-          await AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
-        } catch {
-          setSessionToken(null);
-          await Promise.all([AsyncStorage.removeItem(SESSION_TOKEN_KEY), AsyncStorage.removeItem(SESSION_USER_KEY)]);
+      setAuthLoading(true);
+      setSessionError(null);
+      try {
+        const session = await restoreSavedSession();
+        if (!mounted) return;
+        if (session.status === "restored") {
+          setCurrentUser(session.user);
+          setActiveScreen("home");
+        } else if (session.status === "expired") {
+          setCurrentUser(null);
+          setAuthMode("signin");
+          setAuthError("Your session has ended. Please sign in again.");
+        }
+      } catch {
+        if (mounted) {
+          setSessionError("We couldn't check your saved sign-in. Your session is still saved. Please check your connection and try again.");
+        }
+      } finally {
+        if (mounted) {
+          setAuthLoading(false);
         }
       }
-
-      setAuthLoading(false);
     }
 
-    loadSession().catch(() => {
-      setSessionToken(null);
-      setAuthLoading(false);
-    });
+    loadSession();
 
     return () => {
       mounted = false;
     };
+  }, [sessionAttempt]);
+
+  const saveSession = useCallback(async (session: AuthSession) => {
+    setSessionToken(session.token);
+    await Promise.all([
+      AsyncStorage.setItem(SESSION_TOKEN_KEY, session.token),
+      AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(session.user)),
+    ]);
+    setCurrentUser(session.user);
+    setActiveScreen("home");
   }, []);
 
-  const handleGoogleToken = useCallback(async (idToken: string) => {
+  const handleGoogleToken = useCallback(async (idToken: string, allowRegistration: boolean) => {
     setAuthBusy(true);
     setAuthError(null);
 
     try {
-      const session = await api.googleLogin(idToken);
-      setSessionToken(session.token);
-      setCurrentUser(session.user);
-      await Promise.all([
-        AsyncStorage.setItem(SESSION_TOKEN_KEY, session.token),
-        AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(session.user)),
-      ]);
-      setActiveScreen("home");
+      const session = await api.googleLogin(idToken, allowRegistration);
+      await saveSession(session);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Sign-in failed.");
       setSessionToken(null);
     } finally {
       setAuthBusy(false);
     }
-  }, []);
+  }, [saveSession]);
+
+  const handlePasswordLogin = useCallback(async (email: string, password: string) => {
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      const session = await api.passwordLogin(email, password);
+      await saveSession(session);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Sign-in failed.");
+      setSessionToken(null);
+    } finally {
+      setAuthBusy(false);
+    }
+  }, [saveSession]);
 
   const handleSignOut = useCallback(async () => {
-    setSessionToken(null);
-    setCurrentUser(null);
-    setAuthMode("signin");
-    await Promise.all([AsyncStorage.removeItem(SESSION_TOKEN_KEY), AsyncStorage.removeItem(SESSION_USER_KEY)]);
+    setSigningOut(true);
+    try {
+      await clearSavedSession();
+      setCurrentUser(null);
+      setSelectedPetId(null);
+      setActiveScreen("home");
+      setSessionError(null);
+      setAuthError(null);
+      setAuthMode("signin");
+    } catch {
+      Alert.alert("Could not sign out", "Please try again to finish signing out.");
+    } finally {
+      setSigningOut(false);
+    }
   }, []);
 
   if (authLoading) {
@@ -164,6 +197,24 @@ export default function App() {
     );
   }
 
+  if (sessionError) {
+    return (
+      <SafeAreaView style={styles.authSafeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.sessionRetry}>
+          <Text style={styles.sessionTitle}>Couldn't restore your session</Text>
+          <Text style={styles.sessionMessage}>{sessionError}</Text>
+          <TouchableOpacity disabled={signingOut} style={styles.retryButton} onPress={() => setSessionAttempt((attempt) => attempt + 1)}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={signingOut} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!currentUser) {
     return (
       <SafeAreaView style={styles.authSafeArea}>
@@ -172,8 +223,13 @@ export default function App() {
           mode={authMode}
           busy={authBusy}
           error={authError}
-          onModeChange={setAuthMode}
+          onModeChange={(mode) => {
+            setAuthError(null);
+            setAuthMode(mode);
+          }}
           onGoogleToken={handleGoogleToken}
+          onPasswordLogin={handlePasswordLogin}
+          onRegistrationComplete={saveSession}
         />
       </SafeAreaView>
     );
@@ -183,7 +239,13 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
-        <HomeScreen user={currentUser} availableScreens={availableHomeScreens} onNavigate={navigateHome} />
+        <HomeScreen
+          user={currentUser}
+          availableScreens={availableHomeScreens}
+          onNavigate={navigateHome}
+          onSignOut={handleSignOut}
+          signingOut={signingOut}
+        />
       ) : activeScreen === "pets" ? (
         <MyPetsScreen
           onBack={() => setActiveScreen("home")}
@@ -243,6 +305,40 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  sessionRetry: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 28,
+    gap: 20,
+  },
+  sessionTitle: {
+    color: "#10201F",
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  sessionMessage: {
+    color: "#48525B",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: "#08705F",
+    alignItems: "center",
+    borderRadius: 8,
+    padding: 14,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  signOutText: {
+    color: "#08705F",
+    fontWeight: "700",
+    textAlign: "center",
+    padding: 10,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#FAF8F4",

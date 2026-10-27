@@ -39,6 +39,7 @@ class FakeCollection:
 
 class FakeDatabase:
     def __init__(self, pet):
+        self.auth_credentials = FakeCollection()
         self.pets = FakeCollection([pet])
         self.collections = {
             "symptoms": FakeCollection(),

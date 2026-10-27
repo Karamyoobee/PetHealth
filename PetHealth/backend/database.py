@@ -15,6 +15,10 @@ class Mongo:
     def ensure_indexes(self):
         self.db.users.create_index("email", unique=True, sparse=True)
         self.db.users.create_index("userId", unique=True)
+        self.db.users.create_index("googleEmail", sparse=True)
+        self.db.auth_credentials.create_index("resetExpiresAt", sparse=True)
+        self.db.auth_limits.create_index("expiresAt", expireAfterSeconds=0)
+        self.db.pending_registrations.create_index("expiresAt", expireAfterSeconds=0)
         self.db.pets.create_index([("userId", 1), ("name", 1)])
         self.db.pets.create_index("userId")
         self.db.vet_visits.create_index([("petId", 1), ("appointmentDate", -1)])

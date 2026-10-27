@@ -26,12 +26,15 @@ export type HomeDestination =
   | "vetVisits"
   | "assistant"
   | "timeline"
-  | "reminders";
+  | "reminders"
+  | "reports";
 
 type Props = {
   user: User;
   availableScreens: readonly HomeDestination[];
   onNavigate: (screen: HomeDestination, petId?: string) => void;
+  onSignOut: () => void;
+  signingOut: boolean;
 };
 
 type HomeCounts = {
@@ -40,7 +43,7 @@ type HomeCounts = {
   vetVisits: number;
 };
 
-export default function HomeScreen({ user, availableScreens, onNavigate }: Props) {
+export default function HomeScreen({ user, availableScreens, onNavigate, onSignOut, signingOut }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [counts, setCounts] = useState<HomeCounts | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +164,12 @@ export default function HomeScreen({ user, availableScreens, onNavigate }: Props
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={loadHome} tintColor="#238575" />}
       >
-        <Text style={styles.greeting}>Hello{firstName ? `, ${firstName}` : ""} 👋</Text>
+        <View style={styles.greetingRow}>
+          <Text numberOfLines={1} style={styles.greeting}>Hello{firstName ? `, ${firstName}` : ""} 👋</Text>
+          <TouchableOpacity accessibilityRole="button" disabled={signingOut} onPress={onSignOut}>
+            <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.subtitle}>How are your pets today?</Text>
 
         <View style={styles.stats}>
@@ -248,6 +256,11 @@ export default function HomeScreen({ user, availableScreens, onNavigate }: Props
             </TouchableOpacity>
           ))}
         </View>
+        {canNavigate("reports") ? (
+          <TouchableOpacity accessibilityRole="button" onPress={() => onNavigate("reports")}>
+            <Text style={[styles.link, styles.reportLink]}>Export Health Report (PDF)</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
 
       <BottomNavBar
@@ -272,10 +285,22 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   greeting: {
+    flex: 1,
     fontSize: 22,
     fontWeight: "600",
     color: "#293B35",
     marginTop: 8,
+  },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  signOutText: {
+    color: "#238575",
+    fontSize: 13,
+    fontWeight: "600",
+    paddingVertical: 10,
   },
   subtitle: {
     fontSize: 14,
@@ -330,6 +355,9 @@ const styles = StyleSheet.create({
     color: "#238575",
     fontSize: 12,
     padding: 4,
+  },
+  reportLink: {
+    marginTop: 16,
   },
   pets: {
     gap: 12,
