@@ -1,13 +1,15 @@
 //Weight - Predictive Flagging Engine 
 
 //Set main threshold's for weight flagging check..
-const WATCH_THRESHOLD = 0.05; //5% 
-const ELEVATED_THRESHOLD = 0.10;//10%
+const WATCH_THRESHOLD = 0.05; //5% if current pet weight goes over 5% of expected weight of the specific breed only
+const ELEVATED_THRESHOLD = 0.10;//10% if current pet weight goes well over 10% of expected weight of pet 
 
 //Search function for breed and sex of pet (matching the below pet breeds...)
 function getIdealPetrange(breed, sex){
-    const range = weight_breed[breed]?.[sex];
+    const range = weight_breed[breed]?.[sex];//declare weight_breed connected to backend type
 
+    //If condition check
+    //if pet is not supported for the specific weight analaysis checker
     if(!range){
         throw new Error('Unkown breed or sex: '+breed+" "+sex);
     }
@@ -36,11 +38,15 @@ function retrieveWeightStatus(breed,sex,currentKg){
         deviation = (currentKg - max) / max;
     } 
     
+    {/*Typical = Current Pet's Weight below the expected Weight*/}
+    {/*Watch = Current Pet's Weight is over the expected weight of the pet*/}
+
     //Deviation converted into level display
-    let Level;
+    let Level;//Declare level
+
     if (deviation < WATCH_THRESHOLD){
         Level = "Typical";
-    } else if(deviation < ELEVATED_THRESHOLD){
+    } else if(deviation < ELEVATED_THRESHOLD){ 
         Level = "Watch";
     } else{
         Level = "Elevated";
@@ -104,7 +110,3 @@ const weight_breed = {
 
 module.exports = {retrieveWeightStatus, LEVEL_COLORS}
 
-console.log(retrieveWeightStatus("british", "male", 6.0));
-console.log(retrieveWeightStatus("labrador", "female", 33.5).level);  // Typical
-console.log(retrieveWeightStatus("labrador", "female", 34).level);    // Watch
-console.log(retrieveWeightStatus("ragdoll", "female", 9).level);      // Elevated

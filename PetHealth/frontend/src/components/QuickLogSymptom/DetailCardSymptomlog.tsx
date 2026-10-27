@@ -88,7 +88,7 @@ export default function DetailCardSymptomLog({symptom, note, severity, loggedAt,
                     color="#7A7F7C"
                 />
                 <Text style={styles.durationLabel}>Duration: </Text>
-                <Text style={styles.durationvalue}>{durationDays}</Text> {/*Add days later*/}
+                <Text style={styles.durationvalue}>{durationDays} days</Text> 
             
             <Text style={styles.categoryText}>{category}</Text>
 

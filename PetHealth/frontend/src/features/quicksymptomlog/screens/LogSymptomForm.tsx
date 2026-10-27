@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {View, Text, StyleSheet, Alert } from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet, Alert, ScrollView } from "react-native";//React - Native Libraries
 import DescriptionSymptomInput from "../../../components/QuickLogSymptom/DescriptionSymptomInput";
 import { SaveLog } from "../../../components/QuickLogSymptom/SaveLogButton";
 import { SymptomTextField } from "../../../components/QuickLogSymptom/DescriptionSymptomInput";

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {View, Text, StyleSheet,Alert, ScrollView} from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet,Alert, ScrollView, TouchableOpacity} from "react-native";//React - Native Libraries
 import NewAnalysis from "../components/RunNewAnalysisButton";
 import MainHeader from "../components/Header";
 import PredictiveFlaggingEngine from "./PredictiveFlagEngine";
@@ -17,15 +17,19 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
     const [showEngine, setShowEngine] = useState(false);
 
     //Placeholder for Template of Predictive Flagging Engine First Screen.
-    const handleRunAnalysis = () =>{
+
+    const handleRunAnalysis = () => {
+        setShowEngine(true);
+    };
+
        if(showEngine){
         return(
-            <PredictiveFlagging
+            <PredictiveFlaggingEngine
              petId={petId}
              onBack={() => setShowEngine(false)}
             />
-        )
-       }
+        );
+
     }
 
     return(
@@ -34,15 +38,39 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
 
             <ScrollView contentContainerStyle={styles.content_style}>
                 <View style={styles.card}>
-                    <Text style={styles.card_title}></Text>
-                    <Text style={styles.card_body}></Text>
+                    {/*Add Icon - leaf! */}
+                    <Text style={styles.card_title}>AI-Driven Health Insights</Text>
+                    <Text style={styles.card_body}>
+                        Our advanced predictive models analyze your pet's historical data, 
+                        however our analysis is only limited to predicting the health analysis of 
+                        these 6 selective breeds: 
+                        Dog Breed
+                        1. Labrador Retriever 
+                        2. 
+                        3. 
+                        
+                        Cat Breed
+                        1, 2, 3, 
+                    </Text>
                 </View>
+                
+                {/*Information card for Predictive Flagging Engine Analysis*/}
+                <View style={styles.card}>
+                    <Text style={styles.card_title}>Weight Tracking - 6 Animal Breeds only!</Text>
+                    <Text style={styles.card_body}>
+                        Real-time analysis - only for weight tracking though!   
+                        limited to only 6 breeds (3 dogs | 3 cats) 
+                    </Text>
+                </View>
+
             </ScrollView>
         
 
             {/*Run New Analysis Button*/}
             <View style={styles.footer}>
+                <TouchableOpacity>
                     <NewAnalysis onPress={handleRunAnalysis}/>
+                </TouchableOpacity>
             </View>
         </View>
     )
