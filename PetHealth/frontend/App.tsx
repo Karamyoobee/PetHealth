@@ -26,22 +26,40 @@ import MyPetsScreen from "./src/features/pets/screens/Mypets";
 import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
 import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
 import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
+import LogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomForm";
+import AddWeightLog from "./src/components/WeightLog/Weightlogform";
+import LogWeight from "./src/features/Weightlog/screens/Newweight";
+import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
+import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
+import PredictiveFlagging from "./src/features/Predictiveflagengine/screens/PredictiveFlag";
 
 type ScreenKey =
   | "home"
   | HomeDestination
   | "petProfile"
   | "updatePet"
-  | "scheduleVisit"
-  | "addMedication"
-  | "reports";
+  | "quickLog"
+  | "weightLog"
+  | "weightDashboard"
+  | "mylogSymptom"
+  | "predictiveFlagging";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
 const SESSION_TOKEN_KEY = "petHealth.sessionToken";
 const SESSION_USER_KEY = "petHealth.sessionUser";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "medications", "vetVisits", "assistant", "reminders"];
+const screens: { key: ScreenKey; label: string }[] = [
+  { key: "home", label: "Home" },
+  { key: 'weightLog', label: 'weightLog'},
+  { key: 'weightDashboard', label:'Weight Dashboard'},
+  { key:'mylogSymptom', label: 'My Log Symptom'},
+  { key: "updatePet", label: "Update Pet"},
+  { key: "quickLog", label: "Quick Log"},
+  { key: "reminders", label: "Reminders" },
+  { key: "reports", label: "Reports" },
+  { key: "pets", label: "Add Pet"},
+];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
@@ -53,43 +71,8 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const navigateHome = (screen: HomeDestination | "home", petId?: string) => {
-    if (screen === "home" || availableHomeScreens.includes(screen)) {
-      if (screen === "pets" && petId) {
-        setSelectedPetId(petId);
-        setActiveScreen("petProfile");
-        return;
-      }
-      if (screen === "addPet") {
-        setAddPetReturnScreen("home");
-      }
-      setActiveScreen(screen);
-    }
-  };
-
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (!currentUser || activeScreen === "home") {
-        return false;
-      }
-
-      if (activeScreen === "addMedication") {
-        setActiveScreen("medications");
-      } else if (activeScreen === "scheduleVisit") {
-        setActiveScreen("vetVisits");
-      } else if (activeScreen === "addPet") {
-        setActiveScreen(addPetReturnScreen);
-      } else if (activeScreen === "petProfile") {
-        setActiveScreen("pets");
-      } else if (activeScreen === "updatePet") {
-        setActiveScreen("petProfile");
-      } else {
-        setActiveScreen("home");
-      }
-      return true;
-    });
-    return () => subscription.remove();
-  }, [activeScreen, addPetReturnScreen, currentUser]);
+  //PetHealth Screen Connection - to search and find real Pet Id and details to retrieve from database
+  const[selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -183,20 +166,41 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
-        <HomeScreen user={currentUser} availableScreens={availableHomeScreens} onNavigate={navigateHome} />
-      ) : activeScreen === "pets" ? (
-        <MyPetsScreen
-          onBack={() => setActiveScreen("home")}
-          onSelectPet={(petId) => {
-            setSelectedPetId(petId);
-            setActiveScreen("petProfile");
-          }}
-          onAddNewPet={() => {
-            setAddPetReturnScreen("pets");
-            setActiveScreen("addPet");
-          }}
-          onNavigate={navigateHome}
-        />
+        <>
+          <View style={styles.nav}>
+            {screens.map((screen) => {
+              const isActive = activeScreen === screen.key;
+              return (
+                <TouchableOpacity
+                  key={screen.key}
+                  onPress={() => setActiveScreen(screen.key)}
+                  style={[styles.navButton, isActive && styles.navButtonActive]}
+                >
+                  <Text style={[styles.navText, isActive && styles.navTextActive]}>{screen.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <HomeScreenView user={currentUser} onSignOut={handleSignOut} onNavigate={setActiveScreen} />
+        </>
+      ) : activeScreen === "myPets" || activeScreen === "pets" ? (
+      <MyPetsScreen 
+      onBack={() => setActiveScreen("home")} 
+      onSelectPet={(id)=>{
+        setSelectedPetId(id);
+        setActiveScreen("petProfile");
+      }}
+      onAddNewPet={() => setActiveScreen('addPet')}
+      />
+      ) : activeScreen === "petProfile" ? (
+      <PetProfileScreen 
+      onBack={() => setActiveScreen("myPets")} 
+      petId={selectedPetId}
+      onUpdate={() => setActiveScreen("updatePet")} 
+      onQuickLog={() => setActiveScreen('quickLog')}
+      onWeightLog={() => setActiveScreen('weightDashboard')}
+      onPredictiveFlag={() => setActiveScreen('predictiveFlagging')}
+      />
       ) : activeScreen === "addPet" ? (
         <AddPetScreen
           onBack={() => setActiveScreen(addPetReturnScreen)}
@@ -237,7 +241,40 @@ export default function App() {
         <ReminderForm onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
-      ) : null}
+      ) : activeScreen === "updatePet" ? (
+        <UpdatePetProfile 
+         petId={selectedPetId}
+         onBack={() => setActiveScreen("petProfile")}
+         />
+      ) : activeScreen == "quickLog" ? (
+        <LogSymptom
+         onBack={() => setActiveScreen("mylogSymptom")}
+         petId={selectedPetId}
+        />
+      ): activeScreen == 'weightLog'?(
+        <LogWeight
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}//connect to real data = petId (from real backend database)
+        />
+      ):activeScreen == 'weightDashboard' ? (
+        <WeightDashboard
+          onBack={() => setActiveScreen('petProfile')}
+          onLogNew={() => setActiveScreen('weightLog')}
+          petId ={selectedPetId}
+        />
+      ): activeScreen == 'mylogSymptom' ? (
+        <MyLogSymptom
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}
+        />
+      ): activeScreen == 'predictiveFlagging' ? (
+        <PredictiveFlagging
+          onBack={() => setActiveScreen('petProfile')}
+          petId={selectedPetId}
+        />
+      ) :null
+      }
+
     </SafeAreaView>
   );
 }

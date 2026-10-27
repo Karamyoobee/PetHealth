@@ -2,13 +2,13 @@ import {useState} from "react";
 import { TouchableOpacity, View, Pressable, Text, StyleSheet, TextInput, Button } from "react-native";
 import { colors, spacing, radius } from "@theme";
 
+//Pet Form Props
 type PetFormFieldProps = { 
     label: string;
     value: string;
     onChangeText: (text: string) => void;
     placeholder?: string;
     keyboardType?: 'default' | 'numeric';
-    //Add a second style here... 
 }
 
 //Form Structure 

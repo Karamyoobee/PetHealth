@@ -30,11 +30,13 @@ type PetHeaderProps = {
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
     title?: string;
     onUpdate: () => void;//connection for update button
-    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders') => void;
+    onQuickLog: () => void; // connect to Quick Log Screen
+    onWeightLog: ()=> void;//Button to connect to Add New Weight Log Screen
+    onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate, onNavigate }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -73,6 +75,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onNavigate }
                 onBack={onBack}
                 onDelete={() => console.log("delete")}
             />
+
             <UpdatePet onPress={onUpdate}/>
             {/*Display Pet Name*/}
             <Text style={styles.petname}>{pet?.name}</Text>
@@ -110,13 +113,13 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onNavigate }
             
             <View style={styles.Container}>
             {/*Quick Access: Log Symptom Button*/}
-            <QuickButton
+            <QuickButton onPress={onQuickLog}
                 label="Log Symptom"
                 icon={<FontAwesome5 name="briefcase-medical" size={24} color="black" />}
             />
 
             {/*Quick Access: Weigh-in Button*/}
-            <QuickButton
+            <QuickButton onPress={onWeightLog}
                 label="Weigh-in"
                 icon={<FontAwesome5 name="weight" size={24} color="black" />}
             />
@@ -134,7 +137,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onNavigate }
             />
 
             {/*Quick Access: Predictive Flagging Engine Button*/}
-            <QuickButton
+            <QuickButton onPress={onPredictiveFlag}
                 label="Predictive Flagging Engine"
                 icon={<Entypo name="flag" size={24} color="black" />}
             />

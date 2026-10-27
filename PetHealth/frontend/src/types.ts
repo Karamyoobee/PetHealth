@@ -70,20 +70,22 @@ export type Reminder = {
 };
 
 export type Symptom = {
-  id: string;
-  petId: string;
-  name: string;
-  severity: "low" | "medium" | "high";
-  notes: string;
-  recordedAt: string;
+  id: string;//User Id
+  petId: string;//Pet Id
+  name: string;//Pet Name
+  severity: "mild" | "moderate" | "severe";//
+  category: "Digestive" | "Skin" | "Mobility" | "Appetite";//
+  durationDays: number;//Used for dropdown menu selection '2 days'
+  notes: string;//Notes section
+  recordedAt: string;//Time / Date recorded in Database
 };
 
 export type WeightEntry = {
-  id: string;
-  petId: string;
-  weightKg: number;
-  recordedAt: string;
-  notes?: string;
+  id: string;//User Id
+  petId: string;//petId
+  weightKg: number;//Store Weight in kg
+  recordedAt: string;//Time / Date Recorded in database
+  notes?: string;//Notes section
 };
 
 export type PredictiveFlag = {

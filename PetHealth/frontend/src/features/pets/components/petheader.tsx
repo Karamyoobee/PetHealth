@@ -13,15 +13,15 @@ export default function PetHeader({ onBack }: PetHeaderProps) {
 
     return(
         <View style={styles.header}>
+                    <Text style={styles.headerText}>Add New Pet</Text>
+
             {/*Main Style - Display Header for Screen*/}
             <View style={styles.innerheader}>
-        <Pressable onPress={onBack}>
+        <Pressable onPress={onBack} >
             <AntDesign name="arrowleft" size={24} color="black" />
         </Pressable>   
                 
-            </View>{/*Header Text - Text Centered inside Header Section */}
-                <Text style={styles.headerText}>Add New Pet</Text>
-        
+            </View>{/*Header Text - Text Centered inside Header Section */}        
         </View>
 
 
@@ -58,5 +58,6 @@ const styles = StyleSheet.create({
         position:'absolute',
         width: '100%',
         textAlign: 'center',
+        pointerEvents: 'none',
     }
 });
