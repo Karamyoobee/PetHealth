@@ -1,6 +1,10 @@
 import React from "react";
+import {useState, useEffect} from "react";
 import MainHeader from "./header";
 import {View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import BottomNavBar from "../../features/HomeScreen/components/TabBar";
+import { api } from "../../api/client";
+import { Pet } from "../../types";
 
 type EntryType = 'logged' | 'visit' | 'rx' | 'note';
 
@@ -12,33 +16,79 @@ type TimelineEntry = {
     type: EntryType;
     title: string;
     subtitle: string;
-    pet: string;
+    pet: string; //display pet name
+    petId: string //chip filter - for pets
 };
 
 type TimelineProps = {
     onBack: () => void;
+    onHomePress: () => void;
+    onPetsPress: () => void;
 };
 
-export default function Timeline({onBack}: TimelineProps){
+export default function Timeline({onBack, onHomePress, onPetsPress}: TimelineProps){
+    
+    //Use State 
+    //when a chip is selected: e.g 'all'
+    const [selectedPetId, setSelectedPetId] = useState<string>('all');
+    
+    //Load Pet's only fron backend, empty until API is connected and retrieves information
+    const [pets, setPets] = useState<{id: string; name: string}[]>([]);
+
+    //Chip List: 'All', 'other chips' represeting pets added
+    const chips = [{ id: 'all', name: 'All'}, ...pets]
+
+    //Run only 1 time, only when timeline screen opens and (empty [] dependency arrat)
+    useEffect(() => {
+        //Async function included, effect callback cannot be just 'async'
+        async function loadPetaccount(){
+            try{
+                //Search backend to fetch current user's pet list
+                const result = await api.listCurrentUserPets();
+                //only keep pet id and name 
+                setPets(result.map(p => ({id: p.id, name: p.name})))
+                console.log(result);//Debugging log (testing only) - check if pet actually loaded - to be removed!
+
+            } catch(e){
+                console.log(e);//If the request does fail!, log error
+            }
+        }
+        //Call function - define (in order to run backend connection)
+        loadPetaccount();
+    },[]);
+
     return(
         <View style={styles.screen}>
 
             {/*Header - Text only: Pet Timeline*/}
             <MainHeader title="Pet Timeline"/>
 
-            <ScrollView>
+            <ScrollView contentContainerStyle={styles.content}>
              
             {/*Timeline Heading: Timeline */}
             <Text style={styles.heading_text}>Timeline</Text>
 
             {/*Pet via Chip*/}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {chips.map(chip => ( 
+                    <Pressable key={chip.id}>
+                        <Text>{chip.name}</Text>
+                    </Pressable> ))}
 
+
+            </ScrollView>
+            
             {/*Pop-up Cards*/}
 
             </ScrollView>
-           
 
             {/*Bottom Navigation Bar*/}
+            <BottomNavBar
+                active="timeline"
+                onHomePress={onHomePress}
+                onPetsPress={onPetsPress}
+                onTimelinePress={() => {}}
+            />
 
         </View>
     )
@@ -46,6 +96,12 @@ export default function Timeline({onBack}: TimelineProps){
 
 //Styles Map view
 const styles = StyleSheet.create({
+
+    //ScrollView Style
+    content: {
+        padding: 16,
+        paddingBottom: 96,
+    },
 
     //Main Screen 
     screen:{
@@ -61,11 +117,18 @@ const styles = StyleSheet.create({
     },
 
     pet_chip:{
-
+        borderRadius:999, 
+        borderWidth: 2,
+        backgroundColor: '#fff',
+        marginRight: 20,
     },
 
-    pet_chip_text:{
+    active_pet_chip: {
+        backgroundColor: '#fff',
+    },
 
+    active_pet_chip_text:{
+        color:'#fff',
     },
 
     card:{
