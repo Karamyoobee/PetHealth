@@ -4,19 +4,15 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
 type headerprops = {
-    onBack: () => void;
     title: string;
 }
 
-export default function MainHeader({onBack, title}: headerprops) { 
+export default function MainHeader({ title}: headerprops) { 
     return(
         <View style={styles.header}>
             {/*Icon */}
             <View style={styles.innerheader}>
-                {/*Back Button - return to previous screen*/}
-                <TouchableOpacity onPress={onBack}>
-                    <AntDesign name="arrowleft" size={24} color="black" />
-                </TouchableOpacity>                
+      
                 
             </View>
                 <Text style={styles.headerText}>{title}</Text>
@@ -36,11 +32,8 @@ const styles = StyleSheet.create({
     },
 
     header: {
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         backgroundColor: 'white',
-        paddingHorizontal: 20,
         borderBottomWidth: 1,
         borderBottomColor: "#E4E2DA",
         paddingVertical: 12,
@@ -50,8 +43,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 17,
         color: '#333',
-        position:'absolute',
-        width: '100%',
         textAlign: 'center',
     }
 });

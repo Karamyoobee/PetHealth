@@ -1,4 +1,4 @@
-import react from "react";
+import React from "react";
 import MainHeader from "./header";
 import {View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 
@@ -15,18 +15,28 @@ type TimelineEntry = {
     pet: string;
 };
 
+type TimelineProps = {
+    onBack: () => void;
+};
 
-export default function Timeline(){
+export default function Timeline({onBack}: TimelineProps){
     return(
-        <View>
+        <View style={styles.screen}>
 
             {/*Header - Text only: Pet Timeline*/}
+            <MainHeader title="Pet Timeline"/>
 
+            <ScrollView>
+             
             {/*Timeline Heading: Timeline */}
+            <Text style={styles.heading_text}>Timeline</Text>
 
             {/*Pet via Chip*/}
 
             {/*Pop-up Cards*/}
+
+            </ScrollView>
+           
 
             {/*Bottom Navigation Bar*/}
 
@@ -35,10 +45,19 @@ export default function Timeline(){
 }
 
 //Styles Map view
-const style = StyleSheet.create({
-    
-    heading:{
+const styles = StyleSheet.create({
+
+    //Main Screen 
+    screen:{
+        flex:1,
+        backgroundColor: '#F6F4EF',
+    }, 
+
+    //Heading Text: 
+    heading_text:{
         fontSize: 24,
+        fontWeight: '700',
+        marginBottom: 16,
     },
 
     pet_chip:{
