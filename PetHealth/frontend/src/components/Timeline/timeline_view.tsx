@@ -47,6 +47,14 @@ export default function Timeline({onBack, onHomePress, onPetsPress}: TimelinePro
                 const result = await api.listCurrentUserPets();
                 //only keep pet id and name 
                 setPets(result.map(p => ({id: p.id, name: p.name})))
+                
+                //Testing - debugging only (to check the saved logs for the 4 main features below for current pet id)
+                const pet = result[0];
+                console.log('weights', await api.listWeights(pet.id));
+                console.log('visits', await api.listMedications(pet.id));
+                console.log('symptoms', await api.listSymptoms(pet.id))
+                console.log('visits', await api.listVetVisits(pet.id));
+
                 console.log(result);//Debugging log (testing only) - check if pet actually loaded - to be removed!
 
             } catch(e){
@@ -69,12 +77,27 @@ export default function Timeline({onBack, onHomePress, onPetsPress}: TimelinePro
             <Text style={styles.heading_text}>Timeline</Text>
 
             {/*Pet via Chip*/}
+            {/*Horizontal Row for chips: no scroll bar*/}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {chips.map(chip => ( 
-                    <Pressable key={chip.id}>
-                        <Text>{chip.name}</Text>
-                    </Pressable> ))}
+                {chips.map(chip => {{/* Map: loop over chip (All + real pets from backend), each chip is pressable / tapable*/}
+                    
+                    //true  = chip for the exact id that is being selected
+                    const Active = chip.id === selectedPetId;
 
+                    return(
+                        <Pressable
+                            key={chip.id}  
+                            onPress={() => setSelectedPetId(chip.id)}
+                            style={[styles.pet_chip, Active && styles.active_pet_chip]}
+                        >   
+                        <Text style={[styles.pet_chip_text, Active && styles.active_pet_chip_text]}>{chip.name}</Text> 
+                        </Pressable>
+                    );
+                })}
+
+                    {/*Style for only, when Pet-Chip is Active (tapped on by user)*/} 
+
+                    {/*Chip Label Section: Display and enable tappable chip button (text turns white when active) */}
 
             </ScrollView>
             
@@ -118,13 +141,22 @@ const styles = StyleSheet.create({
 
     pet_chip:{
         borderRadius:999, 
-        borderWidth: 2,
-        backgroundColor: '#fff',
-        marginRight: 20,
+        borderWidth: 1,
+        backgroundColor: '#D8D2C6',
+        borderColor: '#fff',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        marginRight:8,
+    },
+
+    pet_chip_text:{
+        fontWeight: '600',
+        color: '#333',
     },
 
     active_pet_chip: {
-        backgroundColor: '#fff',
+        backgroundColor: '#1F6F5C',
+        borderColor:'#1F6F5C',
     },
 
     active_pet_chip_text:{
