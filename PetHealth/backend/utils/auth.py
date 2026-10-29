@@ -4,20 +4,24 @@ from uuid import uuid4
 import jwt
 from flask import abort, current_app, request
 
+from database import mongo
+
 
 def utc_now():
     return datetime.now(timezone.utc)
 
 
-def create_session_token(user):
+def create_session_token(user, auth_version=None):
     now = utc_now()
     expires_at = now + timedelta(hours=current_app.config["JWT_EXPIRES_HOURS"])
+    credentials = mongo.db.auth_credentials.find_one({"_id": user["userId"]}) or {}
     payload = {
         "iss": current_app.config["JWT_ISSUER"],
         "sub": user["userId"],
         "email": user.get("email"),
         "name": user.get("name"),
         "sid": str(uuid4()),
+        "authVersion": credentials.get("authVersion", 0) if auth_version is None else auth_version,
         "iat": int(now.timestamp()),
         "exp": int(expires_at.timestamp()),
     }
@@ -38,12 +42,16 @@ def current_session():
         return None
 
     try:
-        return jwt.decode(
+        session = jwt.decode(
             token,
             current_app.config["JWT_SECRET"],
             algorithms=["HS256"],
             issuer=current_app.config["JWT_ISSUER"],
         )
+        credentials = mongo.db.auth_credentials.find_one({"_id": session["sub"]}) or {}
+        if session.get("authVersion", 0) != credentials.get("authVersion", 0):
+            abort(401, description="Please sign in again")
+        return session
     except jwt.PyJWTError:
         abort(401, description="Invalid or expired session token")
 

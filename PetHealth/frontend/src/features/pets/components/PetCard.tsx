@@ -25,7 +25,7 @@ export default function PetCard({ pet, onPress }: PetTypeProps){
                 <Text style={styles.subtext}>{pet.breed} {pet.age}</Text>
             </View>
             <StatusBadge status={pet.status}/>    
-            <TouchableOpacity>
+            <TouchableOpacity onPress={onPress}>
                 <Entypo name="chevron-right" size={24} color="black" />
             </TouchableOpacity>
         </Pressable>

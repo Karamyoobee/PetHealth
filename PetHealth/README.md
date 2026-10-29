@@ -10,8 +10,9 @@ This codebase is scoped to Karamjeet's core responsibilities:
 - Medication and treatment tracker
 - Reminder-ready data model
 - Vet-ready PDF export
+- AI-assisted pet health guidance through a backend Gemini integration
 
-Symptom logging, weight tracking, predictive flags, trends, and assistant-style guidance are kept as backend integration points for later project phases. They should not be presented as completed user-facing features until their frontend flows are connected.
+Symptom logging, weight tracking, predictive flags, and trends remain integration points for later project phases.
 
 ## Structure
 
@@ -41,7 +42,11 @@ MONGODB_CREATE_INDEXES=true
 JWT_SECRET=replace-this-for-production
 JWT_EXPIRES_HOURS=168
 GOOGLE_CLIENT_IDS=your-android-client-id.apps.googleusercontent.com
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
+
+Keep `GEMINI_API_KEY` in `backend/.env`. Never put it in `frontend/.env` or use an `EXPO_PUBLIC_` variable for it, because values bundled into the mobile app can be extracted.
 
 ## Frontend
 
@@ -69,4 +74,10 @@ After sign-in, API requests must include:
 ```http
 Authorization: Bearer <jwt>
 ```
+
+## Health Assistant
+
+The Assistant screen sends the selected pet ID, question, and short chat history to the authenticated Flask endpoint. The backend confirms that the pet belongs to the signed-in user and builds a limited context from that pet's recent records. Owner profile fields are not included in the Gemini request, and the Gemini API key never leaves the backend. Free-text pet notes can still contain information entered by a user.
+
+For a student demonstration, a Gemini free-tier key can be created in Google AI Studio. Free-tier prompts and responses may be used by Google to improve its products, so use synthetic pet records and do not submit personal, confidential, or sensitive information. Use a paid project and complete a privacy review before using real customer data.
 

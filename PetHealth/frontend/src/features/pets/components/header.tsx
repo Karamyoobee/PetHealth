@@ -8,7 +8,7 @@ export default function Header({ onBack }: { onBack: () => void }) {
         <View style={styles.header}>
             {/*Icon */}
             <View style={styles.innerheader}>
-                <Pressable>
+                <Pressable onPress={onBack}>
                 <FontAwesome name="paw" size={24} color="#1F7A66" />                    
                 </Pressable>
                 <Text style={styles.headerText}>PetHealth</Text>

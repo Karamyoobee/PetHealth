@@ -15,6 +15,7 @@ import { api } from "../../../api/client";
 type LogSymptomProps = { 
   onBack: () => void;
   petId: string | null;
+  onSaved: (petId: string) => void;
 }; 
 
 const CategoryOptions:Symptom['category'][] = ['Digestive', 'Skin', 'Mobility', 'Appetite'];
@@ -30,7 +31,7 @@ const durationtoDaysformat = (d: string): number => {
 
 }
 
-export default function LogSymptom({onBack, petId}:LogSymptomProps){
+export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<'Digestive' | 'Skin' | 'Mobility' | 'Appetite'>('Digestive');
     const [severity, setSeverity] = useState<'Mild' | 'Moderate' | 'Severe' >('Mild'); //Toggle Button - Spayed/Neutured or Intact
@@ -66,7 +67,7 @@ export default function LogSymptom({onBack, petId}:LogSymptomProps){
             console.log('Quick Log Symptom sent', JSON.stringify(symptomData));
             const saved = await api.createSymptom(selectedPetId, symptomData);
             console.log('Quick Log Symptom returned to backend: ', saved);
-            Alert.alert('Saved', 'Symptom logged!', [{text: 'OK', onPress: onBack}]);
+            Alert.alert('Saved', 'Symptom logged!', [{text: 'OK', onPress: () => onSaved(selectedPetId)}]);
         } catch(error){
             console.error(error);
             Alert.alert('Symptom was unable to be saved!','Please, try again !');

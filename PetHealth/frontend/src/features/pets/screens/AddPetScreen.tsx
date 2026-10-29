@@ -29,11 +29,12 @@ import { api } from "../../../api/client";
 import { uploadImageToCloudinary } from "../../../api/cloudinary";
 
 type AddPetProps = { 
-  onBack: () => void
+  onBack: () => void;
+  onSaved?: () => void;
 };
 
 //Function Component (Add Pet Screen) - UI (Add Net Pet Form)
-export default function AddPetScreen({ onBack }: AddPetProps) {
+export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
     const [weight, setWeight] = useState(''); /// Weight Entry Field
@@ -83,6 +84,7 @@ export default function AddPetScreen({ onBack }: AddPetProps) {
             //Verify: Saved Pet Profile Details securely into database 
             console.log("Pet returned by backend:", savedPet);
             setSubmitted(true);//Pet Profile confirmation - details saved!
+            onSaved?.();
 
           } catch(error){//Inform and catch user input error
             console.error(error)//error message
@@ -118,9 +120,6 @@ export default function AddPetScreen({ onBack }: AddPetProps) {
         setSpecies(newSpecies);
         ('');
     };
-
-    //Handle home screen for pet profile
-    const [screen, setScreen] = useState('home');
 
     return(
         <View style={styles.container}>

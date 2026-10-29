@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import { useEffect } from "react"; // check petId for pet being used here
-import { StyleSheet, Text, ScrollView, View, Alert} from "react-native";
+import { Alert, StyleSheet, Text, ScrollView, View} from "react-native";
 //All Icons Set - For Statistic Cards and Quick Access Buttons
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Feather from '@expo/vector-icons/Feather';
@@ -33,14 +33,45 @@ type PetHeaderProps = {
     onQuickLog: () => void; // connect to Quick Log Screen
     onWeightLog: ()=> void;//Button to connect to Add New Weight Log Screen
     onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
+    onVetVisits: () => void;
+    onMedications: () => void;
+    onDeleted: () => void;
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onDeleted, onNavigate }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
     const [deleting, setDeleting] = useState(false);
+
+    const deletePet = async () => {
+        if (!petId || deleting) return;
+        setDeleting(true);
+        try {
+            await api.deletePet(petId);
+            onDeleted();
+        } catch (error) {
+            Alert.alert('Could not delete pet', error instanceof Error ? error.message : 'Please try again.');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const openPetOptions = () => {
+        if (!pet || loading || deleting) return;
+        Alert.alert('Pet options', pet.name, [
+            { text: 'Edit Pet', onPress: onUpdate },
+            { text: 'Delete Pet', style: 'destructive', onPress: () => {
+                Alert.alert('Delete Pet', `Delete ${pet.name} and their saved health records? This cannot be undone.`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: deletePet },
+                ]);
+            } },
+            { text: 'Cancel', style: 'cancel' },
+        ]);
+    };
 
     //Display and retrieve pet's detail's
     useEffect(() =>{
@@ -88,7 +119,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             <PhotoHeader
                 photoUri={pet?.photoUri}
                 onBack={onBack}
-                onDelete={handleDeletePet}
+                onDelete={openPetOptions}
             />
 
             <UpdatePet onPress={onUpdate}/>
@@ -140,13 +171,13 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             />
 
             {/*Quick Access: Vet Visits Button*/}
-            <QuickButton
+            <QuickButton onPress={onVetVisits}
                 label="Vet Visits"
                 icon={<FontAwesome name="calendar" size={24} color="black" />}
             />
 
             {/*Quick Access: Medications*/}
-            <QuickButton
+            <QuickButton onPress={onMedications}
                 label="Medications"
                 icon={<MaterialCommunityIcons name="pill" size={24} color="black" />}
             />
@@ -161,7 +192,14 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             
         </ScrollView>
                 {/*Bottom Navigation Bar*/}
-            <BottomNavBar/>
+            <BottomNavBar
+                active="pets"
+                onHomePress={() => onNavigate?.('home')}
+                onPetsPress={onBack}
+                onActionPress={() => onNavigate?.('assistant')}
+                onAlertsPress={() => onNavigate?.('reminders')}
+                onTimelinePress={() => onNavigate?.('timeline')}
+            />
          </View>    
 )
 

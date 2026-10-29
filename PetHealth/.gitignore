@@ -5,5 +5,7 @@ node_modules/
 .venv/
 __pycache__/
 .pytest_cache/
+/tmp/
+/output/pdf/
 *.pyc
 frontend/android/local.properties

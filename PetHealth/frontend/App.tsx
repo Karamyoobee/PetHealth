@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  BackHandler,
   Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar as NativeStatusBar,
   StyleSheet,
   Text,
@@ -13,9 +14,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { colors, spacing } from "./src/theme";
 import { api, setSessionToken } from "./src/api/client";
-import type { User } from "./src/types";
+import { clearSavedSession, restoreSavedSession, SESSION_TOKEN_KEY, SESSION_USER_KEY } from "./src/auth/session";
+import type { AuthSession, User } from "./src/types";
 import { AuthScreen } from "./src/features/auth/AuthScreens";
 import VetVisitForm from "./src/features/vetVisits/VetVisitForm";
 import ScheduleVisitScreen from "./src/features/vetVisits/ScheduleVisitScreen";
@@ -23,13 +24,13 @@ import MedicationForm from "./src/features/medications/MedicationForm";
 import AddMedicationScreen from "./src/features/medications/AddMedicationScreen";
 import ReminderForm from "./src/features/reminders/ReminderForm";
 import ReportPanel from "./src/features/reports/ReportPanel";
-import HomeScreenView from "./src/features/HomeScreen/screens/HomeScreen";
-import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
+import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
+import HomeScreen, { type HomeDestination } from "./src/features/home/HomeScreen";
 import MyPetsScreen from "./src/features/pets/screens/Mypets";
+import AddPetScreen from "./src/features/pets/screens/AddPetScreen";
 import PetProfileScreen from "./src/features/pets/screens/PetProfileScreen";
 import UpdatePetProfile from "./src/features/pets/screens/UpdatePetProfile";
 import LogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomForm";
-import AddWeightLog from "./src/components/WeightLog/Weightlogform";
 import LogWeight from "./src/features/Weightlog/screens/Newweight";
 import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
 import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
@@ -38,17 +39,12 @@ import Timeline from "./src/components/Timeline/timeline_view";
 
 type ScreenKey =
   | "home"
-  | "vetVisits"
-  | "scheduleVisit"
-  | "medications"
-  | "addMedication"
-  | "reminders"
-  | "reports"
-  | "pets"
-  | "myPets"
-  | "addPet"
+  | HomeDestination
   | "petProfile"
   | "updatePet"
+  | "scheduleVisit"
+  | "addMedication"
+  | "reports"
   | "quickLog"
   | "weightLog"
   | "weightDashboard"
@@ -56,95 +52,183 @@ type ScreenKey =
   | "predictiveFlagging"
   | "timeline";
 
-type AuthMode = "welcome" | "signup" | "signin";
+type AuthMode = "welcome" | "signin" | "register";
 
-const SESSION_TOKEN_KEY = "petHealth.sessionToken";
-const SESSION_USER_KEY = "petHealth.sessionUser";
-
-const screens: { key: ScreenKey; label: string }[] = [
-  { key: "home", label: "Home" },
-  { key: 'weightLog', label: 'weightLog'},
-  { key: 'weightDashboard', label:'Weight Dashboard'},
-  { key:'mylogSymptom', label: 'My Log Symptom'},
-  { key: "updatePet", label: "Update Pet"},
-  { key: "quickLog", label: "Quick Log"},
-  { key: "reminders", label: "Reminders" },
-  { key: "reports", label: "Reports" },
-  { key: "pets", label: "Add Pet"},
-  { key: "timeline", label: 'Timeline'},
-];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "reports"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
+  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard">("petProfile");
+  const [recordReturnScreen, setRecordReturnScreen] = useState<"home" | "petProfile">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  //PetHealth Screen Connection - to search and find real Pet Id and details to retrieve from database
-  const[selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const navigateHome = (screen: HomeDestination | "home", petId?: string) => {
+    if (screen === "home" || availableHomeScreens.includes(screen)) {
+      setPetSelectionDestination("petProfile");
+      setRecordReturnScreen("home");
+      if (screen === "symptoms") {
+        setSelectedPetId(petId ?? null);
+        setActiveScreen("quickLog");
+        return;
+      }
+      if (screen === "weights") {
+        if (petId) {
+          setSelectedPetId(petId);
+          setActiveScreen("weightDashboard");
+        } else {
+          setPetSelectionDestination("weightDashboard");
+          setActiveScreen("pets");
+        }
+        return;
+      }
+      if (screen === "pets" && petId) {
+        setSelectedPetId(petId);
+        setActiveScreen("petProfile");
+        return;
+      }
+      if (screen === "addPet") {
+        setAddPetReturnScreen("home");
+      }
+      if (screen === "vetVisits" || screen === "medications") {
+        setSelectedPetId(petId ?? null);
+      }
+      setActiveScreen(screen);
+    }
+  };
+
+  const openPetRecords = (screen: ScreenKey) => {
+    setRecordReturnScreen("petProfile");
+    setActiveScreen(screen);
+  };
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!currentUser || activeScreen === "home") {
+        return false;
+      }
+
+      if (activeScreen === "addMedication") {
+        setActiveScreen("medications");
+      } else if (activeScreen === "scheduleVisit") {
+        setActiveScreen("vetVisits");
+      } else if (activeScreen === "addPet") {
+        setActiveScreen(addPetReturnScreen);
+      } else if (activeScreen === "petProfile") {
+        setActiveScreen("pets");
+      } else if (activeScreen === "updatePet") {
+        setActiveScreen("petProfile");
+      } else if (activeScreen === "quickLog") {
+        setActiveScreen(recordReturnScreen);
+      } else if (activeScreen === "weightLog") {
+        setActiveScreen("weightDashboard");
+      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging", "vetVisits", "medications"].includes(activeScreen)) {
+        setActiveScreen(recordReturnScreen);
+      } else {
+        setActiveScreen("home");
+      }
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, addPetReturnScreen, currentUser, recordReturnScreen]);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadSession() {
-      const token = await AsyncStorage.getItem(SESSION_TOKEN_KEY);
-
-      if (!mounted) return;
-
-      if (token) {
-        setSessionToken(token);
-        try {
-          const user = await api.getCurrentUser();
-          if (!mounted) return;
-          setCurrentUser(user);
-          await AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
-        } catch {
-          setSessionToken(null);
-          await Promise.all([AsyncStorage.removeItem(SESSION_TOKEN_KEY), AsyncStorage.removeItem(SESSION_USER_KEY)]);
+      setAuthLoading(true);
+      setSessionError(null);
+      try {
+        const session = await restoreSavedSession();
+        if (!mounted) return;
+        if (session.status === "restored") {
+          setCurrentUser(session.user);
+          setActiveScreen("home");
+        } else if (session.status === "expired") {
+          setCurrentUser(null);
+          setAuthMode("signin");
+          setAuthError("Your session has ended. Please sign in again.");
+        }
+      } catch {
+        if (mounted) {
+          setSessionError("We couldn't check your saved sign-in. Your session is still saved. Please check your connection and try again.");
+        }
+      } finally {
+        if (mounted) {
+          setAuthLoading(false);
         }
       }
-
-      setAuthLoading(false);
     }
 
-    loadSession().catch(() => {
-      setSessionToken(null);
-      setAuthLoading(false);
-    });
+    loadSession();
 
     return () => {
       mounted = false;
     };
+  }, [sessionAttempt]);
+
+  const saveSession = useCallback(async (session: AuthSession) => {
+    setSessionToken(session.token);
+    await Promise.all([
+      AsyncStorage.setItem(SESSION_TOKEN_KEY, session.token),
+      AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(session.user)),
+    ]);
+    setCurrentUser(session.user);
+    setActiveScreen("home");
   }, []);
 
-  const handleGoogleToken = useCallback(async (idToken: string) => {
+  const handleGoogleToken = useCallback(async (idToken: string, allowRegistration: boolean) => {
     setAuthBusy(true);
     setAuthError(null);
 
     try {
-      const session = await api.googleLogin(idToken);
-      setSessionToken(session.token);
-      setCurrentUser(session.user);
-      await Promise.all([
-        AsyncStorage.setItem(SESSION_TOKEN_KEY, session.token),
-        AsyncStorage.setItem(SESSION_USER_KEY, JSON.stringify(session.user)),
-      ]);
-      setActiveScreen("home");
+      const session = await api.googleLogin(idToken, allowRegistration);
+      await saveSession(session);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Sign-in failed.");
       setSessionToken(null);
     } finally {
       setAuthBusy(false);
     }
-  }, []);
+  }, [saveSession]);
+
+  const handlePasswordLogin = useCallback(async (email: string, password: string) => {
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      const session = await api.passwordLogin(email, password);
+      await saveSession(session);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Sign-in failed.");
+      setSessionToken(null);
+    } finally {
+      setAuthBusy(false);
+    }
+  }, [saveSession]);
 
   const handleSignOut = useCallback(async () => {
-    setSessionToken(null);
-    setCurrentUser(null);
-    setAuthMode("signin");
-    await Promise.all([AsyncStorage.removeItem(SESSION_TOKEN_KEY), AsyncStorage.removeItem(SESSION_USER_KEY)]);
+    setSigningOut(true);
+    try {
+      await clearSavedSession();
+      setCurrentUser(null);
+      setSelectedPetId(null);
+      setActiveScreen("home");
+      setSessionError(null);
+      setAuthError(null);
+      setAuthMode("signin");
+    } catch {
+      Alert.alert("Could not sign out", "Please try again to finish signing out.");
+    } finally {
+      setSigningOut(false);
+    }
   }, []);
 
   if (authLoading) {
@@ -158,6 +242,24 @@ export default function App() {
     );
   }
 
+  if (sessionError) {
+    return (
+      <SafeAreaView style={styles.authSafeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.sessionRetry}>
+          <Text style={styles.sessionTitle}>Couldn't restore your session</Text>
+          <Text style={styles.sessionMessage}>{sessionError}</Text>
+          <TouchableOpacity disabled={signingOut} style={styles.retryButton} onPress={() => setSessionAttempt((attempt) => attempt + 1)}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={signingOut} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!currentUser) {
     return (
       <SafeAreaView style={styles.authSafeArea}>
@@ -166,8 +268,13 @@ export default function App() {
           mode={authMode}
           busy={authBusy}
           error={authError}
-          onModeChange={setAuthMode}
+          onModeChange={(mode) => {
+            setAuthError(null);
+            setAuthMode(mode);
+          }}
           onGoogleToken={handleGoogleToken}
+          onPasswordLogin={handlePasswordLogin}
+          onRegistrationComplete={saveSession}
         />
       </SafeAreaView>
     );
@@ -177,119 +284,155 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       {activeScreen === "home" ? (
-        <>
-          <View style={styles.nav}>
-            {screens.map((screen) => {
-              const isActive = activeScreen === screen.key;
-              return (
-                <TouchableOpacity
-                  key={screen.key}
-                  onPress={() => setActiveScreen(screen.key)}
-                  style={[styles.navButton, isActive && styles.navButtonActive]}
-                >
-                  <Text style={[styles.navText, isActive && styles.navTextActive]}>{screen.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <HomeScreenView user={currentUser} onSignOut={handleSignOut} onNavigate={setActiveScreen} />
-        </>
-      ) : activeScreen === "myPets" || activeScreen === "pets" ? (
-      <MyPetsScreen 
-      onBack={() => setActiveScreen("home")} 
-      onSelectPet={(id)=>{
-        setSelectedPetId(id);
-        setActiveScreen("petProfile");
-      }}
-      onAddNewPet={() => setActiveScreen('addPet')}
-      />
-      ) : activeScreen === "petProfile" ? (
-      <PetProfileScreen 
-      onBack={() => setActiveScreen("myPets")} 
-      petId={selectedPetId}
-      onUpdate={() => setActiveScreen("updatePet")} 
-      onQuickLog={() => setActiveScreen('quickLog')}
-      onWeightLog={() => setActiveScreen('weightDashboard')}
-      onPredictiveFlag={() => setActiveScreen('predictiveFlagging')}
-      />
+        <HomeScreen
+          user={currentUser}
+          availableScreens={availableHomeScreens}
+          onNavigate={navigateHome}
+          onSignOut={handleSignOut}
+          signingOut={signingOut}
+        />
+      ) : activeScreen === "pets" ? (
+        <MyPetsScreen
+          onBack={() => setActiveScreen("home")}
+          onSelectPet={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen(petSelectionDestination);
+            setPetSelectionDestination("petProfile");
+          }}
+          onAddNewPet={() => {
+            setAddPetReturnScreen("pets");
+            setActiveScreen("addPet");
+          }}
+          onNavigate={navigateHome}
+        />
       ) : activeScreen === "addPet" ? (
         <AddPetScreen
-         onBack={() => setActiveScreen("myPets")}
-         />
+          onBack={() => setActiveScreen(addPetReturnScreen)}
+          onSaved={() => setActiveScreen("pets")}
+        />
+      ) : activeScreen === "petProfile" ? (
+        <PetProfileScreen
+          petId={selectedPetId}
+          onBack={() => setActiveScreen("pets")}
+          onUpdate={() => setActiveScreen("updatePet")}
+          onQuickLog={() => openPetRecords("quickLog")}
+          onWeightLog={() => openPetRecords("weightDashboard")}
+          onPredictiveFlag={() => openPetRecords("predictiveFlagging")}
+          onVetVisits={() => openPetRecords("vetVisits")}
+          onMedications={() => openPetRecords("medications")}
+          onDeleted={() => {
+            setSelectedPetId(null);
+            setActiveScreen("pets");
+          }}
+          onNavigate={navigateHome}
+        />
+      ) : activeScreen === "updatePet" ? (
+        <UpdatePetProfile petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
+      ) : activeScreen === "assistant" ? (
+        <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
+      ) : activeScreen === "vetVisits" ? (
+        <VetVisitForm
+          petId={selectedPetId}
+          onSelectPet={setSelectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
+          onScheduleVisit={() => setActiveScreen("scheduleVisit")}
+        />
+      ) : activeScreen === "scheduleVisit" ? (
+        <ScheduleVisitScreen
+          petId={selectedPetId}
+          onBack={() => setActiveScreen("vetVisits")}
+          onSubmit={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("vetVisits");
+          }}
+        />
       ) : activeScreen === "medications" ? (
         <MedicationForm
-          onBack={() => setActiveScreen("home")}
+          petId={selectedPetId}
+          onSelectPet={setSelectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
           onAddMedication={() => setActiveScreen("addMedication")}
         />
       ) : activeScreen === "addMedication" ? (
         <AddMedicationScreen
+          petId={selectedPetId}
           onBack={() => setActiveScreen("medications")}
-          onSubmit={() => setActiveScreen("medications")}
+          onSubmit={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("medications");
+          }}
         />
       ) : activeScreen === "reminders" ? (
-        <ReminderForm onBack={() => setActiveScreen("home")} />
+        <ReminderForm onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
+      ) : activeScreen === "timeline" ? (
+        <Timeline onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "updatePet" ? (
-        <UpdatePetProfile 
-         petId={selectedPetId}
-         onBack={() => setActiveScreen("petProfile")}
-         />
-      ) : activeScreen == "quickLog" ? (
+      ) : activeScreen === "quickLog" ? (
         <LogSymptom
-         onBack={() => setActiveScreen("mylogSymptom")}
-         petId={selectedPetId}
+          petId={selectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
+          onSaved={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("mylogSymptom");
+          }}
         />
-      ): activeScreen == 'weightLog'?(
-        <LogWeight
-          onBack={() => setActiveScreen('petProfile')}
-          petId={selectedPetId}//connect to real data = petId (from real backend database)
-        />
-      ):activeScreen == 'weightDashboard' ? (
+      ) : activeScreen === "weightLog" ? (
+        <LogWeight petId={selectedPetId} onBack={() => setActiveScreen("weightDashboard")} />
+      ) : activeScreen === "weightDashboard" ? (
         <WeightDashboard
-          onBack={() => setActiveScreen('petProfile')}
-          onLogNew={() => setActiveScreen('weightLog')}
-          petId ={selectedPetId}
-        />
-      ): activeScreen == 'mylogSymptom' ? (
-        <MyLogSymptom
-          onBack={() => setActiveScreen('petProfile')}
           petId={selectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
+          onLogNew={() => setActiveScreen("weightLog")}
+          onNavigate={navigateHome}
         />
-      ): activeScreen == 'predictiveFlagging' ? (
-        <PredictiveFlagging
-          onBack={() => setActiveScreen('petProfile')}
-          petId={selectedPetId}
-        />
-      ) : activeScreen == 'timeline' ? (
-        <Timeline 
-        onBack={() => setActiveScreen('home')}
-        onHomePress={() => setActiveScreen('home')}
-        onPetsPress={() => setActiveScreen('myPets')}
-        />
-      ):null
-      }
-
+      ) : activeScreen === "mylogSymptom" ? (
+        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} />
+      ) : activeScreen === "predictiveFlagging" ? (
+        <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
+      ) : null}
     </SafeAreaView>
   );
 }
 
-function HomeScreen({ user, onSignOut, onNavigate }: { user: User; onSignOut: () => void; onNavigate?: (screen: ScreenKey) => void; }) {
-  
-  return (
-  <HomeScreenView
-    user={user}
-    onSignOut={onSignOut}
-    onNavigate={onNavigate}
-  />
-
-  );
-}
-
 const styles = StyleSheet.create({
+  sessionRetry: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 28,
+    gap: 20,
+  },
+  sessionTitle: {
+    color: "#10201F",
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  sessionMessage: {
+    color: "#48525B",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: "#08705F",
+    alignItems: "center",
+    borderRadius: 8,
+    padding: 14,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  signOutText: {
+    color: "#08705F",
+    fontWeight: "700",
+    textAlign: "center",
+    padding: 10,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#FAF8F4",
     paddingTop: Platform.OS === "android" ? NativeStatusBar.currentHeight ?? 0 : 0,
   },
   authSafeArea: {
@@ -301,81 +444,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-  },
-  nav: {
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  navButton: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  navButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  navText: {
-    color: colors.text,
-    fontWeight: "800",
-  },
-  navTextActive: {
-    color: colors.white,
-  },
-  home: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 15,
-    marginTop: spacing.sm,
-    textAlign: "center",
-  },
-  previewCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  cardText: {
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  signOutButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  signOutText: {
-    color: colors.text,
-    fontWeight: "800",
   },
 });

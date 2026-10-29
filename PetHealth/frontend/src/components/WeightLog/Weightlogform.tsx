@@ -26,7 +26,7 @@ export default function AddWeightLog({onBack}:WeightProps){
     return(
         <View style={styles.container}>
                 {/*Header */}
-                <NewWeighHeader onBack={onBack}/>
+                <NewWeighHeader onBack={onBack} label="New Weight Entry"/>
 
                 {/*Notes - Tex Input */}
 
@@ -34,7 +34,7 @@ export default function AddWeightLog({onBack}:WeightProps){
 
               {/*Save Button*/}
               <View style={styles.Button}>
-                    <SaveWeight label="Save Entry" onPress={handleSave}/>
+                    <SaveWeight label="Save Entry" onPress={handleSave} icon={null}/>
                     {submitted && <Text style={styles.result}>Entry Saved!</Text>}
 
               </View>

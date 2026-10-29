@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from bson import ObjectId
 from flask import Blueprint, jsonify, request
@@ -12,7 +12,9 @@ pets_bp = Blueprint("pets", __name__, url_prefix="/api")
 
 PET_FIELDS = ("name", "species", "breed", "age", "sex", "weightKg", "spayedNeutered", "photoUri")
 VET_VISIT_FIELDS = (
+    "reason",
     "appointmentDate",
+    "appointmentTime",
     "clinicName",
     "veterinarianName",
     "diagnosis",
@@ -22,6 +24,7 @@ VET_VISIT_FIELDS = (
 )
 MEDICATION_FIELDS = (
     "name",
+    "purpose",
     "dosage",
     "instructions",
     "schedule",
@@ -29,7 +32,7 @@ MEDICATION_FIELDS = (
     "endDate",
     "reminderTime",
 )
-REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled")
+REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled", "dismissedAt", "completedAt", "snoozedUntil")
 SYMPTOM_FIELDS = ("name", "severity", "notes", "recordedAt")
 WEIGHT_FIELDS = ("weightKg", "recordedAt", "notes")
 FLAG_FIELDS = ("type", "title", "message", "severity", "createdAt", "resolved")
@@ -105,6 +108,69 @@ def create_pet():
     return jsonify(serialize_doc(saved)), 201
 
 
+@pets_bp.get("/home/today")
+def home_today():
+    user_id = current_user_id()
+    try:
+        today = date.fromisoformat(request.args.get("date", ""))
+        offset = int(request.args.get("timezoneOffset", "0"))
+        if not -840 <= offset <= 840:
+            raise ValueError()
+    except (ValueError, TypeError):
+        return error("A valid date and timezone offset are required")
+
+    local_timezone = timezone(timedelta(minutes=-offset))
+
+    def local_date(value):
+        if isinstance(value, datetime):
+            parsed = value
+        elif isinstance(value, date):
+            return value
+        elif isinstance(value, str) and value:
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                return None
+        else:
+            return None
+
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(local_timezone)
+        return parsed.date()
+
+    pet_ids = [pet["_id"] for pet in mongo.db.pets.find({"userId": user_id})]
+    query = {"petId": {"$in": pet_ids}}
+    counts = {"vaccinations": 0, "medications": 0, "vetVisits": 0}
+    daily_doses = {"once a day": 1, "twice a day": 2, "three times a day": 3, "daily": 1}
+
+    for medication in mongo.db.medications.find(query):
+        start = local_date(medication.get("startDate"))
+        end = local_date(medication.get("endDate"))
+        if start is None or start > today or (end is not None and end < today):
+            continue
+
+        scheduled = daily_doses.get(str(medication.get("schedule", "")).strip().lower(), 0)
+        taken = sum(
+            dose.get("status") == "taken" and local_date(dose.get("takenAt")) == today
+            for dose in medication.get("doseLog", [])
+        )
+        counts["medications"] += max(scheduled - taken, 0)
+
+    for visit in mongo.db.vet_visits.find(query):
+        if visit.get("status") in ("completed", "cancelled") or visit.get("completedAt"):
+            continue
+        if local_date(visit.get("appointmentDate")) == today:
+            counts["vetVisits"] += 1
+
+    for vaccination in mongo.db.vaccinations.find(query):
+        if vaccination.get("status") in ("completed", "cancelled") or vaccination.get("completedAt"):
+            continue
+        if local_date(vaccination.get("dueDate")) == today:
+            counts["vaccinations"] += 1
+
+    return jsonify({"date": today.isoformat(), "counts": counts})
+
+
 @pets_bp.get("/pets/<pet_id>")
 def get_pet(pet_id):
     pet = get_pet_or_404(pet_id)
@@ -142,7 +208,7 @@ def delete_pet(pet_id):
         return error("Pet not found", 404)
 
     object_id = ObjectId(pet_id)
-    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags"):
+    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations"):
         mongo.db[collection].delete_many({"petId": object_id})
 
     return "", 204
@@ -215,6 +281,26 @@ def list_reminders(pet_id):
 @pets_bp.post("/pets/<pet_id>/reminders")
 def create_reminder(pet_id):
     return create_collection_item("reminders", pet_id, REMINDER_FIELDS)
+
+
+@pets_bp.patch("/reminders/<reminder_id>")
+def update_reminder(reminder_id):
+    if not validate_object_id(reminder_id):
+        return error("Reminder not found", 404)
+
+    update = pick(json_body(), REMINDER_FIELDS)
+    if not update:
+        return error("No valid reminder fields supplied")
+
+    update["updatedAt"] = utc_now()
+    result = mongo.db.reminders.update_one(
+        {"_id": ObjectId(reminder_id), "userId": current_user_id()},
+        {"$set": update},
+    )
+    if result.matched_count == 0:
+        return error("Reminder not found", 404)
+
+    return jsonify(serialize_doc(mongo.db.reminders.find_one({"_id": ObjectId(reminder_id)})))
 
 
 @pets_bp.get("/pets/<pet_id>/symptoms")

@@ -1,5 +1,7 @@
 from bson import ObjectId
 from flask import Blueprint, send_file, jsonify
+from pymongo.errors import PyMongoError
+from werkzeug.utils import secure_filename
 
 from database import mongo
 from services.pdf_report import build_pet_report
@@ -15,11 +17,12 @@ def _not_found():
 
 @reports_bp.get("/pets/<pet_id>/report.pdf")
 def pet_report_pdf(pet_id):
+    user_id = current_user_id()
     if not validate_object_id(pet_id):
         return _not_found()
 
     object_id = ObjectId(pet_id)
-    pet = mongo.db.pets.find_one({"_id": object_id, "userId": current_user_id()})
+    pet = mongo.db.pets.find_one({"_id": object_id, "userId": user_id})
     if pet is None:
         return _not_found()
 
@@ -32,7 +35,15 @@ def pet_report_pdf(pet_id):
         mongo.db.symptoms.find(query).sort("recordedAt", -1),
         mongo.db.weight_entries.find(query).sort("recordedAt", -1),
         mongo.db.predictive_flags.find(query).sort("createdAt", -1),
+        vaccinations=mongo.db.vaccinations.find(query).sort("dueDate", -1),
     )
 
-    filename = f"{pet.get('name', 'pet')}-health-report.pdf".replace(" ", "-").lower()
-    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=filename)
+    name = secure_filename(str(pet.get("name") or "pet"))[:80] or "pet"
+    response = send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"{name.lower()}-health-report.pdf")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@reports_bp.errorhandler(PyMongoError)
+def database_error(exc):
+    return jsonify({"error": "Could not load report records. Please try again."}), 503
