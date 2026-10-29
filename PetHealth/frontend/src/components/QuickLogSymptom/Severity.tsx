@@ -80,8 +80,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#fff',
-        borderRadius:10,
-        borderWidth: 1,
     },
 
     //Inactive Text Style - Segment Control Button not Selected!
