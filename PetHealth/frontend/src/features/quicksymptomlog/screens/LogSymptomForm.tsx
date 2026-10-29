@@ -98,7 +98,7 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
 
             {/*2. Category selector () */}    
             <View style={styles.Category_style}>
-            <Text style={styles.Category_title}>Category</Text>
+            <Text style={styles.section_Headiing}>Category</Text>
             <SelectCategory
                 category_option={CategoryOptions}
                 value={category}
@@ -118,7 +118,7 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
               />
 
             {/*4. Severity (select from options) - Segment Control Button */}
-            <Text>Severity</Text>
+            <Text style={styles.section_Headiing}>Severity</Text>
             <SeveritySegmentButton
             options={[
                 {label: 'Mild', value: 'Mild'},
@@ -131,7 +131,7 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
 
             {/*5. Duration dropdown */}
             <View style={styles.Duration_style}>
-                <Text>Duration</Text>
+                <Text style={styles.section_Headiing} >Duration</Text>
                 <PetDurationDropdownmenu
                     duration={duration}
                     onDurationChange={setDuration}
@@ -149,6 +149,14 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
 
 //Styles Sheet 
 const styles = StyleSheet.create({
+
+    //Consistent Heading for all sections
+    section_Headiing: {
+        fontSize: 18, 
+        fontWeight: '700',
+        color: '#000',
+        marginBottom: 8,
+    },
 
     //Duration style
     Duration_style:{
@@ -178,7 +186,8 @@ const styles = StyleSheet.create({
     },
 
     Pet:{
-        marginBottom: 16,
+        marginTop: 20,
+        marginBottom: 18,
     },
 
     title: {
