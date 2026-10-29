@@ -249,7 +249,7 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
               accessibilityState={{ disabled: !canNavigate(action.screen) }}
               disabled={!canNavigate(action.screen)}
               style={[styles.action, !canNavigate(action.screen) && styles.unavailable]}
-              onPress={() => onNavigate(action.screen)}
+              onPress={() => onNavigate(action.screen, pets.length === 1 ? pets[0].id : undefined)}
             >
               <View style={[styles.iconCircle, { backgroundColor: action.tint }]}>{action.icon}</View>
               <Text style={styles.actionLabel}>{action.label}</Text>

@@ -10,6 +10,7 @@ from pypdf import PdfReader
 from pymongo.errors import PyMongoError
 
 from routes import reports as reports_route
+from routes import pets as pets_route
 from services.pdf_report import build_pet_report
 from utils import auth as auth_utils
 
@@ -31,12 +32,26 @@ class FakeCollection:
         self.queries.append(query)
         return FakeCursor(doc for doc in self.documents if all(doc.get(key) == value for key, value in query.items()))
 
+    def delete_one(self, query):
+        document = self.find_one(query)
+        if document is not None:
+            self.documents.remove(document)
+        return SimpleNamespace(deleted_count=int(document is not None))
+
+    def delete_many(self, query):
+        self.documents = [doc for doc in self.documents if not all(doc.get(key) == value for key, value in query.items())]
+
+
+class FakeDatabase(SimpleNamespace):
+    def __getitem__(self, name):
+        return getattr(self, name)
+
 
 @pytest.fixture
 def report_setup(monkeypatch):
     pet_id = ObjectId()
     other_id = ObjectId()
-    db = SimpleNamespace(pets=FakeCollection([{
+    db = FakeDatabase(pets=FakeCollection([{
         "_id": pet_id, "userId": "owner", "name": "Bella", "species": "Dog",
         "age": 0, "weightKg": 0, "spayedNeutered": False,
     }]), auth_credentials=FakeCollection())
@@ -53,10 +68,12 @@ def report_setup(monkeypatch):
             {"petId": pet_id, **content}, {"petId": other_id, "name": "PRIVATE OTHER PET"},
         ]))
     monkeypatch.setattr(reports_route, "mongo", SimpleNamespace(db=db))
+    monkeypatch.setattr(pets_route, "mongo", SimpleNamespace(db=db))
     monkeypatch.setattr(auth_utils, "mongo", SimpleNamespace(db=db))
     app = Flask(__name__)
     app.config.update(JWT_SECRET="test-secret", JWT_ISSUER="pet-health")
     app.register_blueprint(reports_route.reports_bp)
+    app.register_blueprint(pets_route.pets_bp)
 
     def headers(user_id="owner", expired=False):
         now = datetime.now(timezone.utc)
@@ -113,6 +130,24 @@ def test_report_database_failure_is_retryable(report_setup, monkeypatch):
     response = client.get(f"/api/pets/{pet_id}/report.pdf", headers=headers())
     assert response.status_code == 503
     assert "private database details" not in response.json["error"]
+
+
+def test_deleting_pet_removes_its_report_records_and_keeps_other_pet_records(report_setup):
+    client, db, pet_id, headers = report_setup
+    assert client.delete(f"/api/pets/{pet_id}", headers=headers()).status_code == 204
+    assert client.get(f"/api/pets/{pet_id}/report.pdf", headers=headers()).status_code == 404
+    for name in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations"):
+        assert len(db[name].documents) == 1
+        assert db[name].documents[0]["petId"] != pet_id
+
+
+@pytest.mark.parametrize("user_id,status", [(None, 401), ("another-user", 404)])
+def test_pet_deletion_rejects_missing_session_or_another_owner(report_setup, user_id, status):
+    client, db, pet_id, headers = report_setup
+    response = client.delete(f"/api/pets/{pet_id}", headers=headers(user_id) if user_id else {})
+    assert response.status_code == status
+    assert len(db.pets.documents) == 1
+    assert len(db.vaccinations.documents) == 2
 
 
 def test_long_report_wraps_all_records_and_escapes_user_text():

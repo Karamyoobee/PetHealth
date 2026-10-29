@@ -9,11 +9,13 @@ import type { Pet, VetVisit } from "../../types";
 type Props = {
   onBack?: () => void;
   onScheduleVisit?: () => void;
+  petId?: string | null;
+  onSelectPet?: (petId: string) => void;
 };
 
-export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
+export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [visits, setVisits] = useState<VetVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
       setPets(savedPets);
       const nextPetId = selectedPetId || savedPets[0]?.id || "";
       setSelectedPetId(nextPetId);
+      if (nextPetId) onSelectPet?.(nextPetId);
 
       if (!nextPetId) {
         setVisits([]);
@@ -39,7 +42,7 @@ export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [selectedPetId]);
+  }, [selectedPetId, onSelectPet]);
 
   const loadVisits = useCallback(async (petId: string) => {
     setLoading(true);
@@ -59,6 +62,7 @@ export function VetVisitForm({ onBack, onScheduleVisit }: Props) {
 
   const selectPet = (petId: string) => {
     setSelectedPetId(petId);
+    onSelectPet?.(petId);
     loadVisits(petId);
   };
 

@@ -9,7 +9,8 @@ import type { Pet } from "../../types";
 
 type Props = {
   onBack?: () => void;
-  onSubmit?: () => void;
+  onSubmit?: (petId: string) => void;
+  petId?: string | null;
 };
 
 const frequencyOptions = ["Once a day", "Twice a day", "Three times a day"];
@@ -41,9 +42,9 @@ function parseClockTime(time: string) {
   return { hour, minute: rawMinute ?? "00", period };
 }
 
-export function AddMedicationScreen({ onBack, onSubmit }: Props) {
+export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [dosage, setDosage] = useState("");
@@ -143,7 +144,7 @@ export function AddMedicationScreen({ onBack, onSubmit }: Props) {
         });
       }
 
-      onSubmit?.();
+      onSubmit?.(selectedPetId);
     } catch (error) {
       Alert.alert("Could not save medication", error instanceof Error ? error.message : "Please try again.");
     } finally {

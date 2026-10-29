@@ -132,7 +132,17 @@ def auth_setup(monkeypatch):
     return app, app.test_client(), db, emails, user
 
 
-PASSWORD = "a separate pet health password"
+PASSWORD = "a separate pet health password!"
+
+
+@pytest.mark.parametrize("password", ["!", "a@", "a" * 256 + "#", "a long passphrase with spaces$", "under_score"])
+def test_password_policy_accepts_special_characters_without_length_limits(password):
+    assert auth_route.valid_password(password)
+
+
+@pytest.mark.parametrize("password", [None, 123, "", "   ", "lettersOnly", "1234567890", "a" * 256, "letters with spaces", "\t\n"])
+def test_password_policy_rejects_passwords_without_special_characters(password):
+    assert not auth_route.valid_password(password)
 
 
 def request_code(client, email="owner@example.com"):
@@ -444,7 +454,7 @@ def test_manual_account_can_reset_existing_password(auth_setup):
     assert verified.status_code == 200
     old_token = verified.json["token"]
     challenge_id = request_code(client, "new@example.com")
-    new_password = "my replacement pet health password"
+    new_password = "my replacement pet health password!"
     assert save_password(client, "new@example.com", challenge_id, emails[-1][1], new_password).status_code == 200
     assert client.get("/protected", headers={"Authorization": f"Bearer {old_token}"}).status_code == 401
     assert client.post("/api/auth/password/login", json={"email": "new@example.com", "password": PASSWORD}).status_code == 401
@@ -459,6 +469,30 @@ def test_registration_requires_email_sender_and_valid_password(auth_setup):
     assert register_code(client).status_code == 503
     assert db.pending_registrations.documents == []
     assert emails == []
+
+
+@pytest.mark.parametrize("password", ["a!", "a" * 256 + "#"])
+def test_registration_and_login_accept_short_and_long_passwords_with_symbols(auth_setup, password):
+    _, client, _, emails, _ = auth_setup
+    response = register_code(client, password=password)
+    assert response.status_code == 200
+    assert verify_code(client, response.json["challengeId"], emails[0][1]).status_code == 200
+    assert client.post("/api/auth/password/login", json={"email": "new@example.com", "password": password}).status_code == 200
+
+
+@pytest.mark.parametrize("password", ["a!", "a" * 256 + "#"])
+def test_password_reset_accepts_short_and_long_passwords_with_symbols(auth_setup, password):
+    _, client, _, emails, _ = auth_setup
+    challenge_id = request_code(client)
+    assert save_password(client, "owner@example.com", challenge_id, emails[0][1], password).status_code == 200
+    assert client.post("/api/auth/password/login", json={"email": "owner@example.com", "password": password}).status_code == 200
+
+
+def test_existing_password_without_special_characters_still_allows_login(auth_setup):
+    _, client, db, _, _ = auth_setup
+    password = "an existing password without symbols"
+    db.auth_credentials.documents[0]["passwordHash"] = auth_route.generate_password_hash(password, method=auth_route.PASSWORD_HASH_METHOD)
+    assert client.post("/api/auth/password/login", json={"email": "owner@example.com", "password": password}).status_code == 200
 
 
 def test_google_does_not_duplicate_manual_account(auth_setup, monkeypatch):

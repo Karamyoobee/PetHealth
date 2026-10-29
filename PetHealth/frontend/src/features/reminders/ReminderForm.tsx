@@ -9,6 +9,7 @@ import type { Pet, Reminder } from "../../types";
 
 type Props = {
   onBack?: () => void;
+  onNavigate?: (screen: "home" | "pets" | "assistant" | "timeline" | "reminders") => void;
 };
 
 function nowIso() {
@@ -42,7 +43,7 @@ function reminderAccent(type: Reminder["type"]) {
   return "#238575";
 }
 
-export function ReminderForm({ onBack }: Props) {
+export function ReminderForm({ onBack, onNavigate }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -187,7 +188,14 @@ export function ReminderForm({ onBack }: Props) {
         ) : null}
       </ScrollView>
 
-      <BottomNavBar active="alerts" onHomePress={onBack} />
+      <BottomNavBar
+        active="alerts"
+        onHomePress={onBack}
+        onPetsPress={() => onNavigate?.("pets")}
+        onActionPress={() => onNavigate?.("assistant")}
+        onTimelinePress={() => onNavigate?.("timeline")}
+        onAlertsPress={() => onNavigate?.("reminders")}
+      />
     </View>
   );
 }

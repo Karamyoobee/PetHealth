@@ -11,6 +11,12 @@ import type { AuthSession } from "../../types";
 WebBrowser.maybeCompleteAuthSession();
 
 type AuthMode = "welcome" | "signin" | "register";
+const passwordRequirement = "Include at least one special character, such as @, #, $ or !.";
+
+function hasSpecialCharacter(password: string) {
+  const specialCharacters = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~";
+  return Array.from(password).some((character) => specialCharacters.includes(character));
+}
 
 type Props = {
   mode: AuthMode;
@@ -170,8 +176,8 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
         setError("Enter your name and email address.");
         return;
       }
-      if (password.length < 15 || password.length > 128 || !password.trim()) {
-        setError("Use a password between 15 and 128 characters.");
+      if (!hasSpecialCharacter(password)) {
+        setError(passwordRequirement);
         return;
       }
       if (password !== confirmPassword) {
@@ -281,10 +287,10 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="new-password"
-              maxLength={128}
-              placeholder="At least 15 characters"
+              placeholder="Create a password"
               placeholderTextColor="#66716D"
             />
+            {!hasSpecialCharacter(password) ? <Text accessibilityLiveRegion="polite" style={styles.messageText}>{passwordRequirement}</Text> : null}
             <Text style={styles.inputLabel}>Confirm password</Text>
             <TextInput
               accessibilityLabel="Confirm password"
@@ -296,7 +302,6 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="new-password"
-              maxLength={128}
               placeholder="Repeat your password"
               placeholderTextColor="#66716D"
             />
@@ -371,8 +376,8 @@ function SignInScreen({ busy, error, googleDisabled, onGooglePress, onModeChange
         setFormError("Enter the eight-digit code from your email.");
         return;
       }
-      if (password.length < 15 || password.length > 128 || !password.trim()) {
-        setFormError("Use a password between 15 and 128 characters.");
+      if (!hasSpecialCharacter(password)) {
+        setFormError(passwordRequirement);
         return;
       }
       if (password !== confirmPassword) {
@@ -461,10 +466,10 @@ function SignInScreen({ busy, error, googleDisabled, onGooglePress, onModeChange
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete={step === "reset" ? "new-password" : "current-password"}
-              maxLength={128}
-              placeholder={step === "reset" ? "At least 15 characters" : "Pet Health password"}
+              placeholder={step === "reset" ? "Create a new password" : "Pet Health password"}
               placeholderTextColor="#66716D"
             />
+            {step === "reset" && !hasSpecialCharacter(password) ? <Text accessibilityLiveRegion="polite" style={styles.messageText}>{passwordRequirement}</Text> : null}
           </>
         ) : null}
         {step === "reset" ? (
@@ -480,7 +485,6 @@ function SignInScreen({ busy, error, googleDisabled, onGooglePress, onModeChange
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="new-password"
-              maxLength={128}
               placeholder="Repeat new password"
               placeholderTextColor="#66716D"
             />

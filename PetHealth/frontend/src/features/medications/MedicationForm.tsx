@@ -9,11 +9,13 @@ import type { Medication, Pet } from "../../types";
 type Props = {
   onBack?: () => void;
   onAddMedication?: () => void;
+  petId?: string | null;
+  onSelectPet?: (petId: string) => void;
 };
 
-export function MedicationForm({ onBack, onAddMedication }: Props) {
+export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export function MedicationForm({ onBack, onAddMedication }: Props) {
       setPets(savedPets);
       const nextPetId = selectedPetId || savedPets[0]?.id || "";
       setSelectedPetId(nextPetId);
+      if (nextPetId) onSelectPet?.(nextPetId);
 
       if (!nextPetId) {
         setMedications([]);
@@ -38,7 +41,7 @@ export function MedicationForm({ onBack, onAddMedication }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [selectedPetId]);
+  }, [selectedPetId, onSelectPet]);
 
   const loadMedications = useCallback(async (petId: string) => {
     setLoading(true);
@@ -58,6 +61,7 @@ export function MedicationForm({ onBack, onAddMedication }: Props) {
 
   const selectPet = (petId: string) => {
     setSelectedPetId(petId);
+    onSelectPet?.(petId);
     loadMedications(petId);
   };
 

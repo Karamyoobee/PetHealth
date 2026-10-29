@@ -53,5 +53,6 @@ const styles = StyleSheet.create({
         position:'absolute',
         width: '100%',
         textAlign: 'center',
+        pointerEvents: 'none',
     }
 });

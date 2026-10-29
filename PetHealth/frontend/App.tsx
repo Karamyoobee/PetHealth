@@ -35,6 +35,7 @@ import LogWeight from "./src/features/Weightlog/screens/Newweight";
 import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
 import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
 import PredictiveFlagging from "./src/features/Predictiveflagengine/screens/PredictiveFlag";
+import Timeline from "./src/components/Timeline/timeline_view";
 
 type ScreenKey =
   | "home"
@@ -52,12 +53,14 @@ type ScreenKey =
 
 type AuthMode = "welcome" | "signin" | "register";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "medications", "vetVisits", "assistant", "reminders", "reports"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "reports"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
+  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard">("petProfile");
+  const [recordReturnScreen, setRecordReturnScreen] = useState<"home" | "petProfile">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -69,6 +72,23 @@ export default function App() {
 
   const navigateHome = (screen: HomeDestination | "home", petId?: string) => {
     if (screen === "home" || availableHomeScreens.includes(screen)) {
+      setPetSelectionDestination("petProfile");
+      setRecordReturnScreen("home");
+      if (screen === "symptoms") {
+        setSelectedPetId(petId ?? null);
+        setActiveScreen("quickLog");
+        return;
+      }
+      if (screen === "weights") {
+        if (petId) {
+          setSelectedPetId(petId);
+          setActiveScreen("weightDashboard");
+        } else {
+          setPetSelectionDestination("weightDashboard");
+          setActiveScreen("pets");
+        }
+        return;
+      }
       if (screen === "pets" && petId) {
         setSelectedPetId(petId);
         setActiveScreen("petProfile");
@@ -77,8 +97,16 @@ export default function App() {
       if (screen === "addPet") {
         setAddPetReturnScreen("home");
       }
+      if (screen === "vetVisits" || screen === "medications") {
+        setSelectedPetId(petId ?? null);
+      }
       setActiveScreen(screen);
     }
+  };
+
+  const openPetRecords = (screen: ScreenKey) => {
+    setRecordReturnScreen("petProfile");
+    setActiveScreen(screen);
   };
 
   useEffect(() => {
@@ -98,18 +126,18 @@ export default function App() {
       } else if (activeScreen === "updatePet") {
         setActiveScreen("petProfile");
       } else if (activeScreen === "quickLog") {
-        setActiveScreen("mylogSymptom");
+        setActiveScreen(recordReturnScreen);
       } else if (activeScreen === "weightLog") {
         setActiveScreen("weightDashboard");
-      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging"].includes(activeScreen)) {
-        setActiveScreen("petProfile");
+      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging", "vetVisits", "medications"].includes(activeScreen)) {
+        setActiveScreen(recordReturnScreen);
       } else {
         setActiveScreen("home");
       }
       return true;
     });
     return () => subscription.remove();
-  }, [activeScreen, addPetReturnScreen, currentUser]);
+  }, [activeScreen, addPetReturnScreen, currentUser, recordReturnScreen]);
 
   useEffect(() => {
     let mounted = true;
@@ -267,7 +295,8 @@ export default function App() {
           onBack={() => setActiveScreen("home")}
           onSelectPet={(petId) => {
             setSelectedPetId(petId);
-            setActiveScreen("petProfile");
+            setActiveScreen(petSelectionDestination);
+            setPetSelectionDestination("petProfile");
           }}
           onAddNewPet={() => {
             setAddPetReturnScreen("pets");
@@ -285,9 +314,15 @@ export default function App() {
           petId={selectedPetId}
           onBack={() => setActiveScreen("pets")}
           onUpdate={() => setActiveScreen("updatePet")}
-          onQuickLog={() => setActiveScreen("quickLog")}
-          onWeightLog={() => setActiveScreen("weightDashboard")}
-          onPredictiveFlag={() => setActiveScreen("predictiveFlagging")}
+          onQuickLog={() => openPetRecords("quickLog")}
+          onWeightLog={() => openPetRecords("weightDashboard")}
+          onPredictiveFlag={() => openPetRecords("predictiveFlagging")}
+          onVetVisits={() => openPetRecords("vetVisits")}
+          onMedications={() => openPetRecords("medications")}
+          onDeleted={() => {
+            setSelectedPetId(null);
+            setActiveScreen("pets");
+          }}
           onNavigate={navigateHome}
         />
       ) : activeScreen === "updatePet" ? (
@@ -296,40 +331,62 @@ export default function App() {
         <HealthAssistantScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "vetVisits" ? (
         <VetVisitForm
-          onBack={() => setActiveScreen("home")}
+          petId={selectedPetId}
+          onSelectPet={setSelectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
           onScheduleVisit={() => setActiveScreen("scheduleVisit")}
         />
       ) : activeScreen === "scheduleVisit" ? (
         <ScheduleVisitScreen
+          petId={selectedPetId}
           onBack={() => setActiveScreen("vetVisits")}
-          onSubmit={() => setActiveScreen("vetVisits")}
+          onSubmit={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("vetVisits");
+          }}
         />
       ) : activeScreen === "medications" ? (
         <MedicationForm
-          onBack={() => setActiveScreen("home")}
+          petId={selectedPetId}
+          onSelectPet={setSelectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
           onAddMedication={() => setActiveScreen("addMedication")}
         />
       ) : activeScreen === "addMedication" ? (
         <AddMedicationScreen
+          petId={selectedPetId}
           onBack={() => setActiveScreen("medications")}
-          onSubmit={() => setActiveScreen("medications")}
+          onSubmit={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("medications");
+          }}
         />
       ) : activeScreen === "reminders" ? (
-        <ReminderForm onBack={() => setActiveScreen("home")} />
+        <ReminderForm onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
+      ) : activeScreen === "timeline" ? (
+        <Timeline onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "quickLog" ? (
-        <LogSymptom petId={selectedPetId} onBack={() => setActiveScreen("mylogSymptom")} />
+        <LogSymptom
+          petId={selectedPetId}
+          onBack={() => setActiveScreen(recordReturnScreen)}
+          onSaved={(petId) => {
+            setSelectedPetId(petId);
+            setActiveScreen("mylogSymptom");
+          }}
+        />
       ) : activeScreen === "weightLog" ? (
         <LogWeight petId={selectedPetId} onBack={() => setActiveScreen("weightDashboard")} />
       ) : activeScreen === "weightDashboard" ? (
         <WeightDashboard
           petId={selectedPetId}
-          onBack={() => setActiveScreen("petProfile")}
+          onBack={() => setActiveScreen(recordReturnScreen)}
           onLogNew={() => setActiveScreen("weightLog")}
+          onNavigate={navigateHome}
         />
       ) : activeScreen === "mylogSymptom" ? (
-        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
+        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} />
       ) : activeScreen === "predictiveFlagging" ? (
         <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : null}

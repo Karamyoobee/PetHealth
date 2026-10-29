@@ -20,6 +20,7 @@ from utils.mongo import serialize_doc
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 PASSWORD_HASH_METHOD = "scrypt:131072:8:1"
+SPECIAL_CHARACTERS = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~"
 DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32), method=PASSWORD_HASH_METHOD)
 RESET_MESSAGE = "If this email belongs to a verified Pet Health account with a password, a reset code will be sent."
 REGISTRATION_MESSAGE = "A verification code will be sent to your email. Check your inbox and Spam folder."
@@ -77,7 +78,7 @@ def existing_email(email):
 
 
 def valid_password(password):
-    return isinstance(password, str) and 15 <= len(password) <= 128 and not password.isspace()
+    return isinstance(password, str) and any(character in SPECIAL_CHARACTERS for character in password)
 
 
 @auth_bp.post("/register/request-code")
@@ -89,7 +90,7 @@ def request_registration_code():
     if not email or not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
         return jsonify({"error": "Enter a name and valid email address"}), 400
     if not valid_password(password):
-        return jsonify({"error": "Use a password between 15 and 128 characters"}), 400
+        return jsonify({"error": "Include at least one special character in your password, such as @, #, $ or !."}), 400
     if rate_limited("register-ip", request.remote_addr or "unknown", 30) or rate_limited("register-email", email, 3):
         return jsonify({"error": "Too many code requests. Please try again in 15 minutes."}), 429
     if existing_email(email):
@@ -250,7 +251,7 @@ def password_login():
     body = json_body()
     email = normalized_email(body.get("email"))
     password = body.get("password")
-    if not email or not isinstance(password, str) or not 1 <= len(password) <= 128:
+    if not email or not isinstance(password, str) or not password:
         return jsonify({"error": "Enter a valid email and password"}), 400
     if rate_limited("login-ip", request.remote_addr or "unknown", 60) or rate_limited("login-email", email, 10):
         return jsonify({"error": "Too many sign-in attempts. Please try again in 15 minutes."}), 429
@@ -306,7 +307,7 @@ def reset_password():
     if not email or not isinstance(code, str) or not re.fullmatch(r"\d{8}", code) or not isinstance(challenge_id, str) or not 1 <= len(challenge_id) <= 100:
         return jsonify({"error": "Enter the email and eight-digit code from your password email"}), 400
     if not valid_password(password):
-        return jsonify({"error": "Use a password between 15 and 128 characters"}), 400
+        return jsonify({"error": "Include at least one special character in your password, such as @, #, $ or !."}), 400
     if rate_limited("reset-verify-ip", request.remote_addr or "unknown", 60):
         return jsonify({"error": "Too many attempts. Please try again in 15 minutes."}), 429
 

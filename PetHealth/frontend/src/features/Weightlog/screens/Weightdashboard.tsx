@@ -34,10 +34,11 @@ type WeightDashboardProps = {
   onBack: () => void;
   onLogNew: () => void;
   petId: string | null;
+  onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }; 
 
 //Function - Log Weight
-export default function WeightDashboard({onBack, onLogNew, petId}:WeightDashboardProps){
+export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:WeightDashboardProps){
     const [unit, setUnit] = useState<Unit>('kg');
     const [weightentries, setWeightEntries] = useState<WeightEntry[]>([]);
 
@@ -127,7 +128,13 @@ export default function WeightDashboard({onBack, onLogNew, petId}:WeightDashboar
 
             {/*Navigation Tab Bar*/}
             
-            <BottomNavBar/>
+            <BottomNavBar
+                onHomePress={() => onNavigate?.('home')}
+                onPetsPress={() => onNavigate?.('pets')}
+                onActionPress={() => onNavigate?.('assistant')}
+                onTimelinePress={() => onNavigate?.('timeline')}
+                onAlertsPress={() => onNavigate?.('reminders')}
+            />
         </View>
 
     );

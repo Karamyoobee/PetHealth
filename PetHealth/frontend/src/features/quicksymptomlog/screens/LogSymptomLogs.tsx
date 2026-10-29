@@ -10,9 +10,10 @@ import { api } from "../../../api/client";
 type MySymptomlog={
     onBack: () => void;
     petId: string | null;
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
-export default function MyLogSymptom({onBack, petId}: MySymptomlog){
+export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
 
     //Use States Declared
     const [logs, setLogs] = useState<Symptom[]>([]);
@@ -110,7 +111,13 @@ export default function MyLogSymptom({onBack, petId}: MySymptomlog){
             </ScrollView>
 
 
-            <BottomNavBar/>
+            <BottomNavBar
+                onHomePress={() => onNavigate?.('home')}
+                onPetsPress={() => onNavigate?.('pets')}
+                onActionPress={() => onNavigate?.('assistant')}
+                onTimelinePress={() => onNavigate?.('timeline')}
+                onAlertsPress={() => onNavigate?.('reminders')}
+            />
         </View>
     )
 }

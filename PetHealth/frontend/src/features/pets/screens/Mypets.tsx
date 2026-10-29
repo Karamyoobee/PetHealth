@@ -14,7 +14,7 @@ type MyPetsScreenProps = {
     onBack: () => void;
     onSelectPet: (id: string) => void;
     onAddNewPet: () => void;
-    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders') => void;
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
 //Function for Backend 
@@ -76,6 +76,7 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
                     onPetsPress={() => onNavigate?.('pets')}
                     onActionPress={() => onNavigate?.('assistant')}
                     onAlertsPress={() => onNavigate?.('reminders')}
+                    onTimelinePress={() => onNavigate?.('timeline')}
                 />
             </View>   
  

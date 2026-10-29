@@ -208,7 +208,7 @@ def delete_pet(pet_id):
         return error("Pet not found", 404)
 
     object_id = ObjectId(pet_id)
-    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags"):
+    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations"):
         mongo.db[collection].delete_many({"petId": object_id})
 
     return "", 204
