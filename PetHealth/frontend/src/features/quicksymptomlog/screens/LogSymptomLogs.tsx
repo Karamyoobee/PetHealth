@@ -13,12 +13,7 @@ type MySymptomlog={
     onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
-<<<<<<< HEAD
-//Reusable Component function for My Log Symptom
-export default function MyLogSymptom({onBack, petId}: MySymptomlog){
-=======
 export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
->>>>>>> a34ab36dd84535624f0348e0830277b1088e8933
 
     //Use States Declared
     const [logs, setLogs] = useState<Symptom[]>([]);//Symptom Logs
