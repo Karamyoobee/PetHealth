@@ -34,6 +34,7 @@ import LogWeight from "./src/features/Weightlog/screens/Newweight";
 import WeightDashboard from "./src/features/Weightlog/screens/Weightdashboard";
 import MyLogSymptom from "./src/features/quicksymptomlog/screens/LogSymptomLogs";
 import PredictiveFlagging from "./src/features/Predictiveflagengine/screens/PredictiveFlag";
+import Timeline from "./src/components/Timeline/timeline_view";
 
 type ScreenKey =
   | "home"
@@ -52,7 +53,8 @@ type ScreenKey =
   | "weightLog"
   | "weightDashboard"
   | "mylogSymptom"
-  | "predictiveFlagging";
+  | "predictiveFlagging"
+  | "timeline";
 
 type AuthMode = "welcome" | "signup" | "signin";
 
@@ -69,6 +71,7 @@ const screens: { key: ScreenKey; label: string }[] = [
   { key: "reminders", label: "Reminders" },
   { key: "reports", label: "Reports" },
   { key: "pets", label: "Add Pet"},
+  { key: "timeline", label: 'Timeline'},
 ];
 
 export default function App() {
@@ -258,7 +261,13 @@ export default function App() {
           onBack={() => setActiveScreen('petProfile')}
           petId={selectedPetId}
         />
-      ) :null
+      ) : activeScreen == 'timeline' ? (
+        <Timeline 
+        onBack={() => setActiveScreen('home')}
+        onHomePress={() => setActiveScreen('home')}
+        onPetsPress={() => setActiveScreen('myPets')}
+        />
+      ):null
       }
 
     </SafeAreaView>

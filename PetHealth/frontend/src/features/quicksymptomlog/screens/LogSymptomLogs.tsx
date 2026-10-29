@@ -6,21 +6,19 @@ import BottomNavBar from "../../HomeScreen/components/TabBar";
 import { Symptom, Pet } from "../../../types";
 import { api } from "../../../api/client";
 
-
+//Symptom Log Type
 type MySymptomlog={
     onBack: () => void;
     petId: string | null;
 }
 
+//Reusable Component function for My Log Symptom
 export default function MyLogSymptom({onBack, petId}: MySymptomlog){
 
     //Use States Declared
-    const [logs, setLogs] = useState<Symptom[]>([]);
+    const [logs, setLogs] = useState<Symptom[]>([]);//Symptom Logs
     const [loading, setLoading] = useState(true);//Show Backend Logs
-    const [pet, setPet] = useState<Pet | null>(null);
-
-    //Check if Pet ID is showing...
-    console.log("My Log Symptom petId: ", petId);
+    const [pet, setPet] = useState<Pet | null>(null);//Pet State
 
     //UseEffect
     //Screen First opened by User
@@ -35,15 +33,17 @@ export default function MyLogSymptom({onBack, petId}: MySymptomlog){
         
     },[petId]);//only show when petId changes
 
+    //s
     useEffect(() => {
-        if(!petId) return;
-        api.listPets()
+        if(!petId) return;//If their is no pet that has been returned
+        api.listPets()//api connection for pet list 
             .then(pets => setPet(pets.find(p => p.id === petId) ?? null))
-            .catch(console.error);
+            .catch(console.error);//Error 
     }, [petId]);
 
+    //Sort Logs by Date ()
     const sortedLogs = [...logs].sort(
-        (a,b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+        (a,b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()//Display logs by recorded time and based on real time
     );
 
     return(
@@ -82,7 +82,7 @@ export default function MyLogSymptom({onBack, petId}: MySymptomlog){
             {/* Pet Profile Card - Number of Symptom Logs*/}
             <View style={styles.right_content}>
                 <Text style={styles.totallogs_label}>Total Logs:</Text>
-                <Text style={styles.totallogs_value}>{logs.length}recorded</Text>
+                <Text style={styles.totallogs_value}>{logs.length} recorded</Text>
             </View>
 
             </View>
@@ -94,15 +94,15 @@ export default function MyLogSymptom({onBack, petId}: MySymptomlog){
                 {!loading && logs.length === 0 && <Text>No symptoms logged yet.</Text>}
 
                         {/*Mapping*/}
-            {logs.map((log) =>(
+            {sortedLogs.map((log) =>(
                 <DetailCardSymptomLog 
                     key={log.id}
                     symptom={log.name}
                     note={log.notes}
-                    loggedAt={new Date(log.recordedAt).toLocaleDateString()}//ISO string -> store actual real data
+                    loggedAt={`${new Date(log.recordedAt).toLocaleDateString('en-NZ', {day: 'numeric', month:'short', year:'numeric'})} • ${new Date(log.recordedAt).toLocaleTimeString('en-NZ',{hour:'2-digit', minute:'2-digit'})}`} //ISO string -> store actual real data
                     severity={log.severity}
-                    durationDays={log.durationDays}
-                    category={log.category}
+                    durationDays={log.durationDays ?? parseInt(log.notes?.match(/Duration:\s*(\d+)/)?.[1]??'0')}
+                    category={(log.category ?? log.name) as any}
                 />
             )
         )}
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     pet_name:{
         fontSize: 16,
         fontWeight:'700',
-        backgroundColor: '#000',    
     },
 
     //Status Pill Container Style
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
         width: 6, 
         height: 6, 
         borderRadius:3,
-        color: '#2F7D5B',
+        backgroundColor: '#2F7D5B',
     },
 
     //Pet Data

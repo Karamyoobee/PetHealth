@@ -34,7 +34,7 @@ export default function PhotoHeader({photoUri, onBack, onDelete }: PhotoProps) {
 
         {/*Delete Icon */}
         <Pressable style={[styles.button, styles.right]} onPress={onDelete}>
-           <Entypo name="dots-three-vertical" size={24} color="black" />        
+          <Feather name="trash-2" size={24} color="red" />        
         </Pressable>
 
  

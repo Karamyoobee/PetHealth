@@ -19,7 +19,7 @@ export default function MainHeader({onBack, title}: headerprops) {
                 <TouchableOpacity onPress={onBack}
                     hitSlop={{top: 12, bottom: 12, left: 12, right:12}}//Control button 
                     style={styles.Backbutton}
-                >   {/*Icon*/}
+                >   
                     <AntDesign name="arrowleft" size={24} color="black" />
                 </TouchableOpacity>                
                 

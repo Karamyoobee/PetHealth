@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {ScrollView, View, Text, StyleSheet, Button } from "react-native";
+import {ScrollView, View, Text, StyleSheet, Button, Pressable, Alert } from "react-native";
 import PetFormField from "../components/PetFormfield";
 import UpdatePetHeader from "../components/updatepetheader";
 import SegmentControl from "../components/segmentcontrol";
@@ -31,6 +31,8 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     const [pet, setPet]  = useState<Pet | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
+    //Delete state
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() =>{
         async function loadPet(){
@@ -47,7 +49,8 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
                   setAge(String(found.age));//Form Age vs Age(database stored))
                   setWeight(String(found.weightKg));//Form Weight vs Weight(database stored))
                   setSpecies(found.species === 'Dog' ? 'dog' : 'cat');//Form Gender vs Gender(database stored))
-                  setStatus(found.spayedNeutered ? 'intact': 'spayed/neutered');//Form Gender vs Gender(database stored))
+                  setStatus(found.spayedNeutered ? 'spayed/neutered': 'intact');//Form Gender vs Gender(database stored))
+                  setPhotoUri(found.photoUri ?? null);
                 }
             }
             catch(e){//Catch Error: Display Error message if failed
@@ -66,6 +69,7 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
 
       const petData = {
         name: petName.trim(),
+        photoUri: photoUri,
         species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
         breed: breed,
         age: Number(age),
@@ -76,7 +80,10 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
 
         if (!petId) return;
 
+
+
         try{
+          console.log('Saving photoUri:', photoUri);
             await api.updatePet(petId, petData);
             setSubmitted(true);
           } catch(error){
@@ -85,6 +92,8 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
 
 
     }
+
+
 
     //Species - Dog or Cat = Segment Options
     const options = [

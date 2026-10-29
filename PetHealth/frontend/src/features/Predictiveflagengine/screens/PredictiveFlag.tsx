@@ -68,9 +68,7 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
 
             {/*Run New Analysis Button*/}
             <View style={styles.footer}>
-                <TouchableOpacity>
                     <NewAnalysis onPress={handleRunAnalysis}/>
-                </TouchableOpacity>
             </View>
         </View>
     )

@@ -1,7 +1,7 @@
 import React from "react";
 import {useState, useEffect} from "react";
 import MainHeader from "./header";
-import {View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import {View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import BottomNavBar from "../../features/HomeScreen/components/TabBar";
 import { api } from "../../api/client";
 import { Pet } from "../../types";
@@ -26,6 +26,40 @@ type TimelineProps = {
     onPetsPress: () => void;
 };
 
+//Function 1: Sort By Date / Month for Timeline View 
+function toSortKey(raw?: string | null): number{
+    const time = raw ? new Date(raw).getTime() : NaN;
+
+    return Number.isNaN(time) ? 0 : time;
+}
+
+//Function 2: Display Date for Cards: 
+function toDisplayDate(raw? : string | null): string{
+    //1. No Date provided at all - missing or empty
+    if (!raw) return 'No Date!';
+
+    //Create Date object from text
+    const date = new Date(raw);
+
+    //if Text does not have a valid date: An Invalid Date's getTime() is NaN.
+    if (Number.isNaN(date.getTime())) return 'No date';
+
+    return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
+
+
+const TYPE_COLORS: Record<EntryType, {stripe: string, pillBg: string, pilltext: string}> = {
+    logged:{stripe:'#1F6F5C', pillBg: '#DDEFE8', pilltext: '#1F6F5C'},
+    visit: {stripe:'#E8A15A', pillBg: '#FCE8D2', pilltext: '#B5651D'},
+    rx: {stripe:'#1F6F5C', pillBg: '#E1E8E4', pilltext: '#4A6258'},
+    note: {stripe:'#E8A15A', pillBg: '#FBDDE0', pilltext: '#B42318'},
+};
+
+const TYPE_LABELS: Record<EntryType, string> = {
+    logged: 'LOGGED', visit: 'VISIT', rx: 'RX', note: 'NOTE',
+};
+
+
 export default function Timeline({onBack, onHomePress, onPetsPress}: TimelineProps){
     
     //Use State 
@@ -38,32 +72,80 @@ export default function Timeline({onBack, onHomePress, onPetsPress}: TimelinePro
     //Chip List: 'All', 'other chips' represeting pets added
     const chips = [{ id: 'all', name: 'All'}, ...pets]
 
+    const [entries, setEntries ] = useState<TimelineEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+
     //Run only 1 time, only when timeline screen opens and (empty [] dependency arrat)
-    useEffect(() => {
-        //Async function included, effect callback cannot be just 'async'
-        async function loadPetaccount(){
-            try{
-                //Search backend to fetch current user's pet list
-                const result = await api.listCurrentUserPets();
-                //only keep pet id and name 
+    async function LoadTimeline(){
+        setLoading(true);
+        setError('');
+
+        try{
+            //Fetch all current user's pet's list
+            const result = await api.listCurrentUserPets();
+             //only keep pet id and name 
                 setPets(result.map(p => ({id: p.id, name: p.name})))
-                
-                //Testing - debugging only (to check the saved logs for the 4 main features below for current pet id)
-                const pet = result[0];
-                console.log('weights', await api.listWeights(pet.id));
-                console.log('visits', await api.listMedications(pet.id));
-                console.log('symptoms', await api.listSymptoms(pet.id))
-                console.log('visits', await api.listVetVisits(pet.id));
 
-                console.log(result);//Debugging log (testing only) - check if pet actually loaded - to be removed!
+                //Display all pets load at 1 time
+            const perPet = await Promise.all(result.map(async (p) => {
 
-            } catch(e){
-                console.log(e);//If the request does fail!, log error
-            }
+            //2 pet lists to load at the same time 
+            //Results return back in the oder as per listed - weight - 1, symptoms - 2
+            const [weights, symptoms] = await Promise.all([
+                api.listWeights(p.id),
+                api.listSymptoms(p.id)
+            ]);
+
+            //Shared details for every entry that belongs to the pet
+            const base = {pet: p.name, petId: p.id};
+
+            //Display Weight Entries 
+            const WeightEntries = weights.map((w): TimelineEntry =>({
+                ...base,
+                id: `logged-${w.id}`,
+                type: 'logged',
+                date: toDisplayDate(w.recordedAt),//Display on Date - text format
+                sortKey: toSortKey(w.recordedAt), //Number used to order all cards
+                title: 'Weight Recorded',
+                subtitle: w.weightKg != null ? `${w.weightKg} kg` : 'No details!',
+            }));
+
+            //Symptom Entries ()
+            const symptomEntries = symptoms.map((s): TimelineEntry =>({
+                ...base,
+                id:`note-${s.id}`,
+                type: 'note',
+                date: toDisplayDate(s.recordedAt),
+                sortKey: toSortKey(s.recordedAt),
+                title:s.name || 'Symptoms',             //Symptom Name
+                subtitle: s.notes || 'No details',      //Owner's notes - text
+            }));
+
+        return [...WeightEntries, ...symptomEntries];
+
+        }));
+
+            //perPet an arry of arrays (one per pet) - flatten it into one list
+            const allEntries = ([] as TimelineEntry[]).concat(...perPet);
+            setEntries(allEntries);
+            console.log('entries:', allEntries.length);
+            
+        } catch(e){
+            console.log(e);
+            setError('Unable to load timeline!');
+        }finally{
+            setLoading(false);
         }
-        //Call function - define (in order to run backend connection)
-        loadPetaccount();
+    }    
+
+    useEffect(() => {
+        LoadTimeline();
     },[]);
+
+
+
 
     return(
         <View style={styles.screen}>
@@ -169,9 +251,55 @@ const styles = StyleSheet.create({
         borderWidth:1,
         borderColor:'#E8E4DC',
         padding: 16,
-        marginBottom: 10
+        marginBottom: 10,
+        borderLeftWidth: 4,
     },
 
+    card_top:{
+        flexDirection: 'row', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
 
+    //Date for Card
+    card_date:{
+        fontSize: 13, 
+        fontWeight: '600',
+        color:'#333',
+    },
+
+    //Tag
+    tag: {
+        paddingHorizontal: 8, 
+        paddingVertical: 3,
+        borderRadius:999
+    },
+
+    //Tag Text 
+    tag_text:{
+        fontSize: 10, 
+        fontWeight: '700',
+    },
+    
+    //Title for Card
+    card_title:{
+        fontSize: 17, 
+        fontWeight: '700',
+        color:'#111'
+    },
+    
+    //Subtitle for Card 
+    card_subtitle: {
+        fontSize:13,
+        color:'#666',
+        marginTop: 2
+    },
+
+    //empty_text
+    empty_text:{
+        color:'#666',
+        marginTop: 24,
+    }
 
 })

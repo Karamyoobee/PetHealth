@@ -26,16 +26,16 @@ const style = StyleSheet.create({
         backgroundColor: "orange",
         borderRadius: 30,
         width:100,
-        height:50,
+        height:60,
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "flex-start",
+        alignSelf: "stretch",
         marginLeft:280, 
         marginTop: -60,
     },
 
     text: {
-        fontSize: 15,
+        fontSize: 18,
         color: '#FFFFFF',
     },
 })

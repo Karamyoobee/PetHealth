@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import { useEffect } from "react"; // check petId for pet being used here
-import { StyleSheet, Text, ScrollView, View} from "react-native";
+import { StyleSheet, Text, ScrollView, View, Alert} from "react-native";
 //All Icons Set - For Statistic Cards and Quick Access Buttons
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Feather from '@expo/vector-icons/Feather';
@@ -40,6 +40,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
+    const [deleting, setDeleting] = useState(false);
 
     //Display and retrieve pet's detail's
     useEffect(() =>{
@@ -63,6 +64,20 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
         console.log("pet:", pet)//display pet details - selected from Mypets Screen
     },[petId]);//Repeat when selected pet changes
 
+    //Delete Handle Save 
+    const handleDeletePet = async () => {
+      if(!petId) return;//If their is no pet Id
+      setDeleting(true);
+
+      try{
+        await api.deletePet(petId);
+        onBack();
+      } catch(error){
+        Alert.alert('Error', 'Unable to delete pet, please try again!');
+        setDeleting(false);
+      }
+    }
+
     return(
         <View style={styles.root}>
         <ScrollView style={{ flex: 1}}
@@ -73,7 +88,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             <PhotoHeader
                 photoUri={pet?.photoUri}
                 onBack={onBack}
-                onDelete={() => console.log("delete")}
+                onDelete={handleDeletePet}
             />
 
             <UpdatePet onPress={onUpdate}/>
