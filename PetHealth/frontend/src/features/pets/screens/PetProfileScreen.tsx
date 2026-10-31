@@ -161,31 +161,31 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             {/*Quick Access: Log Symptom Button*/}
             <QuickButton onPress={onQuickLog}
                 label="Log Symptom"
-                icon={<FontAwesome5 name="briefcase-medical" size={24} color="black" />}
+                icon={<FontAwesome5 name="briefcase-medical" size={24} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Weigh-in Button*/}
             <QuickButton onPress={onWeightLog}
                 label="Weigh-in"
-                icon={<FontAwesome5 name="weight" size={24} color="black" />}
+                icon={<FontAwesome5 name="weight" size={24} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Vet Visits Button*/}
             <QuickButton onPress={onVetVisits}
                 label="Vet Visits"
-                icon={<FontAwesome name="calendar" size={24} color="black" />}
+                icon={<FontAwesome name="calendar" size={24} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Medications*/}
             <QuickButton onPress={onMedications}
                 label="Medications"
-                icon={<MaterialCommunityIcons name="pill" size={24} color="black" />}
+                icon={<MaterialCommunityIcons name="pill" size={24} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Predictive Flagging Engine Button*/}
             <QuickButton onPress={onPredictiveFlag}
                 label="Predictive Flagging Engine"
-                icon={<Entypo name="flag" size={24} color="black" />}
+                icon={<Entypo name="flag" size={24} color="#2F7B6D" />}
             />
         </View>
            

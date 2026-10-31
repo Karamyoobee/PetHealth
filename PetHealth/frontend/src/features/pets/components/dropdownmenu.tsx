@@ -1,5 +1,6 @@
 import { Picker } from "@react-native-picker/picker";
-
+import { useEffect, useState } from "react";
+import { api } from "../../../api/client";
 import { StyleSheet, View } from "react-native";
  
 const Dog_Breeds = [
@@ -90,8 +91,19 @@ export default function RNTriggerPetBreedDropdownmenu({
 
 }: Props) {
 
-  const breeds = species === "dog" ? Dog_Breeds : Cat_Breeds;
+  const fallback = species === "dog" ? Dog_Breeds : Cat_Breeds;
+  const [breeds, setBreeds] = useState<string[]>(fallback);
  
+  useEffect(() => {
+    setBreeds(fallback); //display hardcoded (stored breed list above)
+    api
+      .listBreeds(species) //ask Flask for list from MongoDB
+      .then((names) => {
+        if(names.length > 0) setBreeds(names);//
+      })
+      .catch(() => {}); // if unable to connect to database use above fallback - to display dropdown
+  }, [species]);
+
   return (
 <View style={styles.container}>
 <Picker
