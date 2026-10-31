@@ -137,6 +137,9 @@ export const api = {
   createWeight: (petId: string, weight: Omit<WeightEntry, "id" | "petId">) =>
     postJson<WeightEntry>(`/api/pets/${petId}/weights`, weight),
 
+  listBreeds:(species: "dog" | "cat") =>
+    requestJson<string[]>(`/api/breeds?species=${species}`),
+
   listPredictiveFlags: (petId: string) =>
     requestJson<PredictiveFlag[]>(`/api/pets/${petId}/predictive-flags`),
   createPredictiveFlag: (petId: string, flag: Omit<PredictiveFlag, "id" | "petId">) =>

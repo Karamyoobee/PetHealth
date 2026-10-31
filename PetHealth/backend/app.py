@@ -9,6 +9,7 @@ from routes.health import health_bp
 from routes.pets import pets_bp
 from routes.reports import reports_bp
 from routes.users import users_bp
+from routes.breeds import breeds_bp #Breed list - from database
 
 
 def create_app():
@@ -24,6 +25,7 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(pets_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(breeds_bp)
 
     return app
 
