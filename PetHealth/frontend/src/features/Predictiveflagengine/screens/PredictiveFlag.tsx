@@ -46,11 +46,13 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                         these 6 selective breeds: 
                         Dog Breed
                         1. Labrador Retriever 
-                        2. 
-                        3. 
+                        2. Huntaway
+                        3. Golden Retriever
                         
                         Cat Breed
-                        1, 2, 3, 
+                        1. British Shorthair 
+                        2. Domestic Shorthair
+                        3. Ragdoll
                     </Text>
                 </View>
                 
