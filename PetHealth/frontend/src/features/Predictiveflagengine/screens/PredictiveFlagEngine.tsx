@@ -6,13 +6,13 @@ import { retrieveWeightStatus, LEVEL_COLORS } from "../Engine/weightEngine";
 import Weightbar from "../components/Weighbar";
 import { api } from "../../../api/client";
 
-//Predictive Flagging Engine Props
+//Props for Predictive Flagging Engine 
 type PredictiveEngineProps = { 
   onBack: () => void;
   petId: string | null;
 }; 
 
-//Type for Pet Weight
+//Shape of Data Weight sent to engine (hard code - rule based)
 type PetWeightData = {
     breed: string;
     breedLabel: string;
@@ -31,29 +31,30 @@ const BREED_KEYS: Record<string, string> = {
     'Ragdoll':'ragdoll',//Cat breed 3
 };
 
-//Core funcition for connecting with backend
-
+//Function - used to fecth pet and weights from the abckend and prepare data for engine
 async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
-    //1. if no pet is selected - nothign to search for (clear error message)
+    //1. if no pet is selected - (clear error message)
     if (!petId) throw new Error('No Pet hase been selected!');
 
-    //2. Check in Bakend for pets and weights same time
+    //2. Get pets and weights at same time
     const [pets, weights] = await Promise.all([api.listPets(), api.listWeights(petId)])
 
-    //3. Search for pet that matches id given
+    //3. Find pet which matches given Id
     const pet = pets.find((p) => p.id === petId);
     if(!pet) throw new Error('Pet has nt been found!');
     if(weights.length === 0) throw new Error('No weight recorded yet!');
 
-    //4. Sort out from newest first to latest 
+    //4. Sort out weight's from new first to oldest 
     const sorted = [...weights].sort(
         (a,b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
     );
 
-    //5. Convert stored databased backend breed text into engine key for predictive flag!
+    //5. Convert stored database backend breed text into engine key for predictive flag!
     const breedKey = BREED_KEYS[pet.breed];
     if(!breedKey) throw new Error('Breed is not supported yet!' + pet.breed);
+    //Show error message - if current pet is not supported yet by this feature!
 
+    //Add comment here: 
     const currentKg = sorted.length > 0 ? Number(sorted[0].weightKg): Number(pet.weightKg);
 
     //6. Provide Flagging Engine with expected data
@@ -81,7 +82,7 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             .catch((e) => setError(e.message));
     },[petId]);
 
-    //content: show ideal card section...
+    //content: 
     let content;
 
     if(error){
@@ -98,10 +99,12 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             const Percentsize = Math.max(0, Math.min(100, rawdata));//Clamp from 0-100 for percent bar 
         
         
-        content=(
+        content=(//Main Predictive Flagging Engine Card
             <View style={styles.main_card}>
                 <Text style={styles.title}>Comparison with {pet.breedLabel}</Text>
+            {/*Display Comparison text between pet breed*/}            
 
+            {}
             <View style={styles.row}>
                 <Text style={styles.label}>Weight:</Text>
                 <View style={{flex:1, marginHorizontal: 8}}>

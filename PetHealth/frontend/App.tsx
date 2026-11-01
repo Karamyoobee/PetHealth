@@ -365,7 +365,10 @@ export default function App() {
       ) : activeScreen === "reminders" ? (
         <ReminderForm onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
       ) : activeScreen === "timeline" ? (
-        <Timeline onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
+        <Timeline onBack={() => setActiveScreen("home")} 
+        onHomePress={() => setActiveScreen('home')}
+        onPetsPress={() => setActiveScreen('pets')}
+        onNavigate={navigateHome} />
       ) : activeScreen === "reports" ? (
         <ReportPanel onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "quickLog" ? (

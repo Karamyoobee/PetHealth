@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import {View, Text, StyleSheet,Alert} from "react-native";//React - Native Libraries
-import { SaveWeight } from "../../../components/WeightLog/Saveweightbutton";
-import Feather from '@expo/vector-icons/Feather';//Calendar Icon Import 
-import AntDesign from '@expo/vector-icons/AntDesign';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+// ====== IMPORTS ======
+import { useState, useEffect, useMemo } from "react";
+import {View, Text, StyleSheet, Alert, Dimensions, ScrollView} from "react-native";//React - Native Libraries
+import { LineChart as RNLineChart } from 'react-native-chart-kit';
+import type { ComponentType } from 'react';
+const LineChart = RNLineChart as unknown as ComponentType<any>;//Connection for LineChart used for weight chart
+
 import { api } from "../../../api/client";
 import { AddNewWeight } from "../../../components/WeightLog/Newweightentry";
 import WeightHeader from "../../../components/WeightLog/Weight_header";
@@ -13,43 +14,49 @@ import WeightCard from "../../../components/WeightLog/WeightCard";
 
 import { WeightEntry } from "../../../types";
 
+// ==== TYPES AND HELPERS ====
+
+//Unit Type = whic weight the user has toggled on "kg" or "lb"
 type Unit = 'kg'|'lb'
 
 //Weight Conversion function 
 const kg_to_lb = 2.20462;//kg to lb converion on toggle button
 
+//Convert kg to chosen unit | rounded by 1 decimal place
 const toshow = (kg: number, unit: 'kg' | 'lb') => 
     Math.round((unit === 'lb' ? kg * kg_to_lb : kg)*10) / 10;
 
-//Format Date (helper)
+//Turns date string to NZ format e.g "12 oct" - adds year if withYear is true
 const Dateformat = (iso: string, withYear = false) =>
-    new Date(iso).toLocaleDateString('en-NZ', {
-        month: 'short',
-        day: 'numeric',
+    new Date(iso).toLocaleDateString('en-NZ', {//Store based on NZ calendar
+        month: 'short',//display month
+        day: 'numeric',//day stored - number
         ...(withYear && {year: 'numeric'}),
     });
 
 //Weight Props
 type WeightDashboardProps = { 
-  onBack: () => void;
-  onLogNew: () => void;
-  petId: string | null;
+  onBack: () => void;//Return to previous screen
+  onLogNew: () => void;//Send User to new Symptom Log Screen
+  petId: string | null;//Pet Id - from backend
   onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }; 
 
-//Function - Log Weight
+
+// - - - - - -  WEIGHT DASHBOARD SCREEN - - - - - 
 export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:WeightDashboardProps){
+    
+    //States: chosen UNIT and List of Weight Entries
     const [unit, setUnit] = useState<Unit>('kg');
     const [weightentries, setWeightEntries] = useState<WeightEntry[]>([]);
 
-
-
     //Save Button - Store New Weight Entry into backend
+    // ===== DISPLAY pet Weight Entries for this pet (newest first) from backend =====
     useEffect(() => {
-        if (!petId) return;
+        if (!petId) return;//if Pet Id cannot be found
         const load = async () =>{
             try{
-                const data = await api.listWeights(petId);
+                const data = await api.listWeights(petId);//
                 
                 const sorted = [...data].sort((a, b) =>
                 new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
@@ -63,10 +70,29 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
     },[petId]);
 
 
-    //delcare weight entry conversion
+    //display new weight entry (first in sorted list) - used by weight card
     const latest_weight = weightentries[0]
 
+    //Creating Chart Data
+    const chartWidth = Dimensions.get('window').width - 80;
 
+    const chartData = useMemo(() =>{
+        //filter to display only previous 6 months
+        const previoussixMonths = new Date();
+          previoussixMonths.setMonth(previoussixMonths.getMonth() - 6);
+    
+          const points = [...weightentries]
+            .filter((e) => new Date(e.recordedAt) >= previoussixMonths)
+            .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+
+        const step = Math.ceil(points.length / 5) || 1; // display all 5 date labels
+
+            return{
+        labels: points.map((e, i) => (i % step === 0 ? Dateformat(e.recordedAt): " ")),
+        values: points.map((e) => toshow(e.weightKg, unit)), 
+
+    };
+},[weightentries, unit]);
 
     return(
         
@@ -74,6 +100,8 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
             
             {/*Header*/}
             <WeightHeader onBack={onBack} label="Weight Tracker"/>
+
+        <ScrollView>
 
             {/*Weight Chart (simple)*/}
             <WeightCard
@@ -83,9 +111,34 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                 onUnitChange={setUnit}
             />
 
-            {/*Chart Placeholder*/}
-            <View style={styles.Chart}>
+            {/*6 Month Weight Line Chart*/}
+            <View style={styles.Weight_log_Chart}>
                 <Text style={styles.section_title}>6 Month Trend</Text>
+                {chartData.values.length >= 2? (
+                    <LineChart //
+                    data={{
+                        labels:chartData.labels,
+                        datasets: [{data: chartData.values}],
+                    }}
+                    width={chartWidth} 
+                    height={200}
+                    yAxisSuffix={unit}
+                    bezier
+                    withInnerLines={false}
+                    chartConfig={{
+                        backgroundGradientFrom: '#fff',
+                        backgroundGradientTo: '#fff',
+                        decimalPlaces: 1,
+                        color:() => '#167D6B',
+                        labelColor: () => "#808080",
+                    }}
+                    style={{marginTop: 12, marginLeft: -16}}
+                    />    
+                ): (
+                    <Text style={styles.miniweight_text}>
+                        You must log at least 2 weigh-in to see your overall weight log trend.
+                    </Text>
+                )}
             </View>
             
             {/*Log Weight Entry Button*/}
@@ -126,6 +179,9 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                 );
             })}
 
+            </ScrollView>
+
+
             {/*Navigation Tab Bar*/}
             
             <BottomNavBar
@@ -153,12 +209,13 @@ const styles = StyleSheet.create({
     },
 
     //Chart Placeholder Style - to be completed...
-    Chart: {
+    Weight_log_Chart: {
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E5E5E0',
-        padding: 100,//adjust later (once completed full chart)
+        padding: 16,//adjust later (once completed full chart)
         marginTop: 16,
+        backgroundColor: '#fff'
     },
 
     //Chart Title (sectoin)
