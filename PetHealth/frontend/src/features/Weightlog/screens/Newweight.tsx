@@ -1,10 +1,17 @@
 //New Log Weight Screen Form - Pet Owners can record their pet's weight (weight, unit, date, time, notes)
+//Screen Flow: Pet Profile -> Weight Tracker -> Log Weight -> save weight -> return to previous screen (view weight dashboard and changes / increase in weight)
+
+//Calendar pop-up and picker design from ScheduleVisitScreen (Team member's work)
+//React-native-calendar: publid library for calendar (github.com/wix/react-native-calendars)
 
 //Essential Import for react
 import { useState } from "react";
 import { Alert } from "react-native";//Import to display clear Alert buttons...
-import {View, Text, StyleSheet, TextInput, Pressable, ScrollView } from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet, TextInput, Pressable, ScrollView, TouchableOpacity, Modal } from "react-native";//React - Native Libraries
 import { SaveWeight } from "../../../components/WeightLog/Saveweightbutton";
+
+import { Calendar } from "react-native-calendars"; //Calendar Import
+import { Ionicons } from "@expo/vector-icons";//Icons
 
 //Icon's from @expo/vector-icons
 import Feather from '@expo/vector-icons/Feather'; 
@@ -12,7 +19,6 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import WeightHeader from "../../../components/WeightLog/Weight_header";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import Weightformfield from "../../../components/WeightLog/Newweightform";
 
 import WeightEntry from "../../../components/WeightLog/weightentry";
@@ -28,6 +34,8 @@ type WeightProps = {
 }; 
 
 //Main Function [local date returned] (display current date (to be fixed on full calendar display!))
+//getTodayDate Function: retrieve today's NZ LOCAL DATE via "YYY-MM-DD". 
+//Default date - calendar with max date
 function getTodayDate() {
     const now = new Date();//Collect real date
     const year = now.getFullYear();//Collect Real Year
@@ -41,7 +49,21 @@ function getTodayDate() {
     )
 }
 
-//Function - Log Weight
+//Above Function: build's today's date as text with format (YYYY-MM-DD) from local year, month, day 
+//Not toISOString(), that returns UTC date and is 1 day behind NZ morning date
+
+
+//Calendar Function - Popup calendar
+//text directly (not date object) no UTC conversion to shift day
+function addYears(dateString: string, years: number) {//Date set as string / Years - numbers
+    const [y, m,d] = dateString.split("-").map(Number)//[2026,11,`1]
+    const next  = `${y+ years}-${String(m).padStart(2, "0")}-${String(Math.min(d, 28)).padStart(2,"0")}`;//day of month capped at 28, so date like 29 Feb does not become invalid date (only month shown)
+    return next > getTodayDate() ? getTodayDate(): next;//Adding date past today is not allowed, weigh-ins must be present or past NOT future!
+}
+
+//LogWeight - main screen component 
+//Holds form States (weight, unit, date, notes, calendar, time)
+//Validatins input and Handle's saving user input
 export default function LogWeight({onBack, petId}:WeightProps){
     //State - Form Field
     const [notes, setNotes] = useState('');//State - use for Note Text Input Field
@@ -49,10 +71,18 @@ export default function LogWeight({onBack, petId}:WeightProps){
     const [unit, setUnit] = useState<Unit>('kg');//declaring unit (kg,lb)
     const [weight, setWeight] = useState('');//Weight State
     
+    //Date shown as date = chosen day as text (YYY-MM-DD) - start from TODAY
     const [date, setDate] = useState(getTodayDate());//Date State declared 
-    const [showCalendar, setShowCalendar] =  useState(false);//Calendar State
+    const [showCalendar, setShowCalendar] =  useState(false);//calendar popup opens
     const [time, setTime] = useState<Date|null>(null);//Display current time
     const [showTime, setShowTime] = useState(false);//Time
+    const [calendarMonth, setCalendarMonth] = useState(getTodayDate);//which month to show in calendar pop-up
+    
+    //Open pop-up calendar - current chosen date
+    const openCalendar = () => {
+        setCalendarMonth(date || getTodayDate());
+        setShowCalendar(true);
+  };
 
 
     //State - Save Pet Weight 
@@ -78,7 +108,6 @@ export default function LogWeight({onBack, petId}:WeightProps){
 
         try{//Save entered weight - prepare data and send it to backend
             setSavingWeight(true)
-            console.log('petId being used is: ', petId)
 
             const weightData = {//Weight Data  - matching backend data stored 
                 weightKg: Math.round((unit === 'kg' ? weightNumber: weightNumber * 0.45359237) * 100) / 100,
@@ -141,7 +170,7 @@ export default function LogWeight({onBack, petId}:WeightProps){
                 <Weightformfield
                     icon = {<Feather name="calendar" size={16} color="#4A6B64" />}
                     label={"Date"}>
-                    <Pressable style={styles.fieldBox}>
+                    <Pressable onPress={openCalendar} style={styles.fieldBox}>
                             <Text style={styles.Textfield}>{date}</Text>
                     </Pressable>
                 </Weightformfield>
@@ -180,6 +209,41 @@ export default function LogWeight({onBack, petId}:WeightProps){
                     {submitted && <Text style={styles.Success_Message}>Entry Saved!</Text>}
 
          </View>
+        
+          {/*Calendar Modal - used for pop-up calendar for selecting past and present Date (Future Date's blocked) */}
+          <Modal transparent visible={showCalendar} animationType="fade" onRequestClose={() => setShowCalendar(false)}>
+                 <View style={styles.modalBackdrop}>
+                   <View style={styles.calendarCard}>
+                     <View style={styles.yearControls}>
+                       <TouchableOpacity style={styles.yearButton} onPress={() => setCalendarMonth((month) => addYears(month, -1))}>
+                         <Ionicons name="chevron-back" size={18} color="#00796B" />
+                         <Text style={styles.yearButtonText}>Year</Text>
+                       </TouchableOpacity>
+                       <Text style={styles.modalTitle}>Select Date</Text>
+                       <TouchableOpacity style={styles.yearButton} onPress={() => setCalendarMonth((month) => addYears(month, 1))}>
+                         <Text style={styles.yearButtonText}>Year</Text>
+                         <Ionicons name="chevron-forward" size={18} color="#00796B" />
+                       </TouchableOpacity>
+                     </View>
+                     <Calendar
+                       key={calendarMonth}
+                       current={calendarMonth}
+                       maxDate={getTodayDate()}
+                       onMonthChange={(month: {dateString: string}) => setCalendarMonth(month.dateString)}
+                       onDayPress={(day: {dateString: string}) => {
+                         setDate(day.dateString);
+                         setShowCalendar(false);
+                       }}
+                       markedDates={{
+                         ...(date ? { [date]: { selected: true, selectedColor: "#00796B" } } : {}),
+                       }}
+                     />
+                     <TouchableOpacity style={styles.closeButton} onPress={() => setShowCalendar(false)}>
+                       <Text style={styles.closeText}>Close</Text>
+                     </TouchableOpacity>
+                   </View>
+                 </View>
+               </Modal>
     </View>
     </ScrollView>
 
@@ -238,12 +302,13 @@ const styles = StyleSheet.create({
     //Main Layout style for Container - wrapping all form field and user input sections
     content_style:{
         flex: 1,
+        paddingHorizontal: 20,
     },
 
     //Scroll View - Container Style
     contentContainerstyle:{
-        padding: 20,
-        backgroundColor: '#FDFCF9',
+       backgroundColor: '#FDFCF9',
+        paddingBottom: 20,
     },
 
     //Weight Log - Toggle Chip (tracking switching button)
@@ -295,6 +360,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FDFCF9',
+        paddingTop: 0,
     },
 
     //Detail Card Style
@@ -307,6 +373,7 @@ const styles = StyleSheet.create({
     //Save Weight Button - Container
     Button: {
         marginTop: 100,
+        paddingHorizontal: 20,
     },
 
     //Success Message User Input Style
@@ -316,9 +383,75 @@ const styles = StyleSheet.create({
         fontWeight: '600'
     },
 
+    //
     Chip: {
         backgroundColor: '#167D6B',
     },
+
+    //Pop-up calendar - backdrop style
+    modalBackdrop: {
+        alignItems: "center",
+        backgroundColor: "rgba(15, 23, 42, 0.35)",
+        flex: 1,
+        justifyContent: "center",
+        padding: 20,
+    },
+
+  //Pop-up calendar - Card style
+  calendarCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    overflow: "hidden",
+    width: "100%",
+  },
+
+  //Pop-up calendar title
+   modalTitle: {
+    color: "#111827",
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  //Pop-up calendar - control year button style
+  yearControls: {
+    alignItems: "center",
+    borderBottomColor: "#E5E1DB",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+  },
+
+  //Pop-up calendar - year button
+  yearButton: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 2,
+    minWidth: 72,
+  },
+
+  //Pop-up calendar - year button 'text'
+  yearButtonText: {
+    color: "#00796B",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  //pop-up calendar - close button style
+  closeButton: {
+    alignItems: "center",
+    borderTopColor: "#E5E1DB",
+    borderTopWidth: 1,
+    padding: 14,
+  },
+  
+  //Calendar - close text button style
+  closeText: {
+    color: "#00796B",
+    fontSize: 14,
+    fontWeight: "800",
+  },
     
 });
 

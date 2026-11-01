@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: 'white',
+        width:'100%',
         paddingHorizontal: 20,
         borderBottomWidth: 1,
         borderBottomColor: "#E4E2DA",
