@@ -9,10 +9,10 @@ import Imagepicker from "../components/Imagepicker";
 import { api } from "../../../api/client";
 import { Pet } from "../../../types";
 
-//Props for 
+//Props for Updating pet profile screen 
 type updatepetProps = {
-  petId: string | null;
-  onBack: () => void;
+  petId: string | null; //identify the pet ID from the backend (that is to be edited)
+  onBack: () => void;//return to previous screen
 }
 
 //Function Component - UI 
@@ -25,11 +25,11 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
-    const [saving, setSaving] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+    const [saving, setSaving] = useState(false);//only true when updating as a request is in progress
+    const [errorMessage, setErrorMessage] = useState('');//If pet fails to load (show error message)
     const [photoUri, setPhotoUri] = useState<string|null>(null);//Set Image photoUri link / file
-    const [pet, setPet]  = useState<Pet | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [pet, setPet]  = useState<Pet | null>(null);//pet data fetched from database
+    const [loading, setLoading] = useState(true);//only True - when pet details are being fetched from backend
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     //Delete state
     const [deleting, setDeleting] = useState(false);
@@ -41,7 +41,6 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
             try{//Try : display Pet current list
                 const pets = await api.listCurrentUserPets(); //update pet details
                 const found = pets.find((p) => p.id === petId) //save details
-                console.log("found: ", found)
                 if(found){//Compare existing form details with pet details (stored in database)
                   setPetName(found.name);//form Name vs Name(database stored)
                   setGender(found.sex === 'female' ? 'female': 'male');//Form Gender vs Gender(database stored))
@@ -64,36 +63,31 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         loadPet();//Fetch when Effect loads
     },[petId]);//Repeat when selected pet changes
 
-
+    //Updated form values being saved and sent to database only for Selected Pet
     const handleSave = async () => {
-
+      //Create updated pet object from current form values and backend 
       const petData = {
-        name: petName.trim(),
-        photoUri: photoUri,
-        species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
-        breed: breed,
-        age: Number(age),
-        sex: gender,
-        weightKg: Number(weight),
-        spayedNeutered: status === 'spayed/neutered',
+        name: petName.trim(),//Pet Name
+        photoUri: photoUri,//Photo Image
+        species: species === 'dog' ? 'Dog' as const: 'Cat' as const, //Pet Species (Dog/Cat)
+        breed: breed,//Breed of Pet
+        age: Number(age),//Age of Pet
+        sex: gender,//Gender of Pet
+        weightKg: Number(weight),//Weight of pet
+        spayedNeutered: status === 'spayed/neutered',//Sp
       };
 
+      //If not "pet" is selected
         if (!petId) return;
-
-
-
+      //Updated request sent, display success message
         try{
-          console.log('Saving photoUri:', photoUri);
             await api.updatePet(petId, petData);
             setSubmitted(true);
+            //log error if updated pet form has failed
           } catch(error){
-            console.error(error)
+            console.error(error)//Error Message
       }
-
-
     }
-
-
 
     //Species - Dog or Cat = Segment Options
     const options = [
@@ -125,13 +119,14 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     return(
         <View style={styles.container}>
         {/*Header for Screen*/}
-        <UpdatePetHeader onBack={onBack}/>
+        <UpdatePetHeader onBack={onBack}/>{/*Back Button - Previous Screen */}
 
     <ScrollView 
       style={styles.scrollView} 
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}>
-
+              {/*Pet Photo Picker Feature - allow pet to access their mobile phone files 
+              and pick an image to display in their avatar*/}
               <View style={{ alignItems: 'center', marginBottom: 20}}>
                   <Imagepicker onImageSelected={setPhotoUri}/>
               </View>
@@ -154,9 +149,9 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
             onChange={setSpecies}
         />
         </View>
+        
+        {/*Species Title*/}
         <Text style={styles.label}>Species</Text>
-
-
 
         {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
         <View style={styles.sectionContainer}>
@@ -208,8 +203,10 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         >
         </SegmentControl>
 
+        {/*Submit Button - Save updated pet details */}
         <PrimaryButton label="Update Pet Details" onPress={handleSave} />
         {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
+        {/*Success Message - one user has clicked on "Update Pet Details" = Button*/}
 
     </ScrollView>
 
@@ -217,9 +214,10 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     );
  }
 
- //style sheet
+ //Main Style Sheet
 const styles = StyleSheet.create({
-      //Displayed Message for user
+    
+    //Displayed Message for user
     result: {
         marginTop: 10, 
         fontSize: 16, 
@@ -227,36 +225,35 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
+    //Container Style for Main Form 
     container:{
         flex: 1,
     },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40, // Space at the bottom so you can scroll past the last button
-    paddingTop: 10,
-  },
+  
+    //Scroll View Style #1
+    scrollView: {
+      flex: 1,
+    },
+
+
+    //Scroll View Content Style 
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 40, // Space at the bottom so you can scroll past the last button
+      paddingTop: 10,
+    },
   
   // Standard Input Group
   inputGroup: {
     marginBottom: 16,
   },
+
+  //Species Label Style
   label: {
     fontSize: 14,
     color: '#666',
     marginBottom: 8, // Pushes the input down so it doesn't overlap
     fontWeight: '500',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#E4E2DA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: '#fff',
   },
 
   // Section Wrapper (Species, Gender, etc.)
@@ -270,6 +267,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12, // Creates space between the two buttons
   },
+
+  //Toggle Button Style (Dog/Cat)
   toggleButton: {
     flex: 1, // CRUCIAL: Makes both buttons take up exactly 50% of the row
     paddingVertical: 12,
@@ -278,18 +277,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
+
   activeToggle: {
     backgroundColor: '#1E7A6C', // Your teal color
     borderColor: '#1E7A6C',
   },
+
   inactiveToggle: {
     backgroundColor: '#fff',
     borderColor: '#1E7A6C',
   },
+
   activeToggleText: {
     color: '#fff',
     fontWeight: '600',
   },
+
   inactiveToggleText: {
     color: '#1E7A6C',
     fontWeight: '600',
@@ -302,6 +305,7 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 16,
   },
+
   halfInput: {
     flex: 1, 
   },
