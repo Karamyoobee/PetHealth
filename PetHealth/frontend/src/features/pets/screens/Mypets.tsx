@@ -1,8 +1,6 @@
 import React, {useEffect, useState} from 'react'; //React Use State Management
-import {StyleSheet, Text, View, Pressable, FlatList} from 'react-native';//React Essential Imports for Components of Screen
-import { StatusBar } from "expo-status-bar";
+import {StyleSheet, Text, View, FlatList} from 'react-native';//React Essential Imports for Components of Screen
 import Header from '../components/header'; //Header for MyPets Screen
-import StatusBadge from '../components/StatusBadge';
 import BottomNavBar from '../components/Tabbar';//Bottom Navbar File 
 import PetCard from '../components/PetCard';//PetCard to display Pet Owner Pet's from 
 import { Pet } from '../../../types';//Import Backend Pet (Types Set Structure) for Data Types Validation
@@ -11,18 +9,17 @@ import AddButton from '../components/Addnewpetbutton';
 
 //Props - Used to connect 
 type MyPetsScreenProps = {
-    onBack: () => void;
-    onSelectPet: (id: string) => void;
-    onAddNewPet: () => void;
-    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
+    onBack: () => void;//Return to Home Screen
+    onSelectPet: (id: string) => void;//Open the selected pet's profile 
+    onAddNewPet: () => void;//Add New Pet Screen - Open
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;//Main Navigation Bar
 }
 
-//Function for Backend 
+//Main Component for Mypets Screen
 export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavigate }: MyPetsScreenProps){
-    //State set for - display (pets lists), load flags and error messages
-    const [pets, setPets] = useState<Pet[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    //State for loading flag and pet list
+    const [pets, setPets] = useState<Pet[]>([]);//Pet list to store all pet
+    const [loading, setLoading] = useState(true);//True - only when pets are in process of being fetched, also false until loading is completed (success or fail)
 
     //Load all pets from each ID , once screen displays succesfully first!
     useEffect(() => {
@@ -30,14 +27,13 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
         const LoadPets = async () => {
                 try{
                     const showpets = await api.listPets();//Reuse pet list from backend (API client via Mongodb)
-                    console.log("Pets from backend: ", showpets);//Log for Debugging: backend response check only
                     setPets(showpets);//Save response of Pets state -> Flatlis can render with this data set
                 }
             //Handle Error: log failure 
             catch(error){
                 console.error(error)
             }
-            //Always load and final chekc after try/catch process - stops loading state
+            //Always load and final check after try/catch process - stops loading state
             finally{
                 setLoading(false);
             }
@@ -59,20 +55,27 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
 
                 {/*Add Pet - New Button*/}
                 <AddButton onPress={onAddNewPet} />
-                {/*Pet List - Display only per UserId*/}
+
+                {/*Pet List Display: 
+                    1. Only shows current user pets: 
+                    2. Each pet is inside it's own individual card
+                    3. Once tapped - opens pet's profile
+                */}
+
                 <FlatList
                     data={pets}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.id}//Unique key representing each pet in the list
                     renderItem={( {item} ) => <PetCard pet={item} onPress={ () => {
-                        console.log("You Tapped the Button!", item.id);
                         onSelectPet(item.id);
                     }}/>}
+                    
                 />
+                
 
                 {/*Bottom Navigation Bar*/}
                 <BottomNavBar
                     active="pets"
-                    onHomePress={onBack}
+                    onHomePress={onBack} 
                     onPetsPress={() => onNavigate?.('pets')}
                     onActionPress={() => onNavigate?.('assistant')}
                     onAlertsPress={() => onNavigate?.('reminders')}
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FBF9F5',
     },
  
-    //Greeting section
+    //Greeting section - Main Screen Heading
     greetingBlock:{
         padding: 20,
     },
@@ -105,10 +108,4 @@ const styles = StyleSheet.create({
         fontWeight: "800",
     },
  
-    //Sub Text - Greeting Section
-    greetingSub:{
-        color:"#000000",
-        fontSize:13,
-        marginTop:5,
-    },
 });

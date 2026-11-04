@@ -28,15 +28,15 @@ import PhotoHeader from "../components/Photoheader";
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
-    title?: string;
+    title?: string;//Optional title for screen
     onUpdate: () => void;//connection for update button
     onQuickLog: () => void; // connect to Quick Log Screen
     onWeightLog: ()=> void;//Button to connect to Add New Weight Log Screen
     onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
-    onVetVisits: () => void;
-    onMedications: () => void;
-    onDeleted: () => void;
-    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
+    onVetVisits: () => void;//Button connected to Vet Visit Screen
+    onMedications: () => void;//Button to launch Medications Screen
+    onDeleted: () => void;//Delete Pet Profile Succesffully
+    onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;//Bottom Navigation Bar Screen Switch
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
@@ -44,32 +44,37 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
-    const [deleting, setDeleting] = useState(false);
+    const [deleting, setDeleting] = useState(false);//True - only when delete request has been clicked (No double taps)
 
+    //Delete pet via API, notified the parent function (onDeleted), in order to navigate to previous screen
+    //Displayes alert on fail only, No-options if there's no petId or delete in progress at that time
     const deletePet = async () => {
-        if (!petId || deleting) return;
+        if (!petId || deleting) return; //Avoid nothing to delete and prevent double click's
         setDeleting(true);
         try {
             await api.deletePet(petId);
-            onDeleted();
+            onDeleted();//Parent (onDeleted) handles navigation / list refresh
         } catch (error) {
+            //API error message - unable to delete pet
             Alert.alert('Could not delete pet', error instanceof Error ? error.message : 'Please try again.');
         } finally {
+            //Re-use delete button, whether success or fail occurs
             setDeleting(false);
         }
     };
 
+    //Display Options menu: Edit / Delete (deletion of pet profile [confirmation asked first])
     const openPetOptions = () => {
-        if (!pet || loading || deleting) return;
+        if (!pet || loading || deleting) return;//If no pet and unable to delete pet - return
         Alert.alert('Pet options', pet.name, [
-            { text: 'Edit Pet', onPress: onUpdate },
-            { text: 'Delete Pet', style: 'destructive', onPress: () => {
+            { text: 'Edit Pet', onPress: onUpdate },//Edit Button -> Send User to Update Pet Form 
+            { text: 'Delete Pet', style: 'destructive', onPress: () => {//Delete Pet Button
                 Alert.alert('Delete Pet', `Delete ${pet.name} and their saved health records? This cannot be undone.`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Delete', style: 'destructive', onPress: deletePet },
+                    { text: 'Cancel', style: 'cancel' },//Confirmation Notice for pet owner for deletion of pet profile & Details
+                    { text: 'Delete', style: 'destructive', onPress: deletePet },//Delete Button - official delete of pet profile details inside backend
                 ]);
             } },
-            { text: 'Cancel', style: 'cancel' },
+            { text: 'Cancel', style: 'cancel' },//Cancel Button - Close Options Menu Button
         ]);
     };
 
@@ -81,10 +86,10 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             try{//Try : display Pet current list
                 const pets = await api.listCurrentUserPets(); // pick Ideal pet
                 const found = pets.find((p) => p.id === petId) //save details
-                setPet(found ?? null);
+                setPet(found ?? null);//Add comment here...
             }
             catch(e){//Catch Error: Display Error message if failed
-                setError("Unable to load Pet!")
+                setError("Unable to load Pet!")//
             }
             finally{//Runs: stop loading state
                 setLoading(false)
@@ -92,25 +97,12 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
 
         }
         loadPet();//Fetch when Effect loads
-        console.log("pet:", pet)//display pet details - selected from Mypets Screen
     },[petId]);//Repeat when selected pet changes
 
-    //Delete Handle Save 
-    const handleDeletePet = async () => {
-      if(!petId) return;//If their is no pet Id
-      setDeleting(true);
-
-      try{
-        await api.deletePet(petId);
-        onBack();
-      } catch(error){
-        Alert.alert('Error', 'Unable to delete pet, please try again!');
-        setDeleting(false);
-      }
-    }
 
     return(
         <View style={styles.root}>
+        {/*Scrollable Profile Content Style*/}
         <ScrollView style={{ flex: 1}}
             contentContainerStyle={{ paddingBottom: 114}}
             >
@@ -121,7 +113,8 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
                 onBack={onBack}
                 onDelete={openPetOptions}
             />
-
+            
+            {/*Edit Pet Profile Details - Button */}
             <UpdatePet onPress={onUpdate}/>
             {/*Display Pet Name*/}
             <Text style={styles.petname}>{pet?.name}</Text>
@@ -191,7 +184,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
            
             
         </ScrollView>
-                {/*Bottom Navigation Bar*/}
+            {/*Bottom Navigation Bar*/}
             <BottomNavBar
                 active="pets"
                 onHomePress={() => onNavigate?.('home')}

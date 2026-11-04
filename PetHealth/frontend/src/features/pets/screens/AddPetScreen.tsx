@@ -29,11 +29,11 @@ import { api } from "../../../api/client";
 import { uploadImageToCloudinary } from "../../../api/cloudinary";
 
 type AddPetProps = { 
-  onBack: () => void;
-  onSaved?: () => void;
+  onBack: () => void;//Return to previous screen
+  onSaved?: () => void;//Optional only: Called only after pet has been successfully saved
 };
 
-//Function Component (Add Pet Screen) - UI (Add Net Pet Form)
+//Main Component fo (Add Pet Screen) - UI (Add New Pet Form)
 export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
@@ -43,7 +43,7 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
     const [breed, setBreed] = useState('') // Breed's DrowpDown Menu
-    const [saving, setSaving] = useState(false);//Save pet profile image state
+    const [saving, setSaving] = useState(false);//Start saving State for Image
     const [photoUri, setPhotoUri] = useState<string|null>(null);//Set Image photoUri link / file
 
     //Handles: saving all pet's profile and uploading it's image 
@@ -65,20 +65,17 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
           
       //Prepare basic pet profile details & backend API connections
       const petData = {
-        name: petName.trim(),
-        species: species === 'dog' ? 'Dog' as const: 'Cat' as const,
-        breed: breed,
-        age: Number(age),
-        sex: gender,
-        weightKg: Number(weight),
-        spayedNeutered: status === 'spayed/neutered',
-        photoUri: finalPhotoUrl,
+        name: petName.trim(),//Pet Name
+        species: species === 'dog' ? 'Dog' as const: 'Cat' as const, // Pet Breed
+        breed: breed,//Pet Breed
+        age: Number(age),//Pet Age
+        sex: gender,//Pet Gender
+        weightKg: Number(weight),//Weight of Pet
+        spayedNeutered: status === 'spayed/neutered',//Pet Status
+        photoUri: finalPhotoUrl,//Photo URL link - from cloundinary
       };
-            //Verification Logs (development use) - debugging
-            console.log("Selected photo URI:", photoUri);      
-            console.log("Pet data being sent: ",JSON.stringify (petData));
 
-            //Pet profile being "Saved" and send through to Backend API & Mongodb Database
+            //Pet profile being "Saved" and sent to Backend API & Mongodb Database
             const savedPet = await api.createPet(petData);
 
             //Verify: Saved Pet Profile Details securely into database 
@@ -86,15 +83,15 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
             setSubmitted(true);//Pet Profile confirmation - details saved!
             onSaved?.();
 
-          } catch(error){//Inform and catch user input error
+          } catch(error){//1. If a user's photo was selected
+            //2. Uploaded to Cloundinary 
+            //3. Cloundinary live image URL - stored in backend database
             console.error(error)//error message
-            Alert.alert('Image was unable to be saved.', 'Please, try again!');
+            Alert.alert('Unable to Save Pet!', 'Please, try again!');
           } finally{
-            //Restart saving 'state' once inital copmletion of each request for pet profile made
+            //Saving state stoped once request has finished either (success or fail)
             setSaving(false)
           }
-
-
     }
 
     //Species - Dog or Cat = Segment Options
@@ -205,16 +202,17 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
         >
         </SegmentControl>
 
+        {/*Main Save Button - Create new pet for User */}
         <PrimaryButton label="Save Pet" onPress={handleSave} />
         {submitted && <Text style={styles.result}>Your new pet has been saved!</Text>}
-
+        {/*Display Success Message - after pet has been saved*/}
     </ScrollView>
 
         </View>
     );
  }
 
- //style sheet
+ //Main Style Sheet
 const styles = StyleSheet.create({
       //Displayed Message for user
     result: {

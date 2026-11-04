@@ -242,11 +242,7 @@ const styles = StyleSheet.create({
       paddingBottom: 40, // Space at the bottom so you can scroll past the last button
       paddingTop: 10,
     },
-  
-  // Standard Input Group
-  inputGroup: {
-    marginBottom: 16,
-  },
+
 
   //Species Label Style
   label: {
@@ -259,43 +255,6 @@ const styles = StyleSheet.create({
   // Section Wrapper (Species, Gender, etc.)
   sectionContainer: {
     marginBottom: 20,
-  },
-
-  // Row for Toggle Buttons (Dog/Cat, Male/Female)
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12, // Creates space between the two buttons
-  },
-
-  //Toggle Button Style (Dog/Cat)
-  toggleButton: {
-    flex: 1, // CRUCIAL: Makes both buttons take up exactly 50% of the row
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-
-  activeToggle: {
-    backgroundColor: '#1E7A6C', // Your teal color
-    borderColor: '#1E7A6C',
-  },
-
-  inactiveToggle: {
-    backgroundColor: '#fff',
-    borderColor: '#1E7A6C',
-  },
-
-  activeToggleText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-
-  inactiveToggleText: {
-    color: '#1E7A6C',
-    fontWeight: '600',
   },
 
   // Age and Weight Half Row
