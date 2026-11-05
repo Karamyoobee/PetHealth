@@ -1,7 +1,6 @@
 // 1. IMPORTS: React, the react-native pieces you need, the icon, PetImage, StatusBadge, the Pet type
 import React from 'react';
 import {StyleSheet, Text, View, Pressable, TouchableOpacity} from 'react-native';
-import StatusBadge from './StatusBadge';
 import PhotoCover from './Petimage';
 //import { Pet } from '../data/pets';
 //import { Background } from 'expo-router/build/react-navigation';
