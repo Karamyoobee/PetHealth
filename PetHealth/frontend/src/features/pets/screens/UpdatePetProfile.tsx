@@ -121,12 +121,13 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         {/*Header for Screen*/}
         <UpdatePetHeader onBack={onBack}/>{/*Back Button - Previous Screen */}
 
+              {/*Pet Photo Picker Feature - allow pet to access their mobile phone files 
+              and pick an image to display in their avatar*/}
     <ScrollView 
       style={styles.scrollView} 
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}>
-              {/*Pet Photo Picker Feature - allow pet to access their mobile phone files 
-              and pick an image to display in their avatar*/}
+
               <View style={{ alignItems: 'center', marginBottom: 20}}>
                   <Imagepicker onImageSelected={setPhotoUri}/>
               </View>
@@ -157,7 +158,7 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         <View style={styles.sectionContainer}>
         <Text style={styles.label}>Select Breed</Text>
         <RNTriggerPetBreedDropdownmenu
-            species={species} //need to fix
+            species={species}
             breed={breed}
             onBreedChange={setBreed}
         />
@@ -204,10 +205,9 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         </SegmentControl>
 
         {/*Submit Button - Save updated pet details */}
+        {/*Success Message - one user has clicked on "Update Pet Details" = Button*/}
         <PrimaryButton label="Update Pet Details" onPress={handleSave} />
         {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
-        {/*Success Message - one user has clicked on "Update Pet Details" = Button*/}
-
     </ScrollView>
 
         </View>

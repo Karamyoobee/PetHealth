@@ -17,10 +17,8 @@ const PetFormField = ({ label, value, onChangeText, placeholder, keyboardType }:
         //Style for main outer container
         <View style={styles.container}>
             
-            {/*Add Comment Here: */}
             <Text style={styles.label}>{label}</Text>
             
-            {/*Add Comment Here: */}
             <TextInput
                 style={[styles.input, styles.smallInput]}
                 value={value}
