@@ -21,7 +21,6 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
     const [weight, setWeight] = useState(''); /// Weight Entry Field
-    const [submitted, setSubmitted] = useState(false); // Submit Button
     const [species, setSpecies] = useState<'dog' | 'cat'>('dog'); // Toggle Button - Dog / Cat
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
@@ -80,13 +79,13 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
 
         if (!petId || saving || loading) return;
         setSaving(true);
-        setSubmitted(false);
         setErrorMessage('');
 
         try{
             await api.updatePet(petId, petData);
-            setSubmitted(true);
+            // Confirm the save, then return to the pet's refreshed profile.
             showToast("Pet profile updated successfully.");
+            onBack();
           } catch(error){
             setErrorMessage(error instanceof Error ? error.message : "Could not update the pet profile. Please try again.");
           } finally {
@@ -211,8 +210,6 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         {/*Submit Button - Save updated pet details */}
         <PrimaryButton label={saving ? "Saving..." : "Update Pet Details"} disabled={loading || saving || !petId} onPress={handleSave} />
         {errorMessage ? <Text style={styles.result}>{errorMessage}</Text> : null}
-        {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
-        {/*Success Message - one user has clicked on "Update Pet Details" = Button*/}
 
     </ScrollView>
 
