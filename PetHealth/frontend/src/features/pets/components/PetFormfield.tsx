@@ -2,23 +2,27 @@ import {useState} from "react";
 import { TouchableOpacity, View, Pressable, Text, StyleSheet, TextInput, Button } from "react-native";
 import { colors, spacing, radius } from "@theme";
 
-//Pet Form Props
+//Props for Pet Form Field
 type PetFormFieldProps = { 
-    label: string;
-    value: string;
+    label: string;//Lable for Pet Form Details (subtitle)
+    value: string;//Value 
     onChangeText: (text: string) => void;
-    placeholder?: string;
-    keyboardType?: 'default' | 'numeric';
+    placeholder?: string;//Placeholder text
+    keyboardType?: 'default' | 'numeric';//Keyboard 
 }
 
-//Form Structure 
+//Main reusable component for Pet Form Field
 const PetFormField = ({ label, value, onChangeText, placeholder, keyboardType }: PetFormFieldProps) =>{
     return(
-        //Style declaration 
+        //Style for main outer container
         <View style={styles.container}>
+            
+            {/*Add Comment Here: */}
             <Text style={styles.label}>{label}</Text>
+            
+            {/*Add Comment Here: */}
             <TextInput
-                style={[styles.input, styles.smallInput]}//Working on this specific feature... 
+                style={[styles.input, styles.smallInput]}
                 value={value}
                 onChangeText={onChangeText}
                 placeholder={placeholder}
@@ -28,9 +32,6 @@ const PetFormField = ({ label, value, onChangeText, placeholder, keyboardType }:
             </View>
     );    
 };
-
-//To Do 
-//1. Add back arrow 
 
 
 //style sheet

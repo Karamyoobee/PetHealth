@@ -3,10 +3,11 @@ import { Pressable, Text, StyleSheet, View } from "react-native";
 
 //Props - Used to collect user data and Card Details
 type ButtonProps = {
-    label: string;//Text displaed beneath icon
+    label: string;//Text displayed beneath icon
     onPress?: () => void;//Function for Button
     disabled?: boolean;//When Tapped, if true - ignored taps and appears faded
     icon: React.ReactNode,//icons from @expo/vector-icons
+    //ReactNode - allows any copmonent to be passed as icon
 };
 
 //Main Function - Reusable format of Quick Access Buttons Style, Icon and Label
