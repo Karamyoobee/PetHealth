@@ -33,12 +33,14 @@ export default function SegmentControl<T extends string>({options, value, onChan
                         onPress={() => onChange(opt.value)}
                         //Switch between active and inactive style
                         style={isActive ? styles.pillisActive : styles.Inactivepill}
-                        >   {/* Label Text Style: switches to match the pill state (as per user's selected pill state) */}
+                        >   
+                        
                             <Text style={isActive ? styles.activepilltext: styles.inactivepilltext}>
                                 {opt.label}
                             </Text>
                         </Pressable>
                 );
+                {/* Label Text Style: switches to match the pill state (as per user's selected pill state) */}
             })}
         </View>
 );

@@ -31,10 +31,11 @@ export default function Imagepicker({ onImageSelected }: ImagepickerProps) {
       const selectedUri = result.assets[0].uri;
       setImage(selectedUri);
       onImageSelected(selectedUri);
-    } else {//Display Reminder allert message (pop-up message)
+    } else {
       Alert.alert('You did not select any image.');
     }
   };
+  //Display Reminder alert message (pop-up message)
  
   return (
     

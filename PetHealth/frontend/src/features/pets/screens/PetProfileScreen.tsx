@@ -45,7 +45,9 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
     const [deleting, setDeleting] = useState(false);//True - only when delete request has been clicked (No double taps)
-
+    const [latestweight, setlatestweight] = useState<number | null>(null)//Store New Weight from weight log (updated weight)
+    //Latest weight (kg) from the weight log | null - no logs stored yet -> fallback to pet.weightKg
+ 
     //Delete pet via API, notified the parent function (onDeleted), in order to navigate to previous screen
     //Displayes alert on fail only, No-options if there's no petId or delete in progress at that time
     const deletePet = async () => {
@@ -86,7 +88,14 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             try{//Try : display Pet current list
                 const pets = await api.listCurrentUserPets(); // pick Ideal pet
                 const found = pets.find((p) => p.id === petId) //save details
-                setPet(found ?? null);//Add comment here...
+                setPet(found ?? null);
+                //Fetch all weight logs for the selected pet from (Pet Profile Screen)
+                const weights = await api.listWeights(petId);
+                const sorted = [...weights].sort((a,b) =>//Sort from newest first to oldest | copy [...weights] | original array is not changed
+                    new Date(b.recordedAt).getTime() -new Date(a.recordedAt).getTime()
+            );
+            //Newest weight log stored at sorted[0], if no logs, store null (card uses or fallback to pet.weightKg) from inital pet profile details
+            setlatestweight(sorted[0]?.weightKg ?? null);
             }
             catch(e){//Catch Error: Display Error message if failed
                 setError("Unable to load Pet!")//
@@ -125,10 +134,13 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             {/*Details Cards - Statistic of Pet*/}
             <View style={styles.statistics}>
 
-            {/*Pet Weight*/}
+            {/*Pet Weight: 
+                1.displays newest weight log 
+                2. save pet's weight 
+                3. 0 as last resort if none exist*/}
             <DetailCard
                 label="Weight"
-                value={`${pet?.weightKg ?? 0 } kg`}
+                value={`${latestweight ?? pet?.weightKg ?? 0} kg`}
                 icon={<FontAwesome6 name="weight-scale" size={24} color="black" />}
             />
 
