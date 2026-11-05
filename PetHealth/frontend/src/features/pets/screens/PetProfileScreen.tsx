@@ -134,9 +134,10 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
             {/*Details Cards - Statistic of Pet*/}
             <View style={styles.statistics}>
 
-            {/*Add Comment to new updated weight below:  */}
-
-            {/*Pet Weight*/}
+            {/*Pet Weight: 
+                1.displays newest weight log 
+                2. save pet's weight 
+                3. 0 as last resort if none exist*/}
             <DetailCard
                 label="Weight"
                 value={`${latestweight ?? pet?.weightKg ?? 0} kg`}
