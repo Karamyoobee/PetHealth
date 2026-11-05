@@ -6,6 +6,7 @@ import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
 import Imagepicker from "../components/Imagepicker";
+import { showToast } from "../../../components/Toast";
 import { api } from "../../../api/client";
 import { Pet } from "../../../types";
 
@@ -77,15 +78,19 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         spayedNeutered: status === 'spayed/neutered',//Sp
       };
 
-      //If not "pet" is selected
-        if (!petId) return;
-      //Updated request sent, display success message
+        if (!petId || saving || loading) return;
+        setSaving(true);
+        setSubmitted(false);
+        setErrorMessage('');
+
         try{
             await api.updatePet(petId, petData);
             setSubmitted(true);
-            //log error if updated pet form has failed
+            showToast("Pet profile updated successfully.");
           } catch(error){
-            console.error(error)//Error Message
+            setErrorMessage(error instanceof Error ? error.message : "Could not update the pet profile. Please try again.");
+          } finally {
+            setSaving(false);
       }
     }
 
@@ -204,7 +209,8 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         </SegmentControl>
 
         {/*Submit Button - Save updated pet details */}
-        <PrimaryButton label="Update Pet Details" onPress={handleSave} />
+        <PrimaryButton label={saving ? "Saving..." : "Update Pet Details"} disabled={loading || saving || !petId} onPress={handleSave} />
+        {errorMessage ? <Text style={styles.result}>{errorMessage}</Text> : null}
         {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
         {/*Success Message - one user has clicked on "Update Pet Details" = Button*/}
 

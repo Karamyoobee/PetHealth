@@ -21,6 +21,7 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
   const [message, setMessage] = useState<string | null>(null);
 
   const loadPets = useCallback(async () => {
+    // Keep the selected pet when returning from scheduling a visit.
     setLoading(true);
     setMessage(null);
     try {
@@ -45,6 +46,7 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
   }, [selectedPetId, onSelectPet]);
 
   const loadVisits = useCallback(async (petId: string) => {
+    // Fetch visits for the chosen pet and keep any error visible on this screen.
     setLoading(true);
     setMessage(null);
     try {
@@ -61,12 +63,14 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
   }, [loadPets]);
 
   const selectPet = (petId: string) => {
+    // Keep the selected pet when the user opens the scheduling screen.
     setSelectedPetId(petId);
     onSelectPet?.(petId);
     loadVisits(petId);
   };
 
   const { upcomingVisits, pastVisits } = useMemo(() => {
+    // Use the appointment's local date and time to group the visit cards.
     const now = Date.now();
 
     return visits.reduce(

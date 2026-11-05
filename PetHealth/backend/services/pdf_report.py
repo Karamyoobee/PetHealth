@@ -33,7 +33,8 @@ def _section(story, styles, title, records, fields):
         found = True
         section.append(Paragraph(f"Record {index}", styles["Heading3"]))
         for label, field in fields:
-            _line(section, styles, label, record.get(field))
+            value = ", ".join(record["reminderTimes"]) if field == "reminderTime" and record.get("reminderTimes") else record.get(field)
+            _line(section, styles, label, value)
         for dose in record.get("doseLog", []) or []:
             _line(section, styles, "Dose", f"{_value(dose.get('takenAt'))} - {_value(dose.get('status'))}")
             if dose.get("notes"):
@@ -55,6 +56,7 @@ def _page_footer(pdf, document):
 
 
 def build_pet_report(pet, vet_visits, medications, reminders, symptoms=None, weights=None, flags=None, vaccinations=None):
+    # Build the report from the records already checked by the pet report route.
     buffer = BytesIO()
     document = SimpleDocTemplate(
         buffer, pagesize=letter, leftMargin=54, rightMargin=54, topMargin=48, bottomMargin=54,

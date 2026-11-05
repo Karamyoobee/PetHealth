@@ -1,28 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
+import { showToast } from "../../components/Toast";
 import type { Pet } from "../../types";
 import { exportPetReport } from "./exportReport";
 
 type Props = {
   onBack?: () => void;
+  petId?: string | null;
 };
 
-export function ReportPanel({ onBack }: Props) {
+export function ReportPanel({ onBack, petId }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-
   useEffect(() => {
     let mounted = true;
 
     async function loadPets() {
+      // Keep the profile's pet selected when the report panel opens.
       setLoading(true);
       setError(null);
       try {
@@ -50,11 +52,21 @@ export function ReportPanel({ onBack }: Props) {
 
   const selectedPet = pets.find((pet) => pet.id === selectedPetId);
   const exportReport = async () => {
+    // Keep one export running at a time and show the result for this device.
     if (!selectedPet || exporting) return;
     setExporting(true);
     setError(null);
     try {
-      await exportPetReport(selectedPet);
+      await exportPetReport(selectedPet, () => {
+        if (Platform.OS === "android") {
+          showToast("Pet record PDF downloaded successfully.");
+        }
+      });
+      if (Platform.OS === "web") {
+        showToast("Pet record PDF download started.");
+      } else if (Platform.OS !== "android") {
+        showToast("Pet record PDF is ready to save or share.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not export the report. Please try again.");
     } finally {

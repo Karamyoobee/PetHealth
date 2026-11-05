@@ -10,6 +10,8 @@ from routes.pets import pets_bp
 from routes.reports import reports_bp
 from routes.users import users_bp
 from routes.breeds import breeds_bp #Breed list - from database
+from routes.notifications import notifications_bp
+from services.push_notifications import register_push_command
 
 
 def create_app():
@@ -26,6 +28,8 @@ def create_app():
     app.register_blueprint(pets_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(breeds_bp)
+    app.register_blueprint(notifications_bp)
+    register_push_command(app)
 
     return app
 

@@ -7,10 +7,17 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "android": {
-      "package": "pethealth.com"
+      "package": "pethealth.com",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b7ac55a5-3772-404c-8780-8ec13165f852"
+      }
+    },
+    "owner": "karamjeetsingh"
   }
 }

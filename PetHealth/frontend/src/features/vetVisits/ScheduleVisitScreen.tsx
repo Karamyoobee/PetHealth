@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
+import { showToast } from "../../components/Toast";
 import type { Pet } from "../../types";
 
 type Props = {
@@ -67,6 +68,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
   const [clockOpen, setClockOpen] = useState(false);
   const [clockHour, setClockHour] = useState(9);
   const [clockMinute, setClockMinute] = useState("00");
+  const [clockError, setClockError] = useState<string | null>(null);
   const [clockPeriod, setClockPeriod] = useState<"AM" | "PM">("AM");
   const [saving, setSaving] = useState(false);
 
@@ -96,24 +98,34 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
   }, []);
 
   const openCalendar = () => {
+    // Reopen on the chosen appointment date so it is easy to adjust.
     setCalendarMonth(appointmentDate || today);
     setCalendarOpen(true);
   };
 
   const openClock = () => {
+    // Start the clock with the saved time rather than clearing the selection.
     const parsed = parseClockTime(appointmentTime);
     setClockHour(parsed.hour);
     setClockMinute(parsed.minute);
+    setClockError(null);
     setClockPeriod(parsed.period);
     setClockOpen(true);
   };
 
   const confirmClockTime = () => {
-    setAppointmentTime(formatClockTime(clockHour, clockMinute, clockPeriod));
+    // Allow any valid minute, including values outside the quick choices.
+    if (!/^\d{1,2}$/.test(clockMinute) || Number(clockMinute) > 59) {
+      setClockError("Enter minutes from 00 to 59.");
+      return;
+    }
+    setAppointmentTime(formatClockTime(clockHour, clockMinute.padStart(2, "0"), clockPeriod));
     setClockOpen(false);
   };
 
   const scheduleVisit = async () => {
+    // Save the visit before creating its linked reminder.
+    if (saving) return;
     if (!selectedReason) {
       Alert.alert("Reason required", "Please choose or enter a reason for the visit.");
       return;
@@ -151,6 +163,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
         enabled: true,
       });
 
+      showToast("Vet visit scheduled successfully.");
       onSubmit?.(selectedPetId);
     } catch (error) {
       Alert.alert("Could not schedule visit", error instanceof Error ? error.message : "Please try again.");
@@ -286,60 +299,74 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
       </Modal>
 
       <Modal transparent visible={clockOpen} animationType="fade" onRequestClose={() => setClockOpen(false)}>
-        <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView style={styles.modalBackdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={styles.clockCard}>
-            <Text style={styles.modalTitle}>Select Time</Text>
-            <Text style={styles.timePreview}>{formatClockTime(clockHour, clockMinute, clockPeriod)}</Text>
-            <View style={styles.clockFace}>
-              {hourOptions.map((hour, index) => {
-                const angle = (index * 30 - 90) * (Math.PI / 180);
-                const left = 92 + 78 * Math.cos(angle);
-                const top = 92 + 78 * Math.sin(angle);
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Select Time</Text>
+              <Text style={styles.timePreview}>{formatClockTime(clockHour, clockMinute.padStart(2, "0"), clockPeriod)}</Text>
+              <View style={styles.clockFace}>
+                {hourOptions.map((hour, index) => {
+                  const angle = (index * 30 - 90) * (Math.PI / 180);
+                  const left = 92 + 78 * Math.cos(angle);
+                  const top = 92 + 78 * Math.sin(angle);
 
-                return (
+                  return (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[styles.clockHour, { left, top }, clockHour === hour && styles.clockHourActive]}
+                      onPress={() => setClockHour(hour)}
+                    >
+                      <Text style={[styles.clockHourText, clockHour === hour && styles.clockHourTextActive]}>{hour}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <View style={styles.clockCenter} />
+              </View>
+              <View style={styles.periodRow}>
+                {(["AM", "PM"] as const).map((period) => (
                   <TouchableOpacity
-                    key={hour}
-                    style={[styles.clockHour, { left, top }, clockHour === hour && styles.clockHourActive]}
-                    onPress={() => setClockHour(hour)}
+                    key={period}
+                    style={[styles.periodButton, clockPeriod === period && styles.periodButtonActive]}
+                    onPress={() => setClockPeriod(period)}
                   >
-                    <Text style={[styles.clockHourText, clockHour === hour && styles.clockHourTextActive]}>{hour}</Text>
+                    <Text style={[styles.periodText, clockPeriod === period && styles.periodTextActive]}>{period}</Text>
                   </TouchableOpacity>
-                );
-              })}
-              <View style={styles.clockCenter} />
-            </View>
-            <View style={styles.periodRow}>
-              {(["AM", "PM"] as const).map((period) => (
-                <TouchableOpacity
-                  key={period}
-                  style={[styles.periodButton, clockPeriod === period && styles.periodButtonActive]}
-                  onPress={() => setClockPeriod(period)}
-                >
-                  <Text style={[styles.periodText, clockPeriod === period && styles.periodTextActive]}>{period}</Text>
+                ))}
+              </View>
+              <View style={styles.minuteGrid}>
+                {minuteOptions.map((minute) => (
+                  <TouchableOpacity
+                    key={minute}
+                    style={[styles.minuteButton, clockMinute === minute && styles.minuteButtonActive]}
+                    onPress={() => { setClockMinute(minute); setClockError(null); }}
+                  >
+                    <Text style={[styles.minuteText, clockMinute === minute && styles.minuteTextActive]}>{minute}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.label}>Or enter minutes (00 to 59)</Text>
+              <TextInput
+                accessibilityLabel="Custom minutes, from 00 to 59"
+                style={styles.input}
+                keyboardType="number-pad"
+                maxLength={2}
+                value={clockMinute}
+                placeholder="e.g. 07"
+                placeholderTextColor="#6B7280"
+                onChangeText={(value) => { setClockMinute(value); setClockError(null); }}
+              />
+              {clockError ? <Text accessibilityRole="alert" style={styles.clockError}>{clockError}</Text> : null}
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalAction} onPress={() => setClockOpen(false)}>
+                  <Text style={styles.closeText}>Cancel</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.minuteGrid}>
-              {minuteOptions.map((minute) => (
-                <TouchableOpacity
-                  key={minute}
-                  style={[styles.minuteButton, clockMinute === minute && styles.minuteButtonActive]}
-                  onPress={() => setClockMinute(minute)}
-                >
-                  <Text style={[styles.minuteText, clockMinute === minute && styles.minuteTextActive]}>{minute}</Text>
+                <TouchableOpacity style={[styles.modalAction, styles.confirmAction]} onPress={confirmClockTime}>
+                  <Text style={styles.confirmText}>Set Time</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalAction} onPress={() => setClockOpen(false)}>
-                <Text style={styles.closeText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalAction, styles.confirmAction]} onPress={confirmClockTime}>
-                <Text style={styles.confirmText}>Set Time</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -520,6 +547,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   clockCard: {
+    maxHeight: "90%",
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 18,
@@ -635,6 +663,11 @@ const styles = StyleSheet.create({
   },
   periodTextActive: {
     color: "#FFFFFF",
+  },
+  clockError: {
+    color: "#B42318",
+    fontSize: 13,
+    marginBottom: 10,
   },
   minuteGrid: {
     flexDirection: "row",

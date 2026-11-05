@@ -169,6 +169,7 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
   const [message, setMessage] = useState<string | null>(null);
 
   const register = async () => {
+    // Finish email verification before opening the signed-in screens.
     if (working) return;
     setError(null);
     if (!challengeId && !verifiedSession) {
@@ -360,6 +361,7 @@ function SignInScreen({ busy, error, googleDisabled, onGooglePress, onModeChange
   };
 
   const submitPassword = async () => {
+    // Login and password reset share this form, but use separate server requests.
     if (disabled) return;
     setFormError(null);
     setMessage(null);

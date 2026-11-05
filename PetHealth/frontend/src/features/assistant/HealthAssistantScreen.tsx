@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import * as Crypto from "expo-crypto";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,7 +15,8 @@ import {
 } from "react-native";
 
 import { api } from "../../api/client";
-import type { AssistantHistoryMessage, Pet } from "../../types";
+import type { AssistantHistoryMessage, Pet, SavedAssistantMessage } from "../../types";
+import { findVet, possibleEmergency } from "./emergency";
 
 type Props = {
   onBack?: () => void;
@@ -22,6 +25,7 @@ type Props = {
 type ChatMessage = AssistantHistoryMessage & {
   id: string;
   createdAt: Date;
+  vetSearch?: "nearby" | "emergency";
 };
 
 const QUICK_PROMPTS = [
@@ -54,8 +58,17 @@ function petIcon(pet: Pet): keyof typeof Ionicons.glyphMap {
   return pet.species === "Cat" ? "logo-octocat" : "paw";
 }
 
+function savedMessages(messages: SavedAssistantMessage[]): ChatMessage[] {
+  return messages.map((message) => ({ ...message, createdAt: new Date(message.createdAt) }));
+}
+
 export function HealthAssistantScreen({ onBack }: Props) {
   const scrollRef = useRef<ScrollView>(null);
+  const chatRequest = useRef(0);
+  const contentHeight = useRef(0);
+  const scrollOffset = useRef(0);
+  const olderAnchor = useRef<{ height: number; offset: number } | null>(null);
+  const autoScroll = useRef(true);
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage()]);
@@ -63,12 +76,21 @@ export function HealthAssistantScreen({ onBack }: Props) {
   const [loadingPets, setLoadingPets] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emergency, setEmergency] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [conversationVersion, setConversationVersion] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [historyRetry, setHistoryRetry] = useState(0);
 
   const selectedPet = useMemo(
     () => pets.find((pet) => pet.id === selectedPetId),
     [pets, selectedPetId],
   );
   const showQuickPrompts = !messages.some((message) => message.role === "user");
+  const canSend = Boolean(selectedPet) && historyLoaded && !loadingHistory && !sending && !clearing;
 
   useEffect(() => {
     let mounted = true;
@@ -98,29 +120,125 @@ export function HealthAssistantScreen({ onBack }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    const requestId = ++chatRequest.current;
+    if (!selectedPet) return;
+    setLoadingHistory(true);
+    setHistoryLoaded(false);
+    setLoadingOlder(false);
+    setError(null);
+    autoScroll.current = true;
+    olderAnchor.current = null;
+    api.getAssistantChat(selectedPet.id)
+      .then((conversation) => {
+        if (requestId !== chatRequest.current) return;
+        const saved = savedMessages(conversation.messages);
+        setMessages(saved.length ? saved : [welcomeMessage(selectedPet.name)]);
+        setConversationVersion(conversation.conversationVersion);
+        setNextCursor(conversation.nextCursor);
+        setHistoryLoaded(true);
+      })
+      .catch((loadError) => {
+        if (requestId === chatRequest.current) setError(loadError instanceof Error ? loadError.message : "Could not load this conversation.");
+      })
+      .finally(() => {
+        if (requestId === chatRequest.current) setLoadingHistory(false);
+      });
+    return () => { chatRequest.current += 1; };
+  }, [selectedPet, historyRetry]);
+
+  async function loadOlderMessages() {
+    // Keep the reading position when earlier messages are added above the chat.
+    if (!selectedPet || !nextCursor || loadingOlder || sending || clearing) return;
+    const requestId = chatRequest.current;
+    setLoadingOlder(true);
+    autoScroll.current = false;
+    try {
+      const conversation = await api.getAssistantChat(selectedPet.id, nextCursor);
+      if (requestId !== chatRequest.current) return;
+      if (conversation.conversationVersion !== conversationVersion) {
+        setHistoryRetry((current) => current + 1);
+        return;
+      }
+      olderAnchor.current = { height: contentHeight.current, offset: scrollOffset.current };
+      setMessages((current) => [...savedMessages(conversation.messages), ...current]);
+      setNextCursor(conversation.nextCursor);
+    } catch (loadError) {
+      if (requestId === chatRequest.current) setError(loadError instanceof Error ? loadError.message : "Could not load older messages.");
+    } finally {
+      if (requestId === chatRequest.current) setLoadingOlder(false);
+    }
+  }
+
+  function confirmClearConversation() {
+    // Ask before deleting saved messages, and keep health records untouched.
+    if (!selectedPet || sending || clearing || !historyLoaded) return;
+    const requestId = chatRequest.current;
+    Alert.alert("Clear conversation?", `This will delete the saved chat for ${selectedPet.name}. Their health records will stay saved.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Clear", style: "destructive", onPress: async () => {
+        if (requestId !== chatRequest.current) return;
+        const clearRequest = ++chatRequest.current;
+        setClearing(true);
+        setError(null);
+        try {
+          const result = await api.clearAssistantChat(selectedPet.id, conversationVersion);
+          if (clearRequest !== chatRequest.current) return;
+          setMessages([welcomeMessage(selectedPet.name)]);
+          autoScroll.current = true;
+          setConversationVersion(result.conversationVersion);
+          setNextCursor(null);
+          setEmergency(false);
+          setDraft("");
+        } catch (clearError) {
+          if (clearRequest === chatRequest.current) {
+            setError(clearError instanceof Error ? clearError.message : "Could not clear this conversation.");
+            setHistoryLoaded(false);
+          }
+        } finally {
+          if (clearRequest === chatRequest.current) { setClearing(false); setLoadingOlder(false); }
+        }
+      } },
+    ]);
+  }
+
   function selectPet(pet: Pet) {
-    if (pet.id === selectedPetId || sending) return;
+    // Each pet has its own conversation, so clear the previous pet's screen state.
+    if (pet.id === selectedPetId || sending || clearing) return;
+    chatRequest.current += 1;
     setSelectedPetId(pet.id);
     setMessages([welcomeMessage(pet.name)]);
     setDraft("");
     setError(null);
+    setEmergency(false);
+    setHistoryLoaded(false);
+    setNextCursor(null);
+  }
+
+  async function openVetSearch(emergencySearch = false) {
+    // Show a helpful message if neither Maps nor the browser can open.
+    try {
+      await findVet(emergencySearch);
+    } catch {
+      setError("Could not open Maps. Please search for a nearby veterinarian in your browser.");
+    }
   }
 
   async function sendMessage(prefilledMessage?: string) {
+    // Give each send an ID so the server can recognise repeated requests.
     const text = (prefilledMessage ?? draft).trim();
-    if (!text || sending) return;
+    if (!text || sending || clearing || !historyLoaded) return;
 
     if (!selectedPet) {
       setError("Add or select a pet before asking the assistant.");
       return;
     }
 
-    const history: AssistantHistoryMessage[] = messages.slice(-8).map(({ role, text: historyText }) => ({
-      role,
-      text: historyText,
-    }));
+    const requestId = chatRequest.current;
+    const messageId = Crypto.randomUUID();
+    autoScroll.current = true;
     const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: messageId,
       role: "user",
       text,
       createdAt: new Date(),
@@ -130,22 +248,22 @@ export function HealthAssistantScreen({ onBack }: Props) {
     setDraft("");
     setError(null);
     setSending(true);
+    const urgent = possibleEmergency(text);
+    if (urgent) setEmergency(true);
 
     try {
-      const reply = await api.askHealthAssistant(selectedPet.id, text, history);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          text: reply.message,
-          createdAt: new Date(),
-        },
-      ]);
+      const reply = await api.askHealthAssistant(selectedPet.id, text, conversationVersion, messageId);
+      if (requestId !== chatRequest.current) return;
+      if (reply.isEmergency) setEmergency(true);
+      setMessages((current) => [...current.filter((message) => message.id !== messageId && !message.id.startsWith("welcome-")), ...savedMessages(reply.messages)]);
+      setConversationVersion(reply.conversationVersion);
     } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : "The assistant could not respond.");
+      if (requestId === chatRequest.current) {
+        setError(`${sendError instanceof Error ? sendError.message : "The assistant could not respond."} Reload the conversation before trying again.`);
+        setHistoryLoaded(false);
+      }
     } finally {
-      setSending(false);
+      if (requestId === chatRequest.current) setSending(false);
     }
   }
 
@@ -170,13 +288,52 @@ export function HealthAssistantScreen({ onBack }: Props) {
           </View>
           <Text style={styles.headerTitle}>Health Assistant</Text>
         </View>
+        <TouchableOpacity
+          accessibilityLabel="Clear conversation"
+          accessibilityRole="button"
+          disabled={!historyLoaded || sending || clearing || !messages.some((message) => message.role === "user")}
+          onPress={confirmClearConversation}
+          style={styles.clearButton}
+          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+        >
+          {clearing ? <ActivityIndicator color="#087F70" size="small" /> : (
+            <Ionicons name="trash-outline" size={20} color={historyLoaded && !sending && messages.some((message) => message.role === "user") ? "#5B6763" : "#C8D0CD"} />
+          )}
+        </TouchableOpacity>
       </View>
+
+      {emergency ? (
+        <View accessibilityRole="alert" style={styles.emergencyNotice}>
+          <View style={styles.emergencyIcon}>
+            <Ionicons name="alert-circle-outline" size={20} color="#8B5A2B" />
+          </View>
+          <View style={styles.emergencyContent}>
+            <Text style={styles.emergencyTitle}>Possible pet emergency</Text>
+            <Text style={styles.emergencyText}>
+              Contact an emergency vet now. Call ahead to confirm the clinic is open and can help.
+            </Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void openVetSearch(true)} style={styles.emergencyButton}>
+              <Ionicons name="location-outline" size={16} color="#087F70" />
+              <Text style={styles.emergencyButtonText}>Find an emergency vet</Text>
+              <Ionicons name="arrow-forward" size={15} color="#087F70" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
 
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.chatContent}
         keyboardShouldPersistTaps="handled"
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        onScroll={(event) => { scrollOffset.current = event.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
+        onContentSizeChange={(_width, height) => {
+          contentHeight.current = height;
+          if (olderAnchor.current) {
+            scrollRef.current?.scrollTo({ y: olderAnchor.current.offset + height - olderAnchor.current.height, animated: false });
+            olderAnchor.current = null;
+          } else if (autoScroll.current) scrollRef.current?.scrollToEnd({ animated: true });
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.safetyNotice}>
@@ -187,8 +344,15 @@ export function HealthAssistantScreen({ onBack }: Props) {
         </View>
 
         <View style={styles.dayPill}>
-          <Text style={styles.dayPillText}>TODAY</Text>
+          <Text style={styles.dayPillText}>CONVERSATION</Text>
         </View>
+
+        {loadingHistory ? <ActivityIndicator accessibilityLabel="Loading conversation" color="#087F70" /> : null}
+        {nextCursor ? (
+          <TouchableOpacity accessibilityRole="button" disabled={loadingOlder || sending || clearing} onPress={() => void loadOlderMessages()} style={styles.historyButton}>
+            <Text style={styles.quickPromptText}>{loadingOlder ? "Loading..." : "Load older messages"}</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {messages.map((message) => (
           <View
@@ -209,7 +373,19 @@ export function HealthAssistantScreen({ onBack }: Props) {
               <Text style={[styles.messageText, message.role === "user" && styles.userMessageText]}>
                 {message.text}
               </Text>
+              {message.vetSearch ? (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => void openVetSearch(message.vetSearch === "emergency")}
+                  style={styles.quickPrompt}
+                >
+                  <Text style={styles.quickPromptText}>
+                    {message.vetSearch === "emergency" ? "Find an emergency vet" : "Find nearby vets"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
               <Text style={[styles.messageTime, message.role === "user" && styles.userMessageTime]}>
+                {message.createdAt.toDateString() !== new Date().toDateString() ? `${message.createdAt.toLocaleDateString()} · ` : ""}
                 {message.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </Text>
             </View>
@@ -221,9 +397,9 @@ export function HealthAssistantScreen({ onBack }: Props) {
             {QUICK_PROMPTS.map((prompt) => (
               <TouchableOpacity
                 key={prompt.label}
-                disabled={sending || !selectedPet}
+                disabled={!canSend}
                 onPress={() => void sendMessage(prompt.message)}
-                style={[styles.quickPrompt, (!selectedPet || sending) && styles.controlDisabled]}
+                style={[styles.quickPrompt, !canSend && styles.controlDisabled]}
               >
                 <Text style={styles.quickPromptText}>{prompt.label}</Text>
               </TouchableOpacity>
@@ -263,12 +439,18 @@ export function HealthAssistantScreen({ onBack }: Props) {
               return (
                 <TouchableOpacity
                   key={pet.id}
-                  accessibilityState={{ selected }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${pet.name}`}
+                  accessibilityState={{ selected, disabled: sending || clearing }}
+                  disabled={sending || clearing}
                   onPress={() => selectPet(pet)}
                   style={[styles.petChip, selected && styles.petChipSelected]}
                 >
-                  <Ionicons name={petIcon(pet)} size={14} color={selected ? "#087F70" : "#5B6763"} />
+                  <Ionicons name={petIcon(pet)} size={14} color={selected ? "#FFFFFF" : "#5B6763"} />
                   <Text style={[styles.petChipText, selected && styles.petChipTextSelected]}>{pet.name}</Text>
+                  <View style={styles.petSelectionMark}>
+                    {selected ? <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" /> : null}
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -281,11 +463,16 @@ export function HealthAssistantScreen({ onBack }: Props) {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
+        {selectedPet && !historyLoaded && !loadingHistory ? (
+          <TouchableOpacity accessibilityRole="button" onPress={() => setHistoryRetry((current) => current + 1)} style={styles.historyButton}>
+            <Text style={styles.quickPromptText}>Reload conversation</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <View style={styles.composerRow}>
           <TextInput
             accessibilityLabel="Message the health assistant"
-            editable={!sending && Boolean(selectedPet)}
+            editable={canSend}
             maxLength={1200}
             multiline
             onChangeText={setDraft}
@@ -298,11 +485,11 @@ export function HealthAssistantScreen({ onBack }: Props) {
           />
           <TouchableOpacity
             accessibilityLabel="Send message"
-            disabled={!draft.trim() || sending || !selectedPet}
+            disabled={!draft.trim() || !canSend}
             onPress={() => void sendMessage()}
             style={[
               styles.sendButton,
-              (!draft.trim() || sending || !selectedPet) && styles.sendButtonDisabled,
+              (!draft.trim() || !canSend) && styles.sendButtonDisabled,
             ]}
           >
             {sending ? (
@@ -321,6 +508,72 @@ export function HealthAssistantScreen({ onBack }: Props) {
 export default HealthAssistantScreen;
 
 const styles = StyleSheet.create({
+  clearButton: {
+    position: "absolute",
+    right: 16,
+    padding: 6,
+  },
+  historyButton: {
+    alignSelf: "center",
+    padding: 10,
+    marginBottom: 8,
+  },
+  emergencyNotice: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E5E1DB",
+    borderLeftColor: "#F0D3B5",
+    borderLeftWidth: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 12,
+    gap: 10,
+  },
+  emergencyIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFF4E8",
+    borderRadius: 16,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  emergencyContent: {
+    flex: 1,
+    gap: 8,
+  },
+  emergencyTitle: {
+    color: "#24312E",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  emergencyText: {
+    color: "#35413E",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  emergencyButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#E6F5F1",
+    borderColor: "#C8E6DE",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 7,
+  },
+  emergencyButtonText: {
+    color: "#087F70",
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "700",
+  },
   screen: {
     backgroundColor: "#FAF8F4",
     flex: 1,
@@ -520,8 +773,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   petChipSelected: {
-    backgroundColor: "#E6F5F1",
-    borderColor: "#B8DED5",
+    backgroundColor: "#087F70",
+    borderColor: "#087F70",
+  },
+  petSelectionMark: {
+    width: 14,
+    height: 14,
   },
   petChipText: {
     color: "#5B6763",
@@ -529,7 +786,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   petChipTextSelected: {
-    color: "#087F70",
+    color: "#FFFFFF",
   },
   errorRow: {
     alignItems: "flex-start",

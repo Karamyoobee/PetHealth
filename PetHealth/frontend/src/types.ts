@@ -60,6 +60,8 @@ export type Medication = {
   startDate: string;
   endDate: string;
   reminderTime: string;
+  reminderTimes?: string[];
+  reminderEnabled?: boolean;
   doseLog: { status: "taken" | "missed"; takenAt: string; notes?: string }[];
 };
 
@@ -71,6 +73,12 @@ export type Reminder = {
   scheduledFor: string;
   repeat: "none" | "daily" | "weekly" | "monthly";
   enabled: boolean;
+  medicationId?: string;
+  readAt?: string;
+  timezone?: string;
+  timezoneOffset?: number;
+  occurrenceAt?: string;
+  endsOn?: string;
   dismissedAt?: string;
   completedAt?: string;
   snoozedUntil?: string;
@@ -114,4 +122,21 @@ export type AssistantHistoryMessage = {
 export type AssistantReply = {
   message: string;
   disclaimer: string;
+  isEmergency?: boolean;
+  vetSearch?: "nearby" | "emergency";
+  messages: SavedAssistantMessage[];
+  conversationVersion: number;
+};
+
+export type SavedAssistantMessage = AssistantHistoryMessage & {
+  id: string;
+  createdAt: string;
+  isEmergency?: boolean;
+  vetSearch?: "nearby" | "emergency";
+};
+
+export type AssistantConversation = {
+  messages: SavedAssistantMessage[];
+  conversationVersion: number;
+  nextCursor: string | null;
 };

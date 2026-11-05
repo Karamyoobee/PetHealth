@@ -9,3 +9,5 @@ __pycache__/
 /output/pdf/
 *.pyc
 frontend/android/local.properties
+**/*service-account*.json
+**/*firebase-adminsdk*.json
