@@ -1,5 +1,5 @@
 import type {
-  AssistantHistoryMessage,
+  AssistantConversation,
   AssistantReply,
   AuthSession,
   Medication,
@@ -30,6 +30,7 @@ export function setSessionToken(token: string | null) {
 }
 
 async function requestJson<T>(path: string, options: RequestInit = {}, timeoutMs = 45000): Promise<T> {
+  // Keep sign-in headers and connection errors consistent across the screens.
   let response: Response;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -69,6 +70,19 @@ async function requestJson<T>(path: string, options: RequestInit = {}, timeoutMs
 
 function postJson<T>(path: string, body: unknown): Promise<T> {
   return requestJson<T>(path, { method: "POST", body: JSON.stringify(body) });
+}
+
+function reminderContext() {
+  let timezone: string | undefined;
+  try {
+    timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {}
+  return { timezone, timezoneOffset: new Date().getTimezoneOffset() };
+}
+
+function reminderQuery() {
+  const context = reminderContext();
+  return `?timezone=${encodeURIComponent(context.timezone ?? "")}&timezoneOffset=${context.timezoneOffset}`;
 }
 
 export const api = {
@@ -113,16 +127,25 @@ export const api = {
 
   listMedications: (petId: string) => requestJson<Medication[]>(`/api/pets/${petId}/medications`),
   createMedication: (petId: string, medication: Omit<Medication, "id" | "petId" | "doseLog">) =>
-    postJson<Medication>(`/api/pets/${petId}/medications`, medication),
+    postJson<Medication>(`/api/pets/${petId}/medications`, { ...reminderContext(), ...medication }),
   addDoseLog: (medicationId: string, dose: Medication["doseLog"][number]) =>
     requestJson<Medication>(`/api/medications/${medicationId}/doses`, {
       method: "PATCH",
       body: JSON.stringify(dose),
     }),
 
-  listReminders: (petId: string) => requestJson<Reminder[]>(`/api/pets/${petId}/reminders`),
+  listReminders: (petId: string) => requestJson<Reminder[]>(`/api/pets/${petId}/reminders${reminderQuery()}`),
+  listAllReminders: () => requestJson<Reminder[]>(`/api/reminders${reminderQuery()}`),
+  getNotificationConfig: () => requestJson<{ enabled: boolean; projectId: string | null }>("/api/notifications/config"),
+  registerNotificationDevice: (device: { installationId: string; installationSecret: string; token: string; platform: string }) =>
+    postJson<{ mode: "push" }>("/api/notifications/devices", { ...reminderContext(), ...device }),
+  unregisterNotificationDevice: (device: { installationId: string; installationSecret: string }) =>
+    postJson<void>("/api/notifications/devices/unregister", device),
   createReminder: (petId: string, reminder: Omit<Reminder, "id" | "petId">) =>
-    postJson<Reminder>(`/api/pets/${petId}/reminders`, reminder),
+    postJson<Reminder>(`/api/pets/${petId}/reminders`, { ...reminderContext(), ...reminder }),
+  actOnReminder: (reminderId: string, action: "complete" | "snooze" | "read", snoozeMinutes?: number, snoozeUntil?: string) =>
+    postJson<Reminder>(`/api/reminders/${reminderId}/actions`, { action, snoozeMinutes, snoozeUntil }),
+  dismissReadReminders: (petId: string) => postJson<void>(`/api/pets/${petId}/reminders/dismiss-read`, {}),
   updateReminder: (reminderId: string, reminder: Partial<Omit<Reminder, "id" | "petId">>) =>
     requestJson<Reminder>(`/api/reminders/${reminderId}`, {
       method: "PATCH",
@@ -143,8 +166,12 @@ export const api = {
     postJson<PredictiveFlag>(`/api/pets/${petId}/predictive-flags`, flag),
 
   getPetSummary: (petId: string) => requestJson<Record<string, unknown>>(`/api/pets/${petId}/summary`),
-  askHealthAssistant: (petId: string, message: string, history: AssistantHistoryMessage[]) =>
-    postJson<AssistantReply>("/api/assistant/chat", { petId, message, history }),
+  getAssistantChat: (petId: string, before?: string) =>
+    requestJson<AssistantConversation>(`/api/assistant/pets/${petId}/chat${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  clearAssistantChat: (petId: string, version: number) =>
+    requestJson<{ conversationVersion: number }>(`/api/assistant/pets/${petId}/chat?version=${version}`, { method: "DELETE" }),
+  askHealthAssistant: (petId: string, message: string, conversationVersion: number, requestId: string) =>
+    postJson<AssistantReply>("/api/assistant/chat", { petId, message, conversationVersion, requestId, ...reminderContext() }),
   reportUrl: (petId: string) => `${API_URL}/api/pets/${petId}/report.pdf`,
   getReportRequest: (petId: string) => ({
     url: `${API_URL}/api/pets/${encodeURIComponent(petId)}/report.pdf`,

@@ -21,6 +21,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
   const [message, setMessage] = useState<string | null>(null);
 
   const loadPets = useCallback(async () => {
+    // Keep the selected pet when returning from the add medication screen.
     setLoading(true);
     setMessage(null);
     try {
@@ -44,6 +45,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
   }, [selectedPetId, onSelectPet]);
 
   const loadMedications = useCallback(async (petId: string) => {
+    // Fetch the chosen pet's medicines and show any loading error on this screen.
     setLoading(true);
     setMessage(null);
     try {
@@ -60,6 +62,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
   }, [loadPets]);
 
   const selectPet = (petId: string) => {
+    // Keep the parent screen's selection in step with the medication list.
     setSelectedPetId(petId);
     onSelectPet?.(petId);
     loadMedications(petId);
@@ -94,7 +97,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
               </View>
               {medication.purpose ? <Text style={styles.detailText}>Purpose: {medication.purpose}</Text> : null}
               <Text style={styles.detailText}>Frequency: {medication.schedule || "Not set"}</Text>
-              <Text style={styles.detailText}>Time: {medication.reminderTime || "Not set"}</Text>
+              <Text style={styles.detailText}>Time: {medication.reminderTimes?.join(", ") || medication.reminderTime || "Not set"}</Text>
               <Text style={styles.detailText}>
                 Dates: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}
               </Text>

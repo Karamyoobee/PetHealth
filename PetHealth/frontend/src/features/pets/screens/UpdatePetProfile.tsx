@@ -6,6 +6,7 @@ import SegmentControl from "../components/segmentcontrol";
 import { PrimaryButton } from "../components/primarybutton";
 import RNTriggerPetBreedDropdownmenu from "../components/dropdownmenu";
 import Imagepicker from "../components/Imagepicker";
+import { showToast } from "../../../components/Toast";
 import { api } from "../../../api/client";
 import { Pet } from "../../../types";
 
@@ -47,7 +48,7 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
                   setAge(String(found.age));//Form Age vs Age(database stored))
                   setWeight(String(found.weightKg));//Form Weight vs Weight(database stored))
                   setSpecies(found.species === 'Dog' ? 'dog' : 'cat');//Form Gender vs Gender(database stored))
-                  setStatus(found.spayedNeutered ? 'intact': 'spayed/neutered');//Form Gender vs Gender(database stored))
+                  setStatus(found.spayedNeutered ? 'spayed/neutered': 'intact');//Form Gender vs Gender(database stored))
                 }
             }
             catch(e){//Catch Error: Display Error message if failed
@@ -74,13 +75,19 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         spayedNeutered: status === 'spayed/neutered',
       };
 
-        if (!petId) return;
+        if (!petId || saving || loading) return;
+        setSaving(true);
+        setSubmitted(false);
+        setErrorMessage('');
 
         try{
             await api.updatePet(petId, petData);
             setSubmitted(true);
+            showToast("Pet profile updated successfully.");
           } catch(error){
-            console.error(error)
+            setErrorMessage(error instanceof Error ? error.message : "Could not update the pet profile. Please try again.");
+          } finally {
+            setSaving(false);
       }
 
 
@@ -199,7 +206,8 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         >
         </SegmentControl>
 
-        <PrimaryButton label="Update Pet Details" onPress={handleSave} />
+        <PrimaryButton label={saving ? "Saving..." : "Update Pet Details"} disabled={loading || saving || !petId} onPress={handleSave} />
+        {errorMessage ? <Text style={styles.result}>{errorMessage}</Text> : null}
         {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
 
     </ScrollView>

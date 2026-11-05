@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   BackHandler,
   Platform,
   SafeAreaView,
@@ -23,6 +24,8 @@ import ScheduleVisitScreen from "./src/features/vetVisits/ScheduleVisitScreen";
 import MedicationForm from "./src/features/medications/MedicationForm";
 import AddMedicationScreen from "./src/features/medications/AddMedicationScreen";
 import ReminderForm from "./src/features/reminders/ReminderForm";
+import { clearReminderNotifications, listenForReminderPress, setReminderNotificationUser, syncReminderNotifications } from "./src/features/reminders/notifications";
+import Toast from "./src/components/Toast";
 import ReportPanel from "./src/features/reports/ReportPanel";
 import HealthAssistantScreen from "./src/features/assistant/HealthAssistantScreen";
 import HomeScreen, { type HomeDestination } from "./src/features/home/HomeScreen";
@@ -53,7 +56,7 @@ type ScreenKey =
 
 type AuthMode = "welcome" | "signin" | "register";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "reports"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
@@ -69,6 +72,38 @@ export default function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+  const notificationUserId = currentUser?.userId ?? currentUser?.id;
+
+  const refreshNotifications = useCallback(async () => {
+    if (!notificationUserId) return;
+    const notice = await syncReminderNotifications(notificationUserId);
+    setNotificationMessage(notice);
+  }, [notificationUserId]);
+
+  useEffect(() => {
+    setReminderNotificationUser(notificationUserId ?? null);
+    if (!notificationUserId) {
+      if (!authLoading) void clearReminderNotifications().catch(() => setNotificationMessage("Could not clear saved phone reminders."));
+      return;
+    }
+    return listenForReminderPress(notificationUserId, () => setActiveScreen("reminders"));
+  }, [notificationUserId, authLoading]);
+
+  useEffect(() => {
+    if (!notificationUserId) return;
+    let mounted = true;
+    const refresh = () => {
+      if (AppState.currentState === "active") void refreshNotifications().catch(() => {
+        if (mounted) setNotificationMessage("Phone reminders could not refresh. Check your connection and reopen the app.");
+      });
+    };
+    refresh();
+    const timer = setInterval(refresh, 60000);
+    const subscription = AppState.addEventListener("change", (state) => { if (state === "active") refresh(); });
+    return () => { mounted = false; clearInterval(timer); subscription.remove(); };
+  }, [notificationUserId, activeScreen, refreshNotifications]);
 
   const navigateHome = (screen: HomeDestination | "home", petId?: string) => {
     if (screen === "home" || availableHomeScreens.includes(screen)) {
@@ -129,7 +164,7 @@ export default function App() {
         setActiveScreen(recordReturnScreen);
       } else if (activeScreen === "weightLog") {
         setActiveScreen("weightDashboard");
-      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging", "vetVisits", "medications"].includes(activeScreen)) {
+      } else if (["weightDashboard", "mylogSymptom", "predictiveFlagging", "vetVisits", "medications", "reports"].includes(activeScreen)) {
         setActiveScreen(recordReturnScreen);
       } else {
         setActiveScreen("home");
@@ -216,6 +251,7 @@ export default function App() {
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     try {
+      await clearReminderNotifications();
       await clearSavedSession();
       setCurrentUser(null);
       setSelectedPetId(null);
@@ -224,11 +260,12 @@ export default function App() {
       setAuthError(null);
       setAuthMode("signin");
     } catch {
-      Alert.alert("Could not sign out", "Please try again to finish signing out.");
+      setReminderNotificationUser(notificationUserId ?? null);
+      Alert.alert("Could not sign out", "Please check your connection and try again so phone notifications can be stopped safely.");
     } finally {
       setSigningOut(false);
     }
-  }, []);
+  }, [notificationUserId]);
 
   if (authLoading) {
     return (
@@ -312,6 +349,7 @@ export default function App() {
       ) : activeScreen === "petProfile" ? (
         <PetProfileScreen
           petId={selectedPetId}
+          accountEmail={currentUser.email}
           onBack={() => setActiveScreen("pets")}
           onUpdate={() => setActiveScreen("updatePet")}
           onQuickLog={() => openPetRecords("quickLog")}
@@ -319,6 +357,7 @@ export default function App() {
           onPredictiveFlag={() => openPetRecords("predictiveFlagging")}
           onVetVisits={() => openPetRecords("vetVisits")}
           onMedications={() => openPetRecords("medications")}
+          onExportReport={() => openPetRecords("reports")}
           onDeleted={() => {
             setSelectedPetId(null);
             setActiveScreen("pets");
@@ -362,11 +401,11 @@ export default function App() {
           }}
         />
       ) : activeScreen === "reminders" ? (
-        <ReminderForm onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
+        <ReminderForm onRemindersChanged={refreshNotifications} notificationMessage={notificationMessage} onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
       ) : activeScreen === "timeline" ? (
         <Timeline onBack={() => setActiveScreen("home")} onNavigate={navigateHome} />
       ) : activeScreen === "reports" ? (
-        <ReportPanel onBack={() => setActiveScreen("home")} />
+        <ReportPanel petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} />
       ) : activeScreen === "quickLog" ? (
         <LogSymptom
           petId={selectedPetId}
@@ -390,6 +429,7 @@ export default function App() {
       ) : activeScreen === "predictiveFlagging" ? (
         <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : null}
+      <Toast />
     </SafeAreaView>
   );
 }

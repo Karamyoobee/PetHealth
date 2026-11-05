@@ -28,6 +28,7 @@ import PhotoHeader from "../components/Photoheader";
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
+    accountEmail?: string;
     title?: string;
     onUpdate: () => void;//connection for update button
     onQuickLog: () => void; // connect to Quick Log Screen
@@ -35,12 +36,13 @@ type PetHeaderProps = {
     onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
     onVetVisits: () => void;
     onMedications: () => void;
+    onExportReport: () => void;
     onDeleted: () => void;
     onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onDeleted, onNavigate }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onExportReport, onDeleted, onNavigate }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -61,8 +63,7 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
 
     const openPetOptions = () => {
         if (!pet || loading || deleting) return;
-        Alert.alert('Pet options', pet.name, [
-            { text: 'Edit Pet', onPress: onUpdate },
+        Alert.alert('Pet options', `${pet.name}\n\nSigned in as\n${accountEmail || 'Email unavailable'}`, [
             { text: 'Delete Pet', style: 'destructive', onPress: () => {
                 Alert.alert('Delete Pet', `Delete ${pet.name} and their saved health records? This cannot be undone.`, [
                     { text: 'Cancel', style: 'cancel' },
@@ -173,9 +174,12 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
                 label="Predictive Flagging Engine"
                 icon={<Entypo name="flag" size={24} color="black" />}
             />
+            <QuickButton onPress={onExportReport}
+                label="Export PDF"
+                icon={<Feather name="download" size={24} color="black" />}
+            />
         </View>
-           
-            
+
         </ScrollView>
                 {/*Bottom Navigation Bar*/}
             <BottomNavBar

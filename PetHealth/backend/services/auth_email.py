@@ -18,6 +18,7 @@ def email_configured():
 
 
 def send_password_email(app, email, code=None, purpose="reset"):
+    # Use the same secure mail connection for verification and password emails.
     config = app.config
     message = EmailMessage()
     message["From"] = config["SMTP_FROM"]
@@ -57,6 +58,7 @@ def send_password_email(app, email, code=None, purpose="reset"):
 
 
 def queue_password_email(email, code=None):
+    # Send mail separately so the API request does not wait for Gmail.
     email_executor.submit(send_password_email, current_app._get_current_object(), email, code)
 
 

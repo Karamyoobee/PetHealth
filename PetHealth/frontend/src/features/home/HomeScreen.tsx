@@ -26,8 +26,7 @@ export type HomeDestination =
   | "vetVisits"
   | "assistant"
   | "timeline"
-  | "reminders"
-  | "reports";
+  | "reminders";
 
 type Props = {
   user: User;
@@ -51,6 +50,7 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
   const requestId = useRef(0);
 
   const loadHome = useCallback(async () => {
+    // Use the phone's local date so today's counts match the user's day.
     const id = ++requestId.current;
     setLoading(true);
     setError(null);
@@ -256,11 +256,6 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
             </TouchableOpacity>
           ))}
         </View>
-        {canNavigate("reports") ? (
-          <TouchableOpacity accessibilityRole="button" onPress={() => onNavigate("reports")}>
-            <Text style={[styles.link, styles.reportLink]}>Export Health Report (PDF)</Text>
-          </TouchableOpacity>
-        ) : null}
       </ScrollView>
 
       <BottomNavBar
@@ -355,9 +350,6 @@ const styles = StyleSheet.create({
     color: "#238575",
     fontSize: 12,
     padding: 4,
-  },
-  reportLink: {
-    marginTop: 16,
   },
   pets: {
     gap: 12,

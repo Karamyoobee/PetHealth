@@ -1,26 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { ActivityIndicator, AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
 import BottomNavBar from "../../components/BottomNavBar";
 import PetSelector from "../../components/PetSelector";
+import { showToast } from "../../components/Toast";
 import type { Pet, Reminder } from "../../types";
 
 type Props = {
   onBack?: () => void;
+  onRemindersChanged?: () => Promise<void>;
+  notificationMessage?: string | null;
   onNavigate?: (screen: "home" | "pets" | "assistant" | "timeline" | "reminders") => void;
 };
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function addHoursIso(hours: number) {
-  const date = new Date();
-  date.setHours(date.getHours() + hours);
-  return date.toISOString();
-}
 
 function formatReminderTime(value: string) {
   const date = new Date(value);
@@ -43,95 +38,147 @@ function reminderAccent(type: Reminder["type"]) {
   return "#238575";
 }
 
-export function ReminderForm({ onBack, onNavigate }: Props) {
+function localDateString(date: Date) {
+  // Calendar dates should follow the phone's day, rather than the UTC day.
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificationMessage }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
-  const loadPets = useCallback(async () => {
-    setLoading(true);
-    setMessage(null);
-    try {
-      const savedPets = await api.listCurrentUserPets();
+  const [now, setNow] = useState(Date.now());
+  const [busy, setBusy] = useState(false);
+  const [snoozeTarget, setSnoozeTarget] = useState<Reminder | null>(null);
+  const [customSnooze, setCustomSnooze] = useState(false);
+  const [datedSnooze, setDatedSnooze] = useState(false);
+  const [snoozeDate, setSnoozeDate] = useState("");
+  const [snoozeTime, setSnoozeTime] = useState("09:00");
+  const [snoozeClockOpen, setSnoozeClockOpen] = useState(false);
+  const [snoozeMinutes, setSnoozeMinutes] = useState("");
+  const [snoozeError, setSnoozeError] = useState<string | null>(null);
+  const working = useRef(false);
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    let mounted = true;
+    api.listCurrentUserPets().then((savedPets) => {
+      if (!mounted) return;
       setPets(savedPets);
-      const nextPetId = selectedPetId || savedPets[0]?.id || "";
-      setSelectedPetId(nextPetId);
-
-      if (!nextPetId) {
-        setReminders([]);
+      setSelectedPetId(savedPets[0]?.id ?? "");
+      if (!savedPets.length) {
+        setLoading(false);
         setMessage("Add a pet before creating reminders.");
-        return;
       }
-      setReminders(await api.listReminders(nextPetId));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not load reminders.");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedPetId]);
+    }).catch((error) => {
+      if (mounted) {
+        setMessage(error instanceof Error ? error.message : "Could not load pets.");
+        setLoading(false);
+      }
+    });
+    return () => { mounted = false; requestId.current += 1; };
+  }, []);
 
-  const loadReminders = useCallback(async (petId: string) => {
-    setLoading(true);
-    setMessage(null);
+  const loadReminders = useCallback(async (petId: string, showLoading = false) => {
+    // Ignore an earlier response if the user has already selected another pet.
+    const id = ++requestId.current;
+    if (showLoading) setLoading(true);
     try {
-      setReminders(await api.listReminders(petId));
+      const saved = await api.listReminders(petId);
+      if (id === requestId.current) setReminders(saved);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not load reminders.");
+      if (id === requestId.current) setMessage(error instanceof Error ? error.message : "Could not load reminders.");
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadPets();
-  }, [loadPets]);
+    if (!selectedPetId) return;
+    setReminders([]);
+    setMessage(null);
+    void loadReminders(selectedPetId, true);
+    const refresh = () => {
+      setNow(Date.now());
+      if (AppState.currentState === "active" && !working.current) void loadReminders(selectedPetId);
+    };
+    const timer = setInterval(refresh, 60000);
+    const subscription = AppState.addEventListener("change", (state) => { if (state === "active") refresh(); });
+    return () => { clearInterval(timer); subscription.remove(); requestId.current += 1; };
+  }, [selectedPetId, loadReminders]);
 
-  const selectPet = (petId: string) => {
-    setSelectedPetId(petId);
-    loadReminders(petId);
-  };
-
-  const activeReminders = useMemo(() => reminders.filter((reminder) => !reminder.dismissedAt), [reminders]);
+  const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.enabled !== false && !reminder.dismissedAt), [reminders]);
   const historyReminders = useMemo(() => reminders.filter((reminder) => reminder.dismissedAt), [reminders]);
+  const hasRead = activeReminders.some((reminder) => reminder.readAt);
 
-  const updateLocalReminder = (updatedReminder: Reminder) => {
-    setReminders((current) =>
-      current.map((reminder) => (reminder.id === updatedReminder.id ? updatedReminder : reminder)),
-    );
+  const performAction = async (reminder?: Reminder, action?: "complete" | "snooze" | "read", snoozeMinutes?: number, snoozeUntil?: string) => {
+    // Save the change first, then refresh the list and phone notifications.
+    if (working.current || !selectedPetId) return;
+    working.current = true;
+    setBusy(true);
+    setMessage(null);
+    requestId.current += 1;
+    try {
+      if (reminder && action) {
+        const updated = await api.actOnReminder(reminder.id, action, snoozeMinutes, snoozeUntil);
+        setReminders((current) => current.map((item) => item.id === updated.id ? updated : item));
+        if (action === "complete") {
+          showToast(reminder.type === "medication" ? "Medication marked as taken." : "Reminder marked as done.");
+        } else if (action === "snooze") {
+          showToast(`Reminder snoozed until ${formatReminderTime(updated.scheduledFor)}.`);
+        }
+      } else {
+        await api.dismissReadReminders(selectedPetId);
+        showToast("Read reminders dismissed.");
+      }
+      await loadReminders(selectedPetId);
+      try {
+        await onRemindersChanged?.();
+      } catch {
+        setMessage("Your change was saved, but phone notifications could not refresh. Please try again when connected.");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not update the reminder. Please try again.");
+    } finally {
+      working.current = false;
+      setBusy(false);
+    }
   };
 
-  const markDone = async (reminder: Reminder) => {
-    const updatedReminder = await api.updateReminder(reminder.id, {
-      completedAt: nowIso(),
-      dismissedAt: nowIso(),
-    });
-    updateLocalReminder(updatedReminder);
+  const snoozeReminder = (minutes?: number, until?: string) => {
+    // Both snooze options update the same reminder through the usual save flow.
+    const reminder = snoozeTarget;
+    setSnoozeTarget(null);
+    setSnoozeClockOpen(false);
+    if (reminder) void performAction(reminder, "snooze", minutes, until);
   };
 
-  const snooze = async (reminder: Reminder) => {
-    const snoozedUntil = addHoursIso(1);
-    const updatedReminder = await api.updateReminder(reminder.id, {
-      scheduledFor: snoozedUntil,
-      snoozedUntil,
-    });
-    updateLocalReminder(updatedReminder);
+  const confirmCustomSnooze = () => {
+    // Keep typed snooze durations within the range accepted by the backend.
+    if (!/^\d+$/.test(snoozeMinutes) || Number(snoozeMinutes) < 1 || Number(snoozeMinutes) > 1440) {
+      setSnoozeError("Enter 1 to 1440 minutes (up to 24 hours).");
+      return;
+    }
+    snoozeReminder(Number(snoozeMinutes));
   };
 
-  const dismissAllRead = async () => {
-    const dismissedAt = nowIso();
-    const updatedReminders = await Promise.all(
-      activeReminders.map((reminder) =>
-        api.updateReminder(reminder.id, {
-          dismissedAt,
-        }),
-      ),
-    );
-
-    setReminders((current) =>
-      current.map((reminder) => updatedReminders.find((updated) => updated.id === reminder.id) ?? reminder),
-    );
+  const confirmDatedSnooze = () => {
+    // Check the local date and time before sending the new reminder time.
+    const selected = new Date(`${snoozeDate}T${snoozeTime}:00`);
+    if (!Number.isFinite(selected.getTime()) || selected.getTime() <= Date.now()) {
+      setSnoozeError("Choose a date and time in the future.");
+      return;
+    }
+    const selectedTime = `${String(selected.getHours()).padStart(2, "0")}:${String(selected.getMinutes()).padStart(2, "0")}`;
+    if (localDateString(selected) !== snoozeDate || selectedTime !== snoozeTime) {
+      setSnoozeError("That time is unavailable because the clocks change. Please choose another time.");
+      return;
+    }
+    // Send an exact instant so the backend and phone agree across timezones.
+    snoozeReminder(undefined, selected.toISOString());
   };
 
   return (
@@ -145,7 +192,9 @@ export function ReminderForm({ onBack, onNavigate }: Props) {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Reminders</Text>
-        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={selectPet} />
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(petId) => { if (!working.current) setSelectedPetId(petId); }} />
+
+        {message || notificationMessage ? <Text style={styles.emptyText}>{message ?? notificationMessage}</Text> : null}
 
         {loading ? (
           <View style={styles.emptyState}>
@@ -156,8 +205,21 @@ export function ReminderForm({ onBack, onNavigate }: Props) {
             <ReminderCard
               key={reminder.id}
               reminder={reminder}
-              onDone={() => markDone(reminder)}
-              onSnooze={() => snooze(reminder)}
+              now={now}
+              busy={busy}
+              onRead={() => { if (!reminder.readAt) void performAction(reminder, "read"); }}
+              onDone={() => performAction(reminder, "complete")}
+              onSnooze={() => {
+                const suggested = new Date(Date.now() + 15 * 60000);
+                setCustomSnooze(false);
+                setDatedSnooze(false);
+                setSnoozeClockOpen(false);
+                setSnoozeDate(localDateString(suggested));
+                setSnoozeTime(`${String(suggested.getHours()).padStart(2, "0")}:${String(suggested.getMinutes()).padStart(2, "0")}`);
+                setSnoozeMinutes("");
+                setSnoozeError(null);
+                setSnoozeTarget(reminder);
+              }}
             />
           ))
         ) : (
@@ -171,9 +233,9 @@ export function ReminderForm({ onBack, onNavigate }: Props) {
         )}
 
         <TouchableOpacity
-          disabled={activeReminders.length === 0}
-          style={[styles.dismissButton, activeReminders.length === 0 && styles.disabledButton]}
-          onPress={dismissAllRead}
+          disabled={!hasRead || busy}
+          style={[styles.dismissButton, (!hasRead || busy) && styles.disabledButton]}
+          onPress={() => performAction()}
         >
           <Text style={styles.dismissText}>Dismiss All Read</Text>
         </TouchableOpacity>
@@ -187,6 +249,90 @@ export function ReminderForm({ onBack, onNavigate }: Props) {
           </>
         ) : null}
       </ScrollView>
+
+      <Modal transparent visible={snoozeTarget !== null} animationType="fade" onRequestClose={() => setSnoozeTarget(null)}>
+        <KeyboardAvoidingView style={styles.modalBackdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <View style={styles.snoozeCard}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.historyTitle}>Snooze reminder</Text>
+              <Text style={styles.reminderMeta}>Remind me again in</Text>
+              {[15, 30, 60, 120].map((minutes) => (
+                <TouchableOpacity
+                  key={minutes}
+                  accessibilityLabel={`Snooze for ${minutes} minutes`}
+                  style={styles.snoozeOption}
+                  onPress={() => snoozeReminder(minutes)}
+                >
+                  <Text style={styles.snoozeText}>{minutes < 60 ? `${minutes} minutes` : `${minutes / 60} ${minutes === 60 ? "hour" : "hours"}`}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.snoozeOption} onPress={() => { setCustomSnooze(!customSnooze); setDatedSnooze(false); setSnoozeClockOpen(false); setSnoozeError(null); }} accessibilityState={{ expanded: customSnooze }}>
+                <Text style={styles.snoozeText}>Custom duration</Text>
+              </TouchableOpacity>
+              {customSnooze ? (
+                <View style={styles.customSnooze}>
+                  <Text style={styles.reminderMeta}>How many minutes from now?</Text>
+                  <TextInput
+                    accessibilityLabel="Custom snooze duration in minutes"
+                    style={styles.snoozeInput}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    placeholder="e.g. 20"
+                    placeholderTextColor="#6B7280"
+                    value={snoozeMinutes}
+                    onChangeText={(value) => { setSnoozeMinutes(value); setSnoozeError(null); }}
+                  />
+                  <Text style={styles.reminderMeta}>1 to 1440 minutes (up to 24 hours).</Text>
+                  {snoozeError ? <Text accessibilityRole="alert" style={styles.overdueText}>{snoozeError}</Text> : null}
+                  <TouchableOpacity style={styles.snoozeOption} onPress={confirmCustomSnooze}>
+                    <Text style={styles.snoozeText}>Confirm snooze</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              <TouchableOpacity style={styles.snoozeOption} onPress={() => { setDatedSnooze(!datedSnooze); setCustomSnooze(false); setSnoozeClockOpen(false); setSnoozeError(null); }} accessibilityState={{ expanded: datedSnooze }}>
+                <Text style={styles.snoozeText}>Choose date and time</Text>
+              </TouchableOpacity>
+              {datedSnooze ? (
+                <View style={styles.customSnooze}>
+                  <Text style={styles.reminderMeta}>Choose when to receive this reminder again.</Text>
+                  <Text style={styles.reminderMeta}>This changes the reminder only, not the appointment or regular medication schedule.</Text>
+                  <Calendar
+                    current={snoozeDate}
+                    minDate={localDateString(new Date())}
+                    onDayPress={(day) => { setSnoozeDate(day.dateString); setSnoozeError(null); }}
+                    markedDates={{ [snoozeDate]: { selected: true, selectedColor: "#00796B" } }}
+                  />
+                  <TouchableOpacity style={styles.snoozeOption} onPress={() => setSnoozeClockOpen(true)} accessibilityLabel="Choose snooze time">
+                    <Text style={styles.snoozeText}>Time: {snoozeTime}</Text>
+                  </TouchableOpacity>
+                  {snoozeClockOpen ? (
+                    <DateTimePicker
+                      mode="time"
+                      value={new Date(`${snoozeDate}T${snoozeTime}:00`)}
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={(event, date) => {
+                        if (Platform.OS !== "ios") setSnoozeClockOpen(false);
+                        if (event.type === "set" && date) {
+                          setSnoozeTime(`${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`);
+                          setSnoozeError(null);
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <Text style={styles.snoozeSummary}>{formatReminderTime(`${snoozeDate}T${snoozeTime}:00`)}</Text>
+                  {snoozeError ? <Text accessibilityRole="alert" style={styles.overdueText}>{snoozeError}</Text> : null}
+                  <TouchableOpacity style={styles.snoozeOption} onPress={confirmDatedSnooze}>
+                    <Text style={styles.snoozeText}>Snooze until selected time</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              <TouchableOpacity style={styles.snoozeOption} onPress={() => setSnoozeTarget(null)}>
+                <Text style={styles.snoozeText}>Cancel</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <BottomNavBar
         active="alerts"
@@ -207,48 +353,97 @@ function ReminderCard({
   isHistory = false,
   onDone,
   onSnooze,
+  onRead,
+  now = Date.now(),
+  busy = false,
 }: {
   reminder: Reminder;
   isHistory?: boolean;
   onDone?: () => void;
   onSnooze?: () => void;
+  onRead?: () => void;
+  now?: number;
+  busy?: boolean;
 }) {
-  const isOverdue = !isHistory && new Date(reminder.scheduledFor).getTime() < Date.now();
+  const isOverdue = !isHistory && new Date(reminder.scheduledFor).getTime() < now;
   const accentColor = isHistory ? "#9CA3AF" : reminderAccent(reminder.type);
   const subtitle = `${reminder.type === "medication" ? "Medication" : reminder.type} - ${formatReminderTime(reminder.scheduledFor)}`;
 
   return (
     <View style={styles.reminderCard}>
       <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
-      <View style={styles.cardContent}>
+      <TouchableOpacity disabled={busy || isHistory} onPress={onRead} style={styles.cardContent}>
         <Text style={styles.reminderTitle}>{reminder.title}</Text>
         <Text style={styles.reminderMeta}>{subtitle}</Text>
+        {!isHistory ? <Text style={styles.reminderMeta}>{reminder.readAt ? "Read" : "Unread"}</Text> : null}
+        {isOverdue ? <Text style={styles.overdueText}>Overdue</Text> : null}
         {isHistory ? (
           <Text style={styles.historyMeta}>
             {reminder.completedAt ? "Completed" : "Dismissed"} {formatReminderTime(reminder.dismissedAt ?? "")}
           </Text>
         ) : null}
-      </View>
+      </TouchableOpacity>
       {!isHistory ? (
-        isOverdue ? (
-          <View style={styles.overduePill}>
-            <Text style={styles.overdueText}>Overdue</Text>
-          </View>
-        ) : reminder.type === "medication" ? (
-          <TouchableOpacity style={styles.doneButton} onPress={onDone}>
+        <View style={styles.actions}>
+          <TouchableOpacity disabled={busy} style={[styles.doneButton, busy && styles.disabledButton]} onPress={onDone}>
             <Text style={styles.doneText}>Mark Done</Text>
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.snoozeButton} onPress={onSnooze}>
+          <TouchableOpacity disabled={busy} style={[styles.snoozeButton, busy && styles.disabledButton]} onPress={onSnooze}>
             <Text style={styles.snoozeText}>Snooze</Text>
           </TouchableOpacity>
-        )
+        </View>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  snoozeCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    maxWidth: 380,
+    maxHeight: "90%",
+    padding: 20,
+    width: "100%",
+  },
+  customSnooze: {
+    marginTop: 16,
+  },
+  snoozeSummary: {
+    color: "#3E4946",
+    fontSize: 14,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  snoozeInput: {
+    borderColor: "#E2DED7",
+    borderRadius: 8,
+    borderWidth: 1,
+    color: "#3E4946",
+    fontSize: 16,
+    marginVertical: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  snoozeOption: {
+    alignItems: "center",
+    borderColor: "#E2DED7",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+    padding: 14,
+  },
+  actions: {
+    gap: 6,
+    paddingVertical: 10,
+  },
   screen: {
     backgroundColor: "#FAF8F4",
     flex: 1,

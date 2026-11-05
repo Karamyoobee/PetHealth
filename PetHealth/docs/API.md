@@ -219,11 +219,23 @@ Returns the signed-in user's pets.
 {
   "type": "medication",
   "title": "Give medication",
+  "medicationId": "<owned medication id>",
+  "timezone": "Pacific/Auckland",
   "scheduledFor": "2026-09-10T08:00:00Z",
   "repeat": "daily",
   "enabled": true
 }
 ```
+
+Reminder dates are saved in UTC with the device timezone for recurring wall-clock times. Listing reminders creates daily, weekly or monthly occurrences through the next 30 days, stopping at the medication end date. Each occurrence has its own read/completion history. Snooze changes only that occurrence.
+
+`GET /api/reminders` returns reminders across the signed-in user's pets. Both list endpoints accept `timezone` and `timezoneOffset` for older records.
+
+`POST /api/reminders/:id/actions` accepts `{ "action": "read" }`, `"snooze"` or `"complete"`. Snooze accepts either an integer `snoozeMinutes` from 1 to 1440 (24 hours, default 60) or a future `snoozeUntil` ISO timestamp with a timezone, such as `2026-11-08T09:30:00+13:00`. Send only one option. The app offers 15, 30, 60 and 120-minute shortcuts, a custom duration, and a calendar with a time picker. Snooze moves only that occurrence ahead, preserving the regular daily schedule and the original appointment record; complete moves it to History. Completing a medication reminder records one taken dose idempotently. Older medication reminders are linked only when their title matches exactly one owned medication.
+
+`POST /api/pets/:petId/reminders/dismiss-read` dismisses only read, active reminders without recording doses.
+
+Phone notifications use the existing Expo notifications integration and require permission. The app schedules alerts 4 hours before, 1 hour before and at each reminder time, skipping advance times that have already passed. Snoozed occurrences receive only their selected follow-up alert. The app stores the next 50 upcoming alerts across all reminders and refreshes on app foreground, screen changes and each foreground minute. With push disabled, reopen the app to replenish this local schedule. With Expo push configured, the app registers its phone installation and removes local alerts. The backend worker keeps expanding the rolling schedule without an app refresh and sends each alert through Expo/FCM. The local 50-alert queue does not limit remote delivery. Sign-out unregisters the installation and cancels local Pet Health reminder notifications.
 
 ## PDF Export
 
@@ -231,26 +243,31 @@ Returns the signed-in user's pets.
 
 Requires the signed-in user's bearer token. Returns a PDF attachment for an owned pet, containing its saved profile, vet visits, medications and dose logs, reminders, vaccinations, symptoms, weights, and predictive flags. Empty sections are marked as having no saved records. Long records wrap across numbered pages. The response uses `Cache-Control: no-store`; another user's pet returns `404`, and a missing or expired session returns `401`.
 
-In the app, open Home → Export Health Report (PDF), select a pet, and tap Export PDF. Android and iOS open the device share menu for saving or sharing the file. The web version downloads the PDF through an authenticated request. Temporary mobile report files are removed after the share menu closes. Export creates a document from existing records without changing the database.
+In the app, open My Pets → select a pet → Export PDF in the profile's Quick Access section. The report screen opens with that pet selected; tap Export PDF to save or share. Back returns to the pet profile. Android and iOS open the device share menu for saving or sharing the file. The web version downloads the PDF through an authenticated request. Temporary mobile report files are removed after the share menu closes. Export creates a document from existing records without changing the database.
 
-Report tests use `backend/requirements-dev.txt` for the PDF text reader. Run `python -m pytest tests/test_reports.py` from `backend` and `node --test tests/reports.test.cjs` from `frontend`.
 
 ## Health Assistant
 
+### Saved conversations
+
+`GET /api/assistant/pets/:petId/chat` requires a JWT and pet ownership. It returns `messages`, `conversationVersion` and `nextCursor`. Each message includes its ID, role, text and UTC timestamp; assistant messages may include a `vetSearch` Maps action. The latest 25 completed question/reply pairs load first. Pass `?before=<nextCursor>` to load older pairs. This paging does not delete older messages.
+
+`DELETE /api/assistant/pets/:petId/chat?version=<conversationVersion>` clears that pet's saved conversation after UI confirmation, advances its version and preserves health records. A stale version returns 409. Deleting the pet also deletes its chats. In-flight replies cannot restore a cleared conversation. No chat is saved in AsyncStorage; server history is account- and pet-scoped in MongoDB's `chats` collection.
+
+Completed exchanges are saved automatically, including emergency guidance and nearby-vet actions. Failed exchanges are not added to completed history. Interrupted pending exchanges are hidden and expire after ten minutes when TTL indexes are enabled. If saving cannot be confirmed, the app asks the user to reload history before sending again. Earlier conversations from before this feature cannot be recovered.
+
 `POST /api/assistant/chat`
 
-Requires the signed-in user's JWT and a backend `GEMINI_API_KEY`.
+Requires the signed-in user's JWT. Normal Gemini answers also require a backend `GEMINI_API_KEY`; possible-emergency guidance is returned without calling Gemini.
 
 ```json
 {
   "petId": "selected-pet-id",
   "message": "What should I monitor before our vet appointment?",
-  "history": [
-    {
-      "role": "assistant",
-      "text": "What would you like to review?"
-    }
-  ]
+  "conversationVersion": 0,
+  "requestId": "9e585279-4c9c-43cc-94cd-fc899674619e",
+  "timezone": "Pacific/Auckland",
+  "timezoneOffset": -780
 }
 ```
 
@@ -259,11 +276,18 @@ Success response:
 ```json
 {
   "message": "Generated general guidance for the selected pet.",
-  "disclaimer": "AI guidance is general information and is not a veterinary diagnosis or treatment plan."
+  "disclaimer": "AI guidance is general information and is not a veterinary diagnosis or treatment plan.",
+  "isEmergency": false
 }
 ```
 
-The backend limits message and history length, verifies pet ownership, and sends only selected pet context to Gemini. The Gemini key must never be placed in the Expo environment.
+The backend limits message and history length, verifies pet ownership, and sends only selected pet context to Gemini. It reads the last eight messages from completed saved exchanges rather than trusting history supplied by the client. A UUID `requestId` prevents a retried successful request from creating duplicate exchanges. Successful responses also include the two saved `messages` and `conversationVersion`. The Gemini key must never be placed in the Expo environment. Replies remain non-streaming.
+
+Context includes the current date in the supplied timezone (UTC when omitted), recent symptoms, weights, visits, and up to five saved vaccination records. Medications that have ended, have not started, or are marked completed/cancelled/stopped are excluded. Missing or invalid start dates and invalid end dates are listed separately as uncertain. An absent end date is treated as ongoing after its start date. Missing vaccination records do not mean the pet is unvaccinated.
+
+Normal questions are limited per account to five per fixed minute window and 50 per UTC day using the existing `auth_limits` counters. Exceeding a limit returns 429. Possible-emergency messages bypass these counters and return `isEmergency: true` with immediate veterinary guidance. Pattern matching is a precaution and cannot reliably detect or rule out emergencies. The app displays its warning before awaiting the API and offers a nearby emergency-vet Maps search with a browser fallback; clinic availability must be confirmed by calling. No location permission is requested by Pet Health for this search.
+
+Emergency checks cover common breathing/waking spelling variants, severe pain, collapse, poisoning, severe bleeding and other urgent descriptions, with limited handling of negated or prevention wording. Routine pain is not automatically classified as an emergency. For wording missed by these checks, Gemini is instructed to start an urgent response with `Contact an emergency veterinarian now.`; this sets `isEmergency` when the reply arrives. This model-dependent fallback does not replace the immediate checks and is not guaranteed to identify emergencies.
 
 ## Future Integration Endpoints
 
@@ -287,3 +311,16 @@ Returns basic API status.
 `GET /health/db`
 
 Pings MongoDB and returns the configured database name when the backend can connect.
+
+Medication creation accepts `reminderTimes` with one, two or three distinct `HH:mm` values matching `Once a day`, `Twice a day` or `Three times a day`, plus `reminderEnabled`, `timezone` and `timezoneOffset`. The full schedule is saved on the medication in one database write. Reminder listing creates missing daily series for each selected time idempotently; completed and snoozed occurrences are preserved. Existing medications without multiple saved times keep their existing reminder schedule.
+
+
+## Push notification devices
+
+`GET /api/notifications/config` requires a bearer token and returns `{ "enabled": false, "projectId": null }` until `EXPO_PUSH_ENABLED` and a valid `EXPO_PROJECT_ID` are configured.
+
+`POST /api/notifications/devices` requires a bearer token and accepts `installationId` (UUID), `installationSecret` (random device-only capability), `token` (Expo push token), `platform` (`android` or `ios`), `timezone` and `timezoneOffset`. It stores the registration for the authenticated account and returns `{ "mode": "push" }`. Re-registering the same binding preserves its activation time. The installation secret is stored as a hash on the backend; it is never returned. Registrations follow account credential versions so a password reset disables old device registrations.
+
+`POST /api/notifications/devices/unregister` accepts the installation ID and secret. It only disables that installation and requires possession of its random capability. It works without a valid JWT so an expired session can still stop push delivery during sign-out. Invalid capabilities return 403. It cannot read account data or enable notifications.
+
+Run `python -m flask --app app send-reminders --watch` as a separate long-running worker after configuration. Delivery records use per-device/per-occurrence/per-alert IDs, leases and retry state. Tickets and receipts are checked separately; a provider acceptance is not proof of display. Temporary failures retry for up to five minutes and invalid tokens are disabled. No live pushes are sent in automated tests.

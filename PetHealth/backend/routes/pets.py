@@ -4,6 +4,7 @@ from bson import ObjectId
 from flask import Blueprint, jsonify, request
 
 from database import mongo
+from services.reminders import expand_reminders, prepare_reminder, reminder_action, reminder_timezone, validate_medication_times
 from utils.auth import current_user_id
 from utils.mongo import serialize_doc, validate_object_id
 from utils.users import ensure_current_user
@@ -31,6 +32,10 @@ MEDICATION_FIELDS = (
     "startDate",
     "endDate",
     "reminderTime",
+    "reminderTimes",
+    "reminderEnabled",
+    "timezone",
+    "timezoneOffset",
 )
 REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled", "dismissedAt", "completedAt", "snoozedUntil")
 SYMPTOM_FIELDS = ("name", "severity", "notes", "recordedAt")
@@ -208,7 +213,7 @@ def delete_pet(pet_id):
         return error("Pet not found", 404)
 
     object_id = ObjectId(pet_id)
-    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations"):
+    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations", "chats"):
         mongo.db[collection].delete_many({"petId": object_id})
 
     return "", 204
@@ -237,6 +242,11 @@ def create_medication(pet_id):
     data = json_body()
     if not data.get("name"):
         return error("Medication name is required")
+    if "reminderTimes" in data:
+        try:
+            validate_medication_times(data)
+        except (ValueError, TypeError) as exc:
+            return error(str(exc))
     doc = pick(data, MEDICATION_FIELDS)
     doc.update(
         {
@@ -275,12 +285,75 @@ def add_dose_log(medication_id):
 
 @pets_bp.get("/pets/<pet_id>/reminders")
 def list_reminders(pet_id):
-    return list_collection("reminders", pet_id, "scheduledFor", 1)
+    if get_pet_or_404(pet_id) is None:
+        return error("Pet not found", 404)
+    context = request.args.to_dict()
+    try:
+        reminder_timezone(context)
+        reminders = expand_reminders({"petId": ObjectId(pet_id), "userId": current_user_id()}, context)
+    except ValueError as exc:
+        return error(str(exc))
+    return jsonify([serialize_doc(reminder) for reminder in reminders])
+
+
+@pets_bp.get("/reminders")
+def list_user_reminders():
+    user_id = current_user_id()
+    pet_ids = [pet["_id"] for pet in mongo.db.pets.find({"userId": user_id})]
+    context = request.args.to_dict()
+    try:
+        reminder_timezone(context)
+        reminders = expand_reminders({"userId": user_id, "petId": {"$in": pet_ids}}, context)
+    except ValueError as exc:
+        return error(str(exc))
+    return jsonify([serialize_doc(reminder) for reminder in reminders])
 
 
 @pets_bp.post("/pets/<pet_id>/reminders")
 def create_reminder(pet_id):
-    return create_collection_item("reminders", pet_id, REMINDER_FIELDS)
+    if get_pet_or_404(pet_id) is None:
+        return error("Pet not found", 404)
+    data = json_body()
+    if not isinstance(data, dict):
+        return error("Enter valid reminder details")
+    try:
+        reminder = prepare_reminder(data, ObjectId(pet_id), current_user_id())
+    except ValueError as exc:
+        return error(str(exc))
+    mongo.db.reminders.insert_one(reminder)
+    return jsonify(serialize_doc(reminder)), 201
+
+
+@pets_bp.post("/reminders/<reminder_id>/actions")
+def act_on_reminder(reminder_id):
+    user_id = current_user_id()
+    if not validate_object_id(reminder_id):
+        return error("Reminder not found", 404)
+    reminder = mongo.db.reminders.find_one({"_id": ObjectId(reminder_id), "userId": user_id})
+    if not reminder or get_pet_or_404(str(reminder["petId"])) is None:
+        return error("Reminder not found", 404)
+    data = json_body()
+    try:
+        if isinstance(data, dict) and data.get("action") == "snooze" and "snoozeUntil" in data:
+            if not isinstance(data["snoozeUntil"], str) or "snoozeMinutes" in data:
+                return error("Choose either a snooze duration or a valid date and time")
+        updated = reminder_action(reminder, data.get("action") if isinstance(data, dict) else None,
+                                  data.get("snoozeMinutes", 60) if isinstance(data, dict) else 60,
+                                  data.get("snoozeUntil") if isinstance(data, dict) else None)
+    except ValueError as exc:
+        return error(str(exc))
+    return jsonify(serialize_doc(updated))
+
+
+@pets_bp.post("/pets/<pet_id>/reminders/dismiss-read")
+def dismiss_read_reminders(pet_id):
+    if get_pet_or_404(pet_id) is None:
+        return error("Pet not found", 404)
+    mongo.db.reminders.update_many({
+        "petId": ObjectId(pet_id), "userId": current_user_id(), "readAt": {"$ne": None},
+        "dismissedAt": None, "enabled": {"$ne": False},
+    }, {"$set": {"dismissedAt": utc_now().isoformat(), "updatedAt": utc_now()}})
+    return "", 204
 
 
 @pets_bp.patch("/reminders/<reminder_id>")
@@ -288,7 +361,10 @@ def update_reminder(reminder_id):
     if not validate_object_id(reminder_id):
         return error("Reminder not found", 404)
 
-    update = pick(json_body(), REMINDER_FIELDS)
+    data = json_body()
+    if any(field in data for field in ("completedAt", "dismissedAt", "snoozedUntil")):
+        return error("Use the reminder actions to complete, snooze or dismiss reminders")
+    update = pick(data, REMINDER_FIELDS)
     if not update:
         return error("No valid reminder fields supplied")
 
