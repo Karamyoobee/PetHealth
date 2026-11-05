@@ -108,8 +108,9 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
             
             {/*Header for Weight Dashboard Screen*/}
             <WeightHeader onBack={onBack} label="Weight Tracker"/>
-
-        <ScrollView>
+        
+        {/*Scrollable View for Weight Entries */}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
 
             {/*Weight Chart (simple)*/}
             <WeightCard
@@ -123,7 +124,8 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
             />
 
             {/*6 Month Weight Line Chart*/}
-            <View style={styles.Weight_log_Chart}>//Title for Line Chart
+            <View style={styles.Weight_log_Chart}>
+                {/*Title For Line Chart */}
                 <Text style={styles.section_title}>6 Month Trend</Text>
                 {chartData.values.length >= 2? (//require 2 weight logs maximum - to show weight dashboard
                     <LineChart
@@ -134,7 +136,7 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                     width={chartWidth}  // Screen minus padding (to show good size of Chart Width)
                     height={200}    //Fixed height for chart height
                     yAxisSuffix={unit} //show kg/lb on y-axis only
-                    bezie //curve made smooth
+                    bezier //curve made smooth
                     withInnerLines={false}//
                     chartConfig={{//Colors and decimals set for Chart Style
                         backgroundGradientFrom: '#fff',
@@ -170,7 +172,7 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
     
                 return(
             //Individual Weight Entry Card
-            <View key={entry.id} style={styles.individual_card}>//
+            <View key={entry.id} style={styles.individual_card}>
 
                 
 
@@ -189,9 +191,9 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                 )}
                 </View>
                 );
-                {/*1. First Style: Green for Pet Weight Loss */}
-                {/*2. Secont Style: Red for Pet Weight gain */}
-                {/*+ or - sign (representing weight increase or decrease difference for pet weight) */}
+                //1. First Style: Green for Pet Weight Loss 
+                //2. Secont Style: Red for Pet Weight gain 
+                //+ or - sign (representing weight increase or decrease difference for pet weight)
             })}
 
             </ScrollView>
@@ -213,6 +215,11 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
 
 //Styles Sheet 
 const styles = StyleSheet.create({
+
+    //Scroll View Style
+    scrollContent:{
+        padding: 20,
+    },
 
     //Recent Weight Title Style 
     Recent_weight:{
@@ -240,7 +247,6 @@ const styles = StyleSheet.create({
     },
 
     container: {
-        padding: 20,
         backgroundColor: '#FDFCF9',
         flex: 1,
 
