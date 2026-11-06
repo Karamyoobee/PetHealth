@@ -21,7 +21,6 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
     const [petName, setPetName] = useState('');//Pet Name
     const [age, setAge] = useState('');//Age Entry Field
     const [weight, setWeight] = useState(''); /// Weight Entry Field
-    const [submitted, setSubmitted] = useState(false); // Submit Button
     const [species, setSpecies] = useState<'dog' | 'cat'>('dog'); // Toggle Button - Dog / Cat
     const [gender, setGender] = useState<'female' | 'male'>('female'); // Toggle Button - Female / Male
     const [status, setStatus] = useState<'spayed/neutered' | 'intact'>('spayed/neutered'); //Toggle Button - Spayed/Neutured or Intact
@@ -43,6 +42,7 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
                 console.log("found: ", found)
                 if(found){//Compare existing form details with pet details (stored in database)
                   setPetName(found.name);//form Name vs Name(database stored)
+                  setPhotoUri(found.photoUri || null);
                   setGender(found.sex === 'female' ? 'female': 'male');//Form Gender vs Gender(database stored))
                   setBreed(found.breed);//Form Breed vs Breed(database stored))
                   setAge(String(found.age));//Form Age vs Age(database stored))
@@ -73,17 +73,18 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
         sex: gender,
         weightKg: Number(weight),
         spayedNeutered: status === 'spayed/neutered',
+        photoUri: photoUri,
       };
 
         if (!petId || saving || loading) return;
         setSaving(true);
-        setSubmitted(false);
         setErrorMessage('');
 
         try{
             await api.updatePet(petId, petData);
-            setSubmitted(true);
             showToast("Pet profile updated successfully.");
+            // Return to the profile so it loads the saved details and photo.
+            onBack();
           } catch(error){
             setErrorMessage(error instanceof Error ? error.message : "Could not update the pet profile. Please try again.");
           } finally {
@@ -208,7 +209,6 @@ export default function UpdatePetProfile({petId, onBack}: updatepetProps)  {
 
         <PrimaryButton label={saving ? "Saving..." : "Update Pet Details"} disabled={loading || saving || !petId} onPress={handleSave} />
         {errorMessage ? <Text style={styles.result}>{errorMessage}</Text> : null}
-        {submitted && <Text style={styles.result}>Pet Details have been updated!</Text>}
 
     </ScrollView>
 

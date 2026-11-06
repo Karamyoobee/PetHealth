@@ -13,7 +13,8 @@ type Props = {
 };
 
 function petImage(pet: Pet) {
-  return pet.imageUrl ?? pet.photoUrl ?? pet.avatarUrl;
+  // Use the saved profile photo first, with older image fields as a fallback.
+  return pet.photoUri || pet.imageUrl || pet.photoUrl || pet.avatarUrl;
 }
 
 export function PetSelector({
