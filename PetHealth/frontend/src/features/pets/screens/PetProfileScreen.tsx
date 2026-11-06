@@ -28,6 +28,7 @@ import PhotoHeader from "../components/Photoheader";
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
     petId?: string | null;//Collect id of Pet (selected from myPets Screen)
+    accountEmail?: string;
     title?: string;//Optional title for screen
     onUpdate: () => void;//connection for update button
     onQuickLog: () => void; // connect to Quick Log Screen
@@ -35,12 +36,13 @@ type PetHeaderProps = {
     onPredictiveFlag: () => void;//Button to connect to launch Predictive Flagging Engine Screen
     onVetVisits: () => void;//Button connected to Vet Visit Screen
     onMedications: () => void;//Button to launch Medications Screen
+    onExportReport: () => void;
     onDeleted: () => void;//Delete Pet Profile Succesffully
     onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;//Bottom Navigation Bar Screen Switch
 }
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
-export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onDeleted, onNavigate }: PetHeaderProps){
+export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onExportReport, onDeleted, onNavigate }: PetHeaderProps){
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -65,12 +67,11 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
         }
     };
 
-    //Display Options menu: Edit / Delete (deletion of pet profile [confirmation asked first])
+    //Show the signed-in email and ask before deleting the pet.
     const openPetOptions = () => {
-        if (!pet || loading || deleting) return;//If no pet and unable to delete pet - return
-        Alert.alert('Pet options', pet.name, [
-            { text: 'Edit Pet', onPress: onUpdate },//Edit Button -> Send User to Update Pet Form 
-            { text: 'Delete Pet', style: 'destructive', onPress: () => {//Delete Pet Button
+        if (!pet || loading || deleting) return;
+        Alert.alert('Pet options', `${pet.name}\n\nSigned in as\n${accountEmail || 'Email unavailable'}`, [
+            { text: 'Delete Pet', style: 'destructive', onPress: () => {
                 Alert.alert('Delete Pet', `Delete ${pet.name} and their saved health records? This cannot be undone.`, [
                     { text: 'Cancel', style: 'cancel' },//Confirmation Notice for pet owner for deletion of pet profile & Details
                     { text: 'Delete', style: 'destructive', onPress: deletePet },//Delete Button - official delete of pet profile details inside backend
@@ -192,9 +193,12 @@ export default function PetProfileScreen({ onBack, petId, onUpdate, onQuickLog, 
                 label="Predictive Flagging Engine"
                 icon={<Entypo name="flag" size={24} color="#2F7B6D" />}
             />
+            <QuickButton onPress={onExportReport}
+                label="Export PDF"
+                icon={<Feather name="download" size={24} color="black" />}
+            />
         </View>
-           
-            
+
         </ScrollView>
             {/*Bottom Navigation Bar*/}
             <BottomNavBar

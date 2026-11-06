@@ -12,7 +12,8 @@ function checkResponse(status: number) {
   throw new ApiError("Could not create the PDF report. Please try again.", status);
 }
 
-export async function exportPetReport(pet: Pet) {
+export async function exportPetReport(pet: Pet, onDownloaded?: () => void) {
+  // Download with the saved sign-in so only the owner's pet report is available.
   const request = api.getReportRequest(pet.id);
   const name = pet.name.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 60) || "pet";
   const filename = `${name}-health-report.pdf`;
@@ -58,8 +59,10 @@ export async function exportPetReport(pet: Pet) {
     }
     if (!result || timedOut) throw new Error("The report download timed out. Please try again.");
     checkResponse(result.status);
+    onDownloaded?.();
     await Sharing.shareAsync(result.uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf", dialogTitle: "Export Health Report" });
   } finally {
+    // Remove the cached copy after sharing, including failed downloads.
     await FileSystem.deleteAsync(directory, { idempotent: true }).catch(() => undefined);
   }
 }

@@ -12,6 +12,7 @@ def utc_now():
 
 
 def create_session_token(user, auth_version=None):
+    # Use the configured session length for both Google and email sign-in.
     now = utc_now()
     expires_at = now + timedelta(hours=current_app.config["JWT_EXPIRES_HOURS"])
     credentials = mongo.db.auth_credentials.find_one({"_id": user["userId"]}) or {}
@@ -49,6 +50,7 @@ def current_session():
             issuer=current_app.config["JWT_ISSUER"],
         )
         credentials = mongo.db.auth_credentials.find_one({"_id": session["sub"]}) or {}
+        # A password reset changes this version and ends older sign-ins.
         if session.get("authVersion", 0) != credentials.get("authVersion", 0):
             abort(401, description="Please sign in again")
         return session

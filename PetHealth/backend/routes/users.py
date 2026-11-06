@@ -28,6 +28,7 @@ def update_current_user():
 
 @users_bp.get("/users/me/pets")
 def list_current_user_pets():
+    # Return only the pets belonging to the signed-in account.
     ensure_current_user()
     docs = mongo.db.pets.find({"userId": current_user_id()}).sort("name", 1)
     return jsonify([serialize_doc(doc) for doc in docs])

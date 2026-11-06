@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
+import { showToast } from "../../components/Toast";
 import type { Pet } from "../../types";
 
 type Props = {
@@ -49,7 +50,8 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
   const [purpose, setPurpose] = useState("");
   const [dosage, setDosage] = useState("");
   const [frequency, setFrequency] = useState("");
-  const [reminderTime, setReminderTime] = useState("");
+  const [reminderTimes, setReminderTimes] = useState(["", "", ""]);
+  const [timeIndex, setTimeIndex] = useState(0);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -58,6 +60,7 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
   const [timeOpen, setTimeOpen] = useState(false);
   const [clockHour, setClockHour] = useState(8);
   const [clockMinute, setClockMinute] = useState("00");
+  const [clockError, setClockError] = useState<string | null>(null);
   const [clockPeriod, setClockPeriod] = useState<"AM" | "PM">("AM");
   const [calendarTarget, setCalendarTarget] = useState<"start" | "end" | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(today);
@@ -86,33 +89,58 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
     };
   }, []);
 
-  const openClock = () => {
-    const parsed = parseClockTime(reminderTime);
+  const doseCount = frequency === "Three times a day" ? 3 : frequency === "Twice a day" ? 2 : 1;
+  const selectedTimes = reminderTimes.slice(0, doseCount);
+
+  const openClock = (index: number) => {
+    // Remember which dose is being edited so the other times stay unchanged.
+    setTimeIndex(index);
+    const parsed = parseClockTime(reminderTimes[index]);
     setClockHour(parsed.hour);
     setClockMinute(parsed.minute);
+    setClockError(null);
     setClockPeriod(parsed.period);
     setTimeOpen(true);
   };
 
   const confirmClockTime = () => {
-    setReminderTime(formatClockTime(clockHour, clockMinute, clockPeriod));
+    // Check typed minutes before saving this dose's time.
+    if (!/^\d{1,2}$/.test(clockMinute) || Number(clockMinute) > 59) {
+      setClockError("Enter minutes from 00 to 59.");
+      return;
+    }
+    const time = formatClockTime(clockHour, clockMinute.padStart(2, "0"), clockPeriod);
+    setReminderTimes((current) => current.map((value, index) => index === timeIndex ? time : value));
     setTimeOpen(false);
   };
 
   const openCalendar = (target: "start" | "end") => {
+    // Open on the saved start or end date instead of resetting the calendar.
     const selectedDate = target === "start" ? startDate : endDate;
     setCalendarMonth(selectedDate || today);
     setCalendarTarget(target);
   };
 
   const saveMedication = async () => {
+    // Save all daily dose times together so the reminder series stay in sync.
+    if (saving) return;
     if (!name.trim()) {
       Alert.alert("Medication name required", "Please enter the medication name.");
       return;
     }
 
-    if (!frequency || !reminderTime || !startDate || !endDate) {
-      Alert.alert("Missing details", "Please choose frequency, time, start date, and end date.");
+    if (!frequency || selectedTimes.some((time) => !time) || !startDate || !endDate) {
+      Alert.alert("Missing details", "Please choose frequency, a time for each dose, start date, and end date.");
+      return;
+    }
+
+    if (new Set(selectedTimes).size !== doseCount) {
+      Alert.alert("Different times required", "Please choose a different time for each daily dose.");
+      return;
+    }
+
+    if (endDate < startDate) {
+      Alert.alert("Check dates", "End date must be on or after start date.");
       return;
     }
 
@@ -123,7 +151,7 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
 
     setSaving(true);
     try {
-      const medication = await api.createMedication(selectedPetId, {
+      await api.createMedication(selectedPetId, {
         name: name.trim(),
         purpose: purpose.trim(),
         dosage: dosage.trim(),
@@ -131,19 +159,12 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
         schedule: frequency,
         startDate,
         endDate,
-        reminderTime,
+        reminderTime: selectedTimes[0],
+        reminderTimes: selectedTimes,
+        reminderEnabled,
       });
 
-      if (reminderEnabled) {
-        await api.createReminder(selectedPetId, {
-          type: "medication",
-          title: `${medication.name} ${dosage.trim() ? `- ${dosage.trim()}` : ""}`.trim(),
-          scheduledFor: `${startDate}T${reminderTime}:00`,
-          repeat: "daily",
-          enabled: true,
-        });
-      }
-
+      showToast("Medication saved successfully.");
       onSubmit?.(selectedPetId);
     } catch (error) {
       Alert.alert("Could not save medication", error instanceof Error ? error.message : "Please try again.");
@@ -221,13 +242,17 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
             </View>
           </View>
 
-          <Text style={styles.label}>Set Time</Text>
-          <TouchableOpacity style={styles.fullSelect} onPress={openClock}>
-            <Ionicons name="time-outline" size={17} color="#526066" />
-            <Text style={[styles.selectText, !reminderTime && styles.placeholderText]}>
-              {reminderTime || "Select time"}
-            </Text>
-          </TouchableOpacity>
+          {selectedTimes.map((time, index) => (
+            <View key={index}>
+              <Text style={styles.label}>{doseCount === 1 ? "Set Time" : `Dose ${index + 1} Time`}</Text>
+              <TouchableOpacity accessibilityLabel={`Dose ${index + 1} time`} style={styles.fullSelect} onPress={() => openClock(index)}>
+                <Ionicons name="time-outline" size={17} color="#526066" />
+                <Text style={[styles.selectText, !time && styles.placeholderText]}>
+                  {time || "Select time"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
 
           <View style={styles.reminderRow}>
             <View style={styles.reminderLabelWrap}>
@@ -322,64 +347,78 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
       </Modal>
 
       <Modal transparent visible={timeOpen} animationType="fade" onRequestClose={() => setTimeOpen(false)}>
-        <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView style={styles.modalBackdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={styles.clockCard}>
-            <Text style={styles.modalTitle}>Select Time</Text>
-            <Text style={styles.timePreview}>{formatClockTime(clockHour, clockMinute, clockPeriod)}</Text>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Select Time</Text>
+              <Text style={styles.timePreview}>{formatClockTime(clockHour, clockMinute.padStart(2, "0"), clockPeriod)}</Text>
 
-            <View style={styles.clockFace}>
-              {hourOptions.map((hour, index) => {
-                const angle = (index * 30 - 90) * (Math.PI / 180);
-                const left = 92 + 78 * Math.cos(angle);
-                const top = 92 + 78 * Math.sin(angle);
+              <View style={styles.clockFace}>
+                {hourOptions.map((hour, index) => {
+                  const angle = (index * 30 - 90) * (Math.PI / 180);
+                  const left = 92 + 78 * Math.cos(angle);
+                  const top = 92 + 78 * Math.sin(angle);
 
-                return (
+                  return (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[styles.clockHour, { left, top }, clockHour === hour && styles.clockHourActive]}
+                      onPress={() => setClockHour(hour)}
+                    >
+                      <Text style={[styles.clockHourText, clockHour === hour && styles.clockHourTextActive]}>{hour}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <View style={styles.clockCenter} />
+              </View>
+
+              <View style={styles.periodRow}>
+                {(["AM", "PM"] as const).map((period) => (
                   <TouchableOpacity
-                    key={hour}
-                    style={[styles.clockHour, { left, top }, clockHour === hour && styles.clockHourActive]}
-                    onPress={() => setClockHour(hour)}
+                    key={period}
+                    style={[styles.periodButton, clockPeriod === period && styles.periodButtonActive]}
+                    onPress={() => setClockPeriod(period)}
                   >
-                    <Text style={[styles.clockHourText, clockHour === hour && styles.clockHourTextActive]}>{hour}</Text>
+                    <Text style={[styles.periodText, clockPeriod === period && styles.periodTextActive]}>{period}</Text>
                   </TouchableOpacity>
-                );
-              })}
-              <View style={styles.clockCenter} />
-            </View>
+                ))}
+              </View>
 
-            <View style={styles.periodRow}>
-              {(["AM", "PM"] as const).map((period) => (
-                <TouchableOpacity
-                  key={period}
-                  style={[styles.periodButton, clockPeriod === period && styles.periodButtonActive]}
-                  onPress={() => setClockPeriod(period)}
-                >
-                  <Text style={[styles.periodText, clockPeriod === period && styles.periodTextActive]}>{period}</Text>
+              <View style={styles.minuteGrid}>
+                {minuteOptions.map((minute) => (
+                  <TouchableOpacity
+                    key={minute}
+                    style={[styles.minuteButton, clockMinute === minute && styles.minuteButtonActive]}
+                    onPress={() => { setClockMinute(minute); setClockError(null); }}
+                  >
+                    <Text style={[styles.minuteText, clockMinute === minute && styles.minuteTextActive]}>{minute}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Or enter minutes (00 to 59)</Text>
+              <TextInput
+                accessibilityLabel="Custom minutes, from 00 to 59"
+                style={styles.input}
+                keyboardType="number-pad"
+                maxLength={2}
+                value={clockMinute}
+                placeholder="e.g. 07"
+                placeholderTextColor="#6B7280"
+                onChangeText={(value) => { setClockMinute(value); setClockError(null); }}
+              />
+              {clockError ? <Text accessibilityRole="alert" style={styles.clockError}>{clockError}</Text> : null}
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalAction} onPress={() => setTimeOpen(false)}>
+                  <Text style={styles.closeText}>Cancel</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.minuteGrid}>
-              {minuteOptions.map((minute) => (
-                <TouchableOpacity
-                  key={minute}
-                  style={[styles.minuteButton, clockMinute === minute && styles.minuteButtonActive]}
-                  onPress={() => setClockMinute(minute)}
-                >
-                  <Text style={[styles.minuteText, clockMinute === minute && styles.minuteTextActive]}>{minute}</Text>
+                <TouchableOpacity style={[styles.modalAction, styles.confirmAction]} onPress={confirmClockTime}>
+                  <Text style={styles.confirmText}>Set Time</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalAction} onPress={() => setTimeOpen(false)}>
-                <Text style={styles.closeText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalAction, styles.confirmAction]} onPress={confirmClockTime}>
-                <Text style={styles.confirmText}>Set Time</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -603,6 +642,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   clockCard: {
+    maxHeight: "90%",
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 18,
@@ -688,6 +728,11 @@ const styles = StyleSheet.create({
   },
   periodTextActive: {
     color: "#FFFFFF",
+  },
+  clockError: {
+    color: "#B42318",
+    fontSize: 13,
+    marginBottom: 10,
   },
   minuteGrid: {
     flexDirection: "row",

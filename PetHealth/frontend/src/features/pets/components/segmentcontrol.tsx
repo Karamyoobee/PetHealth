@@ -33,8 +33,7 @@ export default function SegmentControl<T extends string>({options, value, onChan
                         onPress={() => onChange(opt.value)}
                         //Switch between active and inactive style
                         style={isActive ? styles.pillisActive : styles.Inactivepill}
-                        >   
-                        
+                        >
                             <Text style={isActive ? styles.activepilltext: styles.inactivepilltext}>
                                 {opt.label}
                             </Text>

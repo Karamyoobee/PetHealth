@@ -17,6 +17,7 @@ def _not_found():
 
 @reports_bp.get("/pets/<pet_id>/report.pdf")
 def pet_report_pdf(pet_id):
+    # Check who owns the pet before collecting any records for the PDF.
     user_id = current_user_id()
     if not validate_object_id(pet_id):
         return _not_found()

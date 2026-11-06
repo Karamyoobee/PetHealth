@@ -11,6 +11,7 @@ def utc_now():
 
 
 def ensure_current_user(profile=None):
+    # Keep profile details up to date without changing a verified sign-in email.
     user_id = current_user_id()
     profile = profile or {}
     existing = mongo.db.users.find_one({"userId": user_id}) or {}

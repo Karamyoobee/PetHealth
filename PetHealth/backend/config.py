@@ -28,3 +28,6 @@ class Config:
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
     SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+    EXPO_PUSH_ENABLED = os.getenv("EXPO_PUSH_ENABLED", "false").lower() == "true"
+    EXPO_PROJECT_ID = os.getenv("EXPO_PROJECT_ID", "").strip()
+    EXPO_ACCESS_TOKEN = os.getenv("EXPO_ACCESS_TOKEN", "").strip()

@@ -50,6 +50,7 @@ def secret_hash(value):
 
 
 def rate_limited(action, identity, limit, seconds=900):
+    # Count attempts in the database so the limit also works across API processes.
     now = utc_now()
     window = int(now.timestamp()) // seconds
     key = secret_hash(f"{action}:{identity}:{window}")
@@ -83,6 +84,7 @@ def valid_password(password):
 
 @auth_bp.post("/register/request-code")
 def request_registration_code():
+    # Keep registration pending until the email verification code is confirmed.
     body = json_body()
     email = normalized_email(body.get("email"))
     name = body.get("name")
@@ -116,6 +118,7 @@ def request_registration_code():
 
 @auth_bp.post("/register/verify")
 def verify_registration():
+    # Create the account only after a valid, unused email code is confirmed.
     body = json_body()
     email = normalized_email(body.get("email"))
     challenge_id = body.get("challengeId")
@@ -194,6 +197,7 @@ def database_error(exc):
 
 @auth_bp.post("/google")
 def google_login():
+    # Let Google verify the token before looking up or creating the app account.
     body = json_body()
     token = body.get("idToken")
     if not isinstance(token, str) or not token:
@@ -248,6 +252,7 @@ def google_login():
 
 @auth_bp.post("/password/login")
 def password_login():
+    # Compare the password hash; the original password is never stored.
     body = json_body()
     email = normalized_email(body.get("email"))
     password = body.get("password")
@@ -270,6 +275,7 @@ def password_login():
 
 @auth_bp.post("/password/request-code")
 def request_password_code():
+    # Use a general reply so this request does not reveal registered emails.
     email = normalized_email(json_body().get("email"))
     if not email:
         return jsonify({"error": "Enter a valid email address"}), 400
@@ -299,6 +305,7 @@ def request_password_code():
 
 @auth_bp.post("/password/reset")
 def reset_password():
+    # Check the reset code before replacing the password hash and ending old sessions.
     body = json_body()
     email = normalized_email(body.get("email"))
     code = body.get("code")

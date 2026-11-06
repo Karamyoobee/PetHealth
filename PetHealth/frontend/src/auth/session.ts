@@ -27,6 +27,7 @@ export async function restoreSavedSession(): Promise<RestoredSession> {
   try {
     user = await api.getCurrentUser();
   } catch (error) {
+    // Keep the saved sign-in when the server is temporarily unreachable.
     if (error instanceof ApiError && error.status === 401) {
       await clearSavedSession();
       return { status: "expired" };
