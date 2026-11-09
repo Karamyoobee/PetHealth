@@ -22,12 +22,9 @@ class Config:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
     GEMINI_TIMEOUT_SECONDS = int(os.getenv("GEMINI_TIMEOUT_SECONDS", "30"))
-    SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
-    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USERNAME = os.getenv("SMTP_USERNAME", "").strip()
-    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-    SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
-    SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
+    BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "").strip()
+    BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Pet Health").strip()
     EXPO_PUSH_ENABLED = os.getenv("EXPO_PUSH_ENABLED", "false").lower() == "true"
     EXPO_PROJECT_ID = os.getenv("EXPO_PROJECT_ID", "").strip()
     EXPO_ACCESS_TOKEN = os.getenv("EXPO_ACCESS_TOKEN", "").strip()
