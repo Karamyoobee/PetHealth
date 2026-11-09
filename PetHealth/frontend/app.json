@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Pet Health",
+    "icon": "./src/features/pets/assets/pet_health_logo.png",
     "slug": "pet-health",
     "scheme": "pethealth.com",
     "version": "0.1.0",
