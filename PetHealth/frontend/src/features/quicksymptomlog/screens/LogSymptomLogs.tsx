@@ -5,17 +5,15 @@ import SectionHeader from "../../../components/QuickLogSymptom/SectionHeader";
 import BottomNavBar from "../../HomeScreen/components/TabBar";
 import { Symptom, Pet } from "../../../types";
 import { api } from "../../../api/client";
-import NewSymptom from "../../../components/QuickLogSymptom/Addnewsymptomlogbutton";
 
 //Symptom Log Type
 type MySymptomlog={
     onBack: () => void;
-    onAddNewSymptomLog: () => void;//Display New Symptom Log Button -> send user to add new symptom log screen
     petId: string | null;
     onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
-export default function MyLogSymptom({onBack, onAddNewSymptomLog, petId, onNavigate}: MySymptomlog){
+export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
 
     //Use States Declared
     const [logs, setLogs] = useState<Symptom[]>([]);//Symptom Logs
@@ -47,52 +45,38 @@ export default function MyLogSymptom({onBack, onAddNewSymptomLog, petId, onNavig
     const sortedLogs = [...logs].sort(
         (a,b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()//Display logs by recorded time and based on real time
     );
+    const petDetails = [pet?.breed, pet?.age ? `${pet.age} years` : null].filter(Boolean).join(' \u2022 ');
 
     return(
         <View style={styles.maincontainer}>
             {/*Header main for screen */}
             <SectionHeader onBack={onBack} title="Symptom Logs"/>
 
-            {/*Button for "Add New symptom Log"  */}
-            <NewSymptom onPress={onAddNewSymptomLog}/>
-
             {/*Pet Profile Card*/}
             <View style={styles.pet_profilecard}>
-                <View style={styles.left_container_content}>
+                <View style={styles.petInfo}>
                     {pet?.photoUri?(
                     <Image source={{ uri: pet?.photoUri}} style={styles.Image_avatar}/>
                 ) : (
                 <View style={[styles.Image_avatar, {backgroundColor: '#E6E8E3'}]}/>
                 )}
-            
-            <View>
-
-            </View>
-            
-            {/*Pet Profile Container - Displayed Pet Information and Symptom Logs*/}
-                <View style={styles.petprofile_name_container}>
-                    <Text style={styles.pet_name}>{pet?.name}</Text>
-                    <View style={styles.Status_pill}>
-                        <View style={styles.dot_status}/>
-                            <Text style={styles.banner_title}>{pet?.status}</Text>
-                    </View>
+                <View style={styles.petDetails}>
+                    <Text style={styles.pet_name}>{pet?.name ?? 'Selected pet'}</Text>
+                    <Text style={styles.pet_meta}>{petDetails || 'Pet profile'}</Text>
+                    {!!pet?.status && (
+                        <View style={styles.Status_pill}>
+                            <View style={styles.dot_status}/>
+                            <Text style={styles.banner_title}>{pet.status}</Text>
+                        </View>
+                    )}
                 </View>
             </View>
-                
-            {/*Display Breed & Age of Selected Pet*/}
-                <View>
-                    <Text style={styles.pet_meta}>{pet?.breed} • {pet?.age} years</Text>
-                </View>
-
-            {/* Pet Profile Card - Number of Symptom Logs*/}
-            <View style={styles.right_content}>
-                <Text style={styles.totallogs_label}>Total Logs:</Text>
-                <Text style={styles.totallogs_value}>{logs.length} recorded</Text>
+            <View style={styles.logCount}>
+                <Text style={styles.totallogs_value}>{logs.length}</Text>
+                <Text style={styles.totallogs_label}>Logs</Text>
             </View>
-
             </View>
-
-            <ScrollView contentContainerStyle={styles.scrollview_style}>
+            <ScrollView style={styles.scrollview} contentContainerStyle={styles.scrollview_style}>
 
                 {loading && <Text>Loading...</Text>}
 
@@ -104,7 +88,7 @@ export default function MyLogSymptom({onBack, onAddNewSymptomLog, petId, onNavig
                     key={log.id}
                     symptom={log.name}
                     note={log.notes}
-                    loggedAt={`${new Date(log.recordedAt).toLocaleDateString('en-NZ', {day: 'numeric', month:'short', year:'numeric'})} • ${new Date(log.recordedAt).toLocaleTimeString('en-NZ',{hour:'2-digit', minute:'2-digit'})}`} //ISO string -> store actual real data
+                    loggedAt={`${new Date(log.recordedAt).toLocaleDateString('en-NZ', {day: 'numeric', month:'short', year:'numeric'})} \u2022 ${new Date(log.recordedAt).toLocaleTimeString('en-NZ',{hour:'2-digit', minute:'2-digit'})}`} //ISO string -> store actual real data
                     severity={log.severity}
                     durationDays={log.durationDays ?? parseInt(log.notes?.match(/Duration:\s*(\d+)/)?.[1]??'0')}
                     category={(log.category ?? log.name) as any}
@@ -128,8 +112,8 @@ export default function MyLogSymptom({onBack, onAddNewSymptomLog, petId, onNavig
 
 const styles = StyleSheet.create({
 
-    //Left Aligned Row - Card Details: 
-    left_container_content:{
+    //Left aligned pet details in the summary card.
+    petInfo:{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10, 
@@ -142,30 +126,9 @@ const styles = StyleSheet.create({
         borderRadius:22,
     },
 
-    //Text Block Style - inside pet profile card
-    text:{
-        color:'lightgreen',
-        borderRadius: 12,
-    },
-
-    //Right content - container
-    right_content:{
+    logCount:{
         alignItems: 'flex-end',
-        color:'lightgrey',
-    },
-
-    //Heading row (saved log symptoms)
-    heading:{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-
-    //Banner Style - Symptom Saved logs declared
-    banner: {
-        flexDirection:'row',
-        backgroundColor: 'lightgreen',
-        borderColor:'green',
+        minWidth: 48,
     },
 
     //Icon - left side... 
@@ -175,17 +138,24 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff', 
         borderWidth: 1,
         borderColor:'#E6E8E3',
-        borderRadius: 12,
-        padding: 12,
+        borderRadius: 14,
+        padding: 14,
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center',
+        marginHorizontal: 16,
+        marginTop: 16,
     },
 
     //scroll view style 
     scrollview_style:{
         padding: 16,
         gap: 14,
+        paddingBottom: 72,
+    },
+
+    scrollview: {
+        flex: 1,
     },
     
     //row - main container
@@ -194,17 +164,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#FAF7F0',
     },
     
-    //Pet Profile Name row container 
-    petprofile_name_container:{
-        flexDirection: 'row', 
-        alignItems: 'center',
-        gap: 8,
+    petDetails:{
+        gap: 3,
     },
 
     //Pet Profile Name Text Style 
     pet_name:{
         fontSize: 16,
         fontWeight:'700',
+        color: '#23332F',
     },
 
     //Status Pill Container Style
@@ -236,25 +204,16 @@ const styles = StyleSheet.create({
     totallogs_label:{
         fontSize: 11,
         color:'#7A7F7C',
+        marginTop: 2,
     },
 
     //Label for Total value symptom logs (number shown)
     totallogs_value:{
-        fontSize: 11,
+        fontSize: 20,
         color:'#2F7D5B',
         fontWeight: '700',
     },
 
-    //Title Section Style: Quick Log Symptom Entries
-    title_section:{
-        fontSize: 11,
-        color:'#2F7D5B',
-        fontWeight: '700',
-    },
-
-
-    //Section Sorted - Button (maybe not include not enough time!)
-    
     //Banner Title Style
     banner_title:{
         fontSize: 13,

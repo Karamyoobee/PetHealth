@@ -1,7 +1,8 @@
 // ====== IMPORTS ======
 import { useState, useEffect, useMemo } from "react";
-import {View, Text, StyleSheet, Alert, Dimensions, ScrollView} from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet, Alert, Dimensions, ScrollView, Pressable} from "react-native";//React - Native Libraries
 import { LineChart as RNLineChart } from 'react-native-chart-kit';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import type { ComponentType } from 'react';
 const LineChart = RNLineChart as unknown as ComponentType<any>;//Connection for LineChart used for weight chart (avoid type errors)
 
@@ -18,6 +19,15 @@ import { WeightEntry } from "../../../types";
 
 //Unit Type = whic weight the user has toggled on "kg" or "lb"
 type Unit = 'kg'|'lb'
+type TrendRange = 'week' | 1 | 3 | 6 | 'custom';
+type DatePickerTarget = 'start' | 'end' | null;
+
+const trendOptions: { label: string; value: TrendRange }[] = [
+    { label: '7 days', value: 'week' },
+    { label: '1 month', value: 1 },
+    { label: '3 months', value: 3 },
+    { label: '6 months', value: 6 },
+];
 
 //Weight Conversion function 
 //Conversion factor (kg -> lb)
@@ -51,6 +61,14 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
     //States: chosen UNIT and List of Weight Entries
     const [unit, setUnit] = useState<Unit>('kg');   //selected (kg/lb) unit
     const [weightentries, setWeightEntries] = useState<WeightEntry[]>([]);//Store all weight entries for pet
+    const [trendRange, setTrendRange] = useState<TrendRange>('week');
+    const [customStartDate, setCustomStartDate] = useState(() => {
+        const date = new Date();
+        date.setMonth(date.getMonth() - 1);
+        return date;
+    });
+    const [customEndDate, setCustomEndDate] = useState(new Date());
+    const [datePickerTarget, setDatePickerTarget] = useState<DatePickerTarget>(null);
 
     //Save Button - Store New Weight Entry into backend
     // ===== DISPLAY pet Weight Entries for this pet (newest first) from backend =====
@@ -77,30 +95,49 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
     const latest_weight = weightentries[0]
 
     //Creating Chart Data
-    const chartWidth = Dimensions.get('window').width - 80;
+    const chartWidth = Dimensions.get('window').width - 72;
 
-    //Create chart labels and values to be used 
+    //Use the selected period to keep the chart focused on recent changes.
     const chartData = useMemo(() =>{
-        //filter to display only previous 6 months
-        const previoussixMonths = new Date();
-        //6 Month's ago only for line chart
-          previoussixMonths.setMonth(previoussixMonths.getMonth() - 6);
+        const startDate = new Date();
+        let endDate = new Date();
+
+        if (trendRange === 'week') {
+            startDate.setDate(startDate.getDate() - 7);
+        } else if (trendRange === 'custom') {
+            startDate.setTime(customStartDate.getTime());
+            endDate = new Date(customEndDate);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            startDate.setMonth(startDate.getMonth() - trendRange);
+        }
         
+          //Only use records inside the dates the owner selected.
           const points = [...weightentries]
-            //filter only by the last 6months of weight records only
-            .filter((e) => new Date(e.recordedAt) >= previoussixMonths)
+            .filter((e) => {
+                const recordedAt = new Date(e.recordedAt);
+                return recordedAt >= startDate && recordedAt <= endDate;
+            })
             //Sort from oldest first showing on chart to newest
             .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
 
         //provide space to labels 
-        const step = Math.ceil(points.length / 5) || 1; // display all 5 date labels
+        const step = trendRange === 'week' ? 1 : Math.ceil(points.length / 5) || 1;
             return{
                 //label every nth point, otherwise else remain blank
         labels: points.map((e, i) => (i % step === 0 ? Dateformat(e.recordedAt): " ")),
         values: points.map((e) => toshow(e.weightKg, unit)), //Weight's to be shown in selected unit (kg/lb)
 
     };
-},[weightentries, unit]);//re-calculate on data/unit change
+},[weightentries, unit, trendRange, customStartDate, customEndDate]);//re-calculate on data/unit change
+
+    const trendTitle = trendRange === 'week'
+        ? '7 Day Trend'
+        : trendRange === 'custom'
+            ? 'Custom Trend'
+        : trendRange === 1
+            ? '1 Month Trend'
+            : `${trendRange} Month Trend`;
 
     return(
         //Main container for "Weight Dashboard Screen"
@@ -110,7 +147,7 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
             <WeightHeader onBack={onBack} label="Weight Tracker"/>
         
         {/*Scrollable View for Weight Entries */}
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
 
             {/*Weight Chart (simple)*/}
             <WeightCard
@@ -123,11 +160,38 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                 onUnitChange={setUnit}//Updated on toggle for either kg or lb
             />
 
-            {/*6 Month Weight Line Chart*/}
+            {/* Weight trend chart */}
             <View style={styles.Weight_log_Chart}>
-                {/*Title For Line Chart */}
-                <Text style={styles.section_title}>6 Month Trend</Text>
-                {chartData.values.length >= 2? (//require 2 weight logs maximum - to show weight dashboard
+                <View style={styles.chartHeader}>
+                    <Text style={styles.section_title}>{trendTitle}</Text>
+                </View>
+                <View style={styles.trendOptions}>
+                    {trendOptions.map((option) => (
+                        <Pressable
+                            key={String(option.value)}
+                            onPress={() => setTrendRange(option.value)}
+                            style={[styles.trendOption, trendRange === option.value && styles.selectedTrendOption]}
+                        >
+                            <Text style={[styles.trendOptionText, trendRange === option.value && styles.selectedTrendOptionText]}>
+                                {option.label}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
+                <Pressable
+                    onPress={() => {
+                        setTrendRange('custom');
+                        setDatePickerTarget('start');
+                    }}
+                    style={[styles.customRangeButton, trendRange === 'custom' && styles.selectedCustomRangeButton]}
+                >
+                    <Text style={[styles.customRangeText, trendRange === 'custom' && styles.selectedCustomRangeText]}>
+                        {trendRange === 'custom'
+                            ? `${Dateformat(customStartDate.toISOString())} - ${Dateformat(customEndDate.toISOString())}`
+                            : 'Choose custom dates'}
+                    </Text>
+                </Pressable>
+                {chartData.values.length > 0 ? (
                     <LineChart
                     data={{
                         labels:chartData.labels,
@@ -136,23 +200,73 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
                     width={chartWidth}  // Screen minus padding (to show good size of Chart Width)
                     height={200}    //Fixed height for chart height
                     yAxisSuffix={unit} //show kg/lb on y-axis only
-                    bezier //curve made smooth
-                    withInnerLines={false}//
+                    bezier={chartData.values.length > 1} // A single record is shown as a dot.
+                    withDots
+                    withShadow
+                    withVerticalLines={false}
+                    withHorizontalLines
+                    withOuterLines={false}
+                    segments={4}
+                    getDotColor={(dataPoint: number, index: number) => {
+                        if (index === 0) return '#697572';
+                        const previousPoint = chartData.values[index - 1];
+                        return dataPoint > previousPoint ? '#D9822B' : '#167D6B';
+                    }}
+                    withInnerLines
                     chartConfig={{//Colors and decimals set for Chart Style
                         backgroundGradientFrom: '#fff',
                         backgroundGradientTo: '#fff',
                         decimalPlaces: 1,
                         color:() => '#167D6B',
                         labelColor: () => "#808080",
+                        propsForDots: {
+                            r: '5',
+                            strokeWidth: '2',
+                            stroke: '#FFFFFF',
+                        },
+                        propsForBackgroundLines: {
+                            stroke: '#E8EEEC',
+                            strokeDasharray: '',
+                        },
                     }}//Card Sizing for Weight Chart
-                    style={{marginTop: 12, marginLeft: -16}}
+                    style={styles.chart}
                     />    
                 ): ( //Important Message for user
                     <Text style={styles.miniweight_text}>
-                        You must log at least 2 weigh-in to see your overall weight log trend.
+                        No weight entries were recorded in this period.
                     </Text>
                 )}
+                {chartData.values.length > 1 && (
+                    <View style={styles.chartLegend}>
+                        <View style={[styles.legendDot, styles.lowerDot]}/>
+                        <Text style={styles.legendText}>Lower or unchanged</Text>
+                        <View style={[styles.legendDot, styles.higherDot]}/>
+                        <Text style={styles.legendText}>Increased</Text>
+                    </View>
+                )}
             </View>
+
+            {datePickerTarget && (
+                <DateTimePicker
+                    value={datePickerTarget === 'start' ? customStartDate : customEndDate}
+                    mode="date"
+                    maximumDate={new Date()}
+                    minimumDate={datePickerTarget === 'end' ? customStartDate : undefined}
+                    onChange={(_, selectedDate) => {
+                        setDatePickerTarget(null);
+                        if (!selectedDate) return;
+
+                        if (datePickerTarget === 'start') {
+                            setCustomStartDate(selectedDate);
+                            setCustomEndDate((currentEndDate) => currentEndDate < selectedDate ? selectedDate : currentEndDate);
+                            setDatePickerTarget('end');
+                            return;
+                        }
+
+                        setCustomEndDate(selectedDate);
+                    }}
+                />
+            )}
             
             {/*Log Weight Entry Button - Allow user's to create new weight*/}
             <View style={styles.addentrybutton}>
@@ -219,6 +333,11 @@ const styles = StyleSheet.create({
     //Scroll View Style
     scrollContent:{
         padding: 20,
+        paddingBottom: 92,
+    },
+
+    scrollView: {
+        flex: 1,
     },
 
     //Recent Weight Title Style 
@@ -237,6 +356,72 @@ const styles = StyleSheet.create({
         padding: 16,//adjust later (once completed full chart)
         marginTop: 16,
         backgroundColor: '#fff'
+    },
+
+    chartHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+
+    trendOptions: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F6F5',
+        borderRadius: 10,
+        marginTop: 12,
+        padding: 3,
+    },
+
+    trendOption: {
+        alignItems: 'center',
+        borderRadius: 8,
+        flex: 1,
+        paddingHorizontal: 4,
+        paddingVertical: 8,
+    },
+
+    selectedTrendOption: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#1F302C',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+
+    trendOptionText: {
+        color: '#697572',
+        fontSize: 11,
+        fontWeight: '600',
+    },
+
+    selectedTrendOptionText: {
+        color: '#167D6B',
+    },
+
+    customRangeButton: {
+        alignItems: 'center',
+        borderColor: '#D8E4E0',
+        borderRadius: 8,
+        borderWidth: 1,
+        marginTop: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+
+    selectedCustomRangeButton: {
+        backgroundColor: '#E7F3EF',
+        borderColor: '#167D6B',
+    },
+
+    customRangeText: {
+        color: '#3E4946',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+
+    selectedCustomRangeText: {
+        color: '#167D6B',
     },
 
     //Chart Title (sectoin)
@@ -320,6 +505,39 @@ const styles = StyleSheet.create({
     miniweight_text:{
         color:'#808080',
         fontSize: 12,
+    },
+
+    chart: {
+        marginTop: 14,
+        marginLeft: -10,
+        borderRadius: 10,
+    },
+
+    chartLegend: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginTop: 6,
+    },
+
+    legendDot: {
+        borderRadius: 5,
+        height: 10,
+        width: 10,
+    },
+
+    lowerDot: {
+        backgroundColor: '#167D6B',
+    },
+
+    higherDot: {
+        backgroundColor: '#D9822B',
+        marginLeft: 8,
+    },
+
+    legendText: {
+        color: '#697572',
+        fontSize: 11,
     },
     
     //Use to display weigh increase / decrease overtime

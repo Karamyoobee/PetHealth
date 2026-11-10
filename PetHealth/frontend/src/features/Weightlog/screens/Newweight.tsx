@@ -11,6 +11,7 @@ import {View, Text, StyleSheet, TextInput, Pressable, ScrollView, TouchableOpaci
 import { SaveWeight } from "../../../components/WeightLog/Saveweightbutton";
 
 import { Calendar } from "react-native-calendars"; //Calendar Import
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from "@expo/vector-icons";//Icons
 
 //Icon's from @expo/vector-icons
@@ -59,6 +60,20 @@ function addYears(dateString: string, years: number) {//Date set as string / Yea
     const [y, m,d] = dateString.split("-").map(Number)//[2026,11,`1]
     const next  = `${y+ years}-${String(m).padStart(2, "0")}-${String(Math.min(d, 28)).padStart(2,"0")}`;//day of month capped at 28, so date like 29 Feb does not become invalid date (only month shown)
     return next > getTodayDate() ? getTodayDate(): next;//Adding date past today is not allowed, weigh-ins must be present or past NOT future!
+}
+
+//Show the optional time in a short, readable format.
+function formatTime(time: Date) {
+    return time.toLocaleTimeString('en-NZ', {
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+}
+
+//Keep the chosen date and optional time together when saving the entry.
+function buildRecordedAt(date: string, time: Date | null) {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Date(year, month - 1, day, time?.getHours() ?? 12, time?.getMinutes() ?? 0).toISOString();
 }
 
 //LogWeight - main screen component 
@@ -111,7 +126,7 @@ export default function LogWeight({onBack, petId}:WeightProps){
 
             const weightData = {//Weight Data  - matching backend data stored 
                 weightKg: Math.round((unit === 'kg' ? weightNumber: weightNumber * 0.45359237) * 100) / 100,
-                recordedAt: new Date(`${date}T12:00:00`).toISOString(),
+                recordedAt: buildRecordedAt(date, time),
                 notes: notes.trim(),
             };
             //Send Saved Weight data to backend API and mongodb database
@@ -179,8 +194,10 @@ export default function LogWeight({onBack, petId}:WeightProps){
                 <Weightformfield
                     icon = {<AntDesign name="clockcircle" size={16} color="#4A6B64" />}
                     label={"Time (Optional)"}>
-                        <Pressable style={styles.fieldBox}>
-                            <Text style={styles.placholederTextStyle}>--:-- --</Text>
+                        <Pressable onPress={() => setShowTime(true)} style={styles.fieldBox}>
+                            <Text style={time ? styles.Textfield : styles.placholederTextStyle}>
+                                {time ? formatTime(time) : '--:-- --'}
+                            </Text>
                         </Pressable>
                 </Weightformfield>
 
@@ -244,6 +261,17 @@ export default function LogWeight({onBack, petId}:WeightProps){
                    </View>
                  </View>
                </Modal>
+
+          {showTime && (
+            <DateTimePicker
+              value={time ?? new Date()}
+              mode="time"
+              onChange={(_, selectedTime) => {
+                setShowTime(false);
+                if (selectedTime) setTime(selectedTime);
+              }}
+            />
+          )}
     </View>
     </ScrollView>
 
