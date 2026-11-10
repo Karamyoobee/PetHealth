@@ -5,15 +5,17 @@ import SectionHeader from "../../../components/QuickLogSymptom/SectionHeader";
 import BottomNavBar from "../../HomeScreen/components/TabBar";
 import { Symptom, Pet } from "../../../types";
 import { api } from "../../../api/client";
+import NewSymptom from "../../../components/QuickLogSymptom/Addnewsymptomlogbutton";
 
 //Symptom Log Type
 type MySymptomlog={
     onBack: () => void;
+    onAddNewSymptomLog: () => void;//Display New Symptom Log Button -> send user to add new symptom log screen
     petId: string | null;
     onNavigate?: (screen: 'home' | 'pets' | 'assistant' | 'reminders' | 'timeline') => void;
 }
 
-export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
+export default function MyLogSymptom({onBack, onAddNewSymptomLog, petId, onNavigate}: MySymptomlog){
 
     //Use States Declared
     const [logs, setLogs] = useState<Symptom[]>([]);//Symptom Logs
@@ -50,6 +52,9 @@ export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
         <View style={styles.maincontainer}>
             {/*Header main for screen */}
             <SectionHeader onBack={onBack} title="Symptom Logs"/>
+
+            {/*Button for "Add New symptom Log"  */}
+            <NewSymptom onPress={onAddNewSymptomLog}/>
 
             {/*Pet Profile Card*/}
             <View style={styles.pet_profilecard}>
