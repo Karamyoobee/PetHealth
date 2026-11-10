@@ -18,13 +18,13 @@ type PetTypeProps = {
 export default function PetCard({ pet, onPress }: PetTypeProps){
     return(
         <Pressable style={styles.card} onPress={onPress}>
-            <PhotoCover uri={pet.photoUri} size={80}/>
+            <PhotoCover uri={pet.photoUri} size={56}/>
             <View style={styles.middleblock}>
                 <Text style={styles.petnametext}>{pet.name}</Text>
-                <Text style={styles.subtext}>{pet.breed} {pet.age}</Text>
+                <Text style={styles.subtext}>{pet.breed} {pet.age ? `, ${pet.age} yrs` : ''}</Text>
             </View>
             <TouchableOpacity onPress={onPress}>
-                <Entypo name="chevron-right" size={24} color="black" />
+                <Entypo name="chevron-right" size={20} color="#65716E" />
             </TouchableOpacity>
         </Pressable>
     );
@@ -36,25 +36,28 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         flexDirection: 'row',
         alignItems: 'center',
-        padding:5,
-        borderRadius: 3,
-        marginBottom: 5,
-        elevation: 2,
+        padding:12,
+        borderRadius: 12,
+        marginBottom: 10,
+        borderColor: '#E5E1DB',
+        borderWidth: 1,
+        elevation: 1,
     },
 
     middleblock: {
         flex: 1,
-        marginLeft:4,
+        marginLeft:12,
     },
 
     petnametext:{
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 16,
     },
 
     subtext:{
-        color: 'grey',
-        fontSize:14,
+        color: '#6B7280',
+        fontSize:12,
+        marginTop: 3,
     },
 
 

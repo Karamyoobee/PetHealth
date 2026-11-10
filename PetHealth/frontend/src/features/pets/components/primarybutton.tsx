@@ -28,13 +28,14 @@ return (
 //Styles for Primary Button - Save Pet 
 const styles = StyleSheet.create({
   button:{
-    backgroundColor: colors.secondary, 
+    backgroundColor: '#087F70',
     borderRadius: 10, 
-    height:50,
+    height:52,
     alignItems: "center",
     justifyContent: 'center',
     width: '100%',
-    marginTop: 220,
+    marginTop: 12,
+    marginBottom: 12,
   },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },

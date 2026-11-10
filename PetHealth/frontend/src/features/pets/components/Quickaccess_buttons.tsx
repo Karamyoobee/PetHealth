@@ -30,24 +30,22 @@ const styles = StyleSheet.create({
     //Main Quick Access Card (Wraps icon and label for Button)
     card: {
         backgroundColor: 'white',
-        borderRadius: 15,
+        borderRadius: 9,
+        borderColor: '#E5E1DB',
+        borderWidth: 1,
+        minHeight: 94,
         padding: 12,
-        marginBottom: 8,        
-        shadowColor: 'black',   //Shadow:Elevation used for Android Style
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        marginBottom: 8,
         alignItems: 'flex-start',   //Align Icon and text to left of Card
-        gap: 8,                     //Space between icon and label
+        gap: 7,                     //Space between icon and label
         width: '48%',               //2 Cards fit in 1 row with small gap
-        marginTop: 18, 
     },
 
     //Circle - Light green behind icon
     iconbackground: {
-        width: 40,
-        height: 40, 
-        borderRadius: 20, 
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#DCEFE9',
@@ -55,7 +53,7 @@ const styles = StyleSheet.create({
 
     //Label : Text for Quick Access Button
     label: {
-        fontSize: 16,
+        fontSize: 12,
         fontWeight: '600',
         color: 'black',
         flexShrink: 1,

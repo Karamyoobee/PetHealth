@@ -127,7 +127,7 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}>
 
-              <View style={{ alignItems: 'center', marginBottom: 20}}>
+              <View style={styles.photoSection}>
           <Imagepicker onImageSelected={setPhotoUri}/>
           
         </View>
@@ -142,19 +142,16 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
         
         {/*2. Add Pet Species (Toggle button - dog or cat) */}
         <View style={styles.sectionContainer}>
+        <Text style={styles.label}>Species</Text>
         <SegmentControl 
             options={options}
             value={species}
             onChange={setSpecies}
         />
         </View>
-        <Text style={styles.label}>Species</Text>
-
-
-
         {/*3. Add Breed Selection - based on chosen pet (dog/cat) {drop down menu} */}
         <View style={styles.sectionContainer}>
-        <Text style={styles.label}>Select Breed</Text>
+        <Text style={styles.label}>Breed</Text>
         <RNTriggerPetBreedDropdownmenu
             species={species}
             breed={breed}
@@ -166,20 +163,22 @@ export default function AddPetScreen({ onBack, onSaved }: AddPetProps) {
         <View style={styles.halfRow}>
             <View style={styles.halfInput}>
               <PetFormField 
-                label = "Age"
+                label = "Age (Years)"
                 value={age}
                 onChangeText={setAge}
-                placeholder="age"
+                placeholder="e.g. 3"
+                keyboardType="numeric"
               />
         </View>
 
         {/*5. Add Weight */}
         <View style={styles.halfInput}>
             <PetFormField 
-                label = "Weight"
+                label = "Weight (kg)"
                 value={weight}
                 onChangeText={setWeight}
-                placeholder="e.g 45"
+                placeholder="e.g. 45"
+                keyboardType="numeric"
             />
           </View>
         </View>
@@ -230,8 +229,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40, // Space at the bottom so you can scroll past the last button
-    paddingTop: 10,
+    paddingBottom: 32, // Space at the bottom so you can scroll past the last button
+    paddingTop: 20,
+  },
+  photoSection: {
+    alignItems: 'center',
+    marginBottom: 18,
   },
   
   // Standard Input Group
@@ -239,10 +242,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8, // Pushes the input down so it doesn't overlap
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#3E4946',
+    marginBottom: 6, // Pushes the input down so it doesn't overlap
+    fontWeight: '600',
   },
   textInput: {
     borderWidth: 1,
@@ -256,7 +259,7 @@ const styles = StyleSheet.create({
 
   // Section Wrapper (Species, Gender, etc.)
   sectionContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
 
   // Row for Toggle Buttons (Dog/Cat, Male/Female)
@@ -294,8 +297,8 @@ const styles = StyleSheet.create({
   halfRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 0,
   },
   halfInput: {
     flex: 1, 

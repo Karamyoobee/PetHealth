@@ -32,9 +32,9 @@ export default function PhotoHeader({photoUri, onBack, onDelete }: PhotoProps) {
         </Pressable>
 
 
-        {/*Delete Icon */}
+        {/*Options menu keeps delete separate from the update button. */}
         <Pressable style={[styles.button, styles.right]} onPress={onDelete}>
-          <Feather name="trash-2" size={24} color="red" />        
+          <Feather name="more-vertical" size={20} color="#3E4946" />
         </Pressable>
 
  
@@ -48,7 +48,8 @@ const styles = StyleSheet.create({
 
     container: {
         width: '100%',
-        height: 340,
+        height: 230,
+        backgroundColor: '#E6F3EF',
     },
 
     photo: {
@@ -65,17 +66,17 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'white',
         alignItems: 'center',
-        top: 48,
-        width: 40,
-        height: 40,
+        top: 18,
+        width: 36,
+        height: 36,
         justifyContent: 'center',
     },
 
     right:{
-        right: 20,
+        right: 18,
     },
 
     left: {
-        left: 20,
+        left: 18,
     }
 });
