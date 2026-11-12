@@ -39,20 +39,26 @@ Disclaimer: Once the user has opened the app "Pet Health", they will directly be
 ### Home Screen 
 1. Inside the "Home Screen", the user will have a variety of options to choose from
 2. The user could choose from 2 main options 1. View their existing pets 2. Select from the 4 "Quick Actions" buttons
-3. When the user clicks onto the "Log Symptom" (Button), this will lead them to the "New Log Symptom Screen"
-4. When the user clicks onto the "Weight tracker", this will open the weight log's screen
-5. If the user clicks onto the "Vet visits" (Button), this will open the "Vet Visit Logs"
-6. If the user clicks onto the "Medications" (Button), this will open the "Medications Log"
+3. The user will also be able to "Read-only" their pet's added "Vaccines", "Meds" and "Vet Visit" totals
+4. When the user clicks onto the "Log Symptom" (Button), this will lead them to the "New Log Symptom Screen"
+5. When the user clicks onto the "Weight tracker", this will open the weight log's screen
+6. If the user clicks onto the "Vet visits" (Button), this will open the "Vet Visit Logs"
+7. If the user clicks onto the "Medications" (Button), this will open the "Medications Log"
 
  
 ### Pet's Profile 
 1. When the user clicks onto their pet log inside "My Pets", they will be able to view their pet's profile details
 2. The user will then be able to chose from the 6 main "Quick Access" Buttons which are 1. Log Symptom 2. Weigh-in 3. Vet Visits 4. Medications 5. Predictive Flagging Engine 6. Export PDF
-3. The user will also be able to 
 
 ### Add New Pet 
+1. The User has the option to add an pet image by tapping on the orange circle button with the plus "+" symbol
+2. The user would then be able to crop and save their image
+3. You will need to full out the form with details that include: 1. Pet Name, 2. Specie, 3. Breed, 4. Age, 5. Weight 6. Gender, 7. Status
+4. Once, the user taps on the button "Save Pet"
+5. A mini message of success will show that pet entries have been saved
 
 ### Medications 
+
 ### Vet Visits 
 
 ### Quick Symptom Log
