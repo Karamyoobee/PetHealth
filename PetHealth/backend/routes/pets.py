@@ -92,6 +92,31 @@ def create_collection_item(collection_name, pet_id, fields):
     return jsonify(serialize_doc(saved)), 201
 
 
+def seed_saved_values_once(pet, kind, source_collection, saved_collection, fields):
+    """Create saved dropdown values from records that existed before this feature."""
+    user_id = current_user_id()
+    setting_filter = {"userId": user_id, "petId": pet["_id"], "kind": kind}
+    if mongo.db.saved_value_settings.find_one(setting_filter):
+        return
+
+    for source in mongo.db[source_collection].find({"userId": user_id, "petId": pet["_id"]}, {field: 1 for field in fields}):
+        values = {field: str(source.get(field, "")).strip() for field in fields}
+        if not any(values.values()):
+            continue
+        mongo.db[saved_collection].update_one(
+            {"userId": user_id, "petId": pet["_id"], **values},
+            {"$set": {"updatedAt": utc_now()}, "$setOnInsert": {"createdAt": utc_now()}},
+            upsert=True,
+        )
+
+    # Mark this as complete so clearing the list does not bring entries back.
+    mongo.db.saved_value_settings.update_one(
+        setting_filter,
+        {"$set": {"updatedAt": utc_now()}, "$setOnInsert": {"createdAt": utc_now()}},
+        upsert=True,
+    )
+
+
 @pets_bp.get("/pets")
 def list_pets():
     ensure_current_user()
@@ -213,7 +238,7 @@ def delete_pet(pet_id):
         return error("Pet not found", 404)
 
     object_id = ObjectId(pet_id)
-    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations", "chats", "veterinarians", "medication_templates"):
+    for collection in ("vet_visits", "medications", "reminders", "symptoms", "weight_entries", "predictive_flags", "vaccinations", "chats", "veterinarians", "medication_templates", "saved_value_settings"):
         mongo.db[collection].delete_many({"petId": object_id})
 
     return "", 204
@@ -231,6 +256,7 @@ def list_veterinarians(pet_id):
     if pet is None:
         return error("Pet not found", 404)
 
+    seed_saved_values_once(pet, "veterinarians", "vet_visits", "veterinarians", ("clinicName", "veterinarianName"))
     docs = mongo.db.veterinarians.find({"userId": current_user_id(), "petId": pet["_id"]}).sort([("clinicName", 1), ("veterinarianName", 1)])
     return jsonify([serialize_doc(doc) for doc in docs])
 
@@ -296,6 +322,7 @@ def list_medication_templates(pet_id):
     if pet is None:
         return error("Pet not found", 404)
 
+    seed_saved_values_once(pet, "medication_templates", "medications", "medication_templates", ("name", "purpose", "dosage"))
     docs = mongo.db.medication_templates.find({"userId": current_user_id(), "petId": pet["_id"]}).sort([("name", 1), ("purpose", 1), ("dosage", 1)])
     return jsonify([serialize_doc(doc) for doc in docs])
 
