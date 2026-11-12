@@ -308,7 +308,18 @@ export function HealthAssistantScreen({ onBack }: Props) {
             <Ionicons name="alert-circle-outline" size={20} color="#8B5A2B" />
           </View>
           <View style={styles.emergencyContent}>
-            <Text style={styles.emergencyTitle}>Possible pet emergency</Text>
+            <View style={styles.emergencyHeader}>
+              <Text style={styles.emergencyTitle}>Possible pet emergency</Text>
+              <TouchableOpacity
+                accessibilityLabel="Close emergency notice"
+                accessibilityRole="button"
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                onPress={() => setEmergency(false)}
+                style={styles.dismissEmergencyButton}
+              >
+                <Ionicons name="close" size={18} color="#5B6763" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.emergencyText}>
               Contact an emergency vet now. Call ahead to confirm the clinic is open and can help.
             </Text>
@@ -543,6 +554,17 @@ const styles = StyleSheet.create({
   emergencyContent: {
     flex: 1,
     gap: 8,
+  },
+  emergencyHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  dismissEmergencyButton: {
+    alignItems: "center",
+    height: 28,
+    justifyContent: "center",
+    width: 28,
   },
   emergencyTitle: {
     color: "#24312E",
