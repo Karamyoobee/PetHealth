@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Entypo, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   AppState,
   Image,
   Linking,
+  Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -27,7 +29,8 @@ export type HomeDestination =
   | "vetVisits"
   | "assistant"
   | "timeline"
-  | "reminders";
+  | "reminders"
+  | "predictiveFlagging";
 
 type Props = {
   user: User;
@@ -50,6 +53,7 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
   const [counts, setCounts] = useState<HomeCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const requestId = useRef(0);
 
   const loadHome = useCallback(async () => {
@@ -103,6 +107,11 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
 
   const canNavigate = (screen: HomeDestination) => availableScreens.includes(screen);
   const firstName = user.name.trim().split(/\s+/)[0];
+  const closeAccountMenu = () => setAccountMenuOpen(false);
+  const openExternalPage = (path: "privacy" | "terms") => {
+    closeAccountMenu();
+    void Linking.openURL(`https://pethealth-backend-9hbs.onrender.com/${path}`);
+  };
   const stats: {
     label: string;
     count: number | null;
@@ -168,18 +177,18 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
         refreshControl={<RefreshControl refreshing={loading} onRefresh={loadHome} tintColor="#238575" />}
       >
         <View style={styles.greetingRow}>
-          <Text numberOfLines={1} style={styles.greeting}>Hello{firstName ? `, ${firstName}` : ""} 👋</Text>
-          <View style={styles.accountActions}>
-            <TouchableOpacity accessibilityRole="button" disabled={signingOut || deletingAccount} onPress={onSignOut}>
-              <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" disabled={signingOut || deletingAccount} onPress={onDeleteAccount}>
-              <Text style={styles.deleteAccountText}>{deletingAccount ? "Deleting..." : "Delete Account"}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="link" onPress={() => void Linking.openURL("https://pethealth-backend-9hbs.onrender.com/privacy")}>
-              <Text style={styles.privacyText}>Privacy Policy</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Open account menu"
+            style={styles.greetingButton}
+            onPress={() => setAccountMenuOpen(true)}
+          >
+            <View style={styles.greetingContent}>
+              <Text numberOfLines={1} style={styles.greeting}>Hello{firstName ? `, ${firstName}` : ""}</Text>
+              <MaterialIcons name="waving-hand" size={21} color="#238575" />
+            </View>
+            <Ionicons name="chevron-down" size={18} color="#5D706A" />
+          </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>How are your pets today?</Text>
 
@@ -192,7 +201,7 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
               style={styles.stat}
             >
               <View style={[styles.iconCircle, { backgroundColor: stat.tint }]}>{stat.icon}</View>
-              <Text style={styles.count}>{stat.count ?? "—"}</Text>
+              <Text style={styles.count}>{stat.count ?? "-"}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
           ))}
@@ -267,7 +276,75 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
             </TouchableOpacity>
           ))}
         </View>
+
+        <TouchableOpacity
+          style={styles.upcomingCard}
+          onPress={() => onNavigate("predictiveFlagging", pets.length === 1 ? pets[0].id : undefined)}
+        >
+          <View style={styles.upcomingIcon}>
+            <Entypo name="flag" size={23} color="#238575" />
+          </View>
+          <View style={styles.upcomingDetails}>
+            <Text style={styles.upcomingTitle}>Predictive Flagging</Text>
+            <Text numberOfLines={1} style={styles.upcomingText}>Review your pet's weight trends and health insights</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#71817C" />
+        </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={accountMenuOpen} transparent animationType="slide" onRequestClose={closeAccountMenu}>
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close account menu" style={styles.backdrop} onPress={closeAccountMenu} />
+          <View style={styles.accountDrawer}>
+            <View style={styles.drawerHandle} />
+            <View style={styles.drawerHeader}>
+              <View style={styles.accountAvatar}>
+                <Ionicons name="person" size={23} color="#238575" />
+              </View>
+              <View style={styles.accountDetails}>
+                <Text numberOfLines={1} style={styles.accountName}>{user.name || "Pet Health user"}</Text>
+                <Text numberOfLines={1} style={styles.accountEmail}>{user.email}</Text>
+              </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close account menu" style={styles.closeButton} onPress={closeAccountMenu}>
+                <Ionicons name="close" size={22} color="#40514C" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerItems}>
+              <TouchableOpacity accessibilityRole="link" style={styles.drawerItem} onPress={() => openExternalPage("privacy")}>
+                <Ionicons name="shield-checkmark-outline" size={21} color="#238575" />
+                <Text style={styles.drawerItemText}>Privacy Policy</Text>
+                <Ionicons name="open-outline" size={18} color="#71817C" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                disabled={signingOut || deletingAccount}
+                style={styles.drawerItem}
+                onPress={() => { closeAccountMenu(); onSignOut(); }}
+              >
+                <Ionicons name="log-out-outline" size={21} color="#40514C" />
+                <Text style={styles.drawerItemText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                disabled={signingOut || deletingAccount}
+                style={[styles.drawerItem, styles.deleteAccountItem]}
+                onPress={() => { closeAccountMenu(); onDeleteAccount(); }}
+              >
+                <Ionicons name="trash-outline" size={21} color="#A74337" />
+                <Text style={styles.deleteAccountText}>{deletingAccount ? "Deleting..." : "Delete Account"}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerFooter}>
+              <TouchableOpacity accessibilityRole="link" onPress={() => openExternalPage("terms")}>
+                <Text style={styles.termsText}>Terms & Conditions</Text>
+              </TouchableOpacity>
+              <Text style={styles.footerBrand}>Pet Health</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <BottomNavBar
         active="home"
@@ -291,7 +368,6 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   greeting: {
-    flex: 1,
     fontSize: 22,
     fontWeight: "600",
     color: "#293B35",
@@ -300,29 +376,25 @@ const styles = StyleSheet.create({
   greetingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
-  accountActions: {
-    alignItems: "flex-end",
+  greetingButton: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+    paddingRight: 4,
   },
-  signOutText: {
-    color: "#238575",
-    fontSize: 13,
-    fontWeight: "600",
-    paddingVertical: 10,
+  greetingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
   },
   deleteAccountText: {
     color: "#A74337",
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: "600",
-    paddingHorizontal: 10,
-    paddingTop: 2,
-  },
-  privacyText: {
-    color: "#5D706A",
-    fontSize: 12,
-    paddingHorizontal: 10,
-    paddingTop: 7,
   },
   subtitle: {
     fontSize: 14,
@@ -451,6 +523,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  upcomingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 22,
+    minHeight: 82,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D9EAE5",
+    backgroundColor: "#F1F8F5",
+  },
+  upcomingIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DDF1EA",
+  },
+  upcomingDetails: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  upcomingTitle: {
+    color: "#293B35",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  upcomingText: {
+    color: "#5D706A",
+    fontSize: 13,
+    marginTop: 3,
+  },
   unavailable: {
     opacity: 0.5,
   },
@@ -458,5 +563,96 @@ const styles = StyleSheet.create({
     color: "#B42318",
     marginTop: 12,
     lineHeight: 20,
+  },
+  modalRoot: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(22, 36, 31, 0.38)",
+  },
+  accountDrawer: {
+    width: "86%",
+    maxWidth: 360,
+    backgroundColor: "#FAF8F4",
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    justifyContent: "space-between",
+  },
+  drawerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D7D3CC",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: 22,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E1DB",
+  },
+  accountAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E3F5F2",
+  },
+  accountDetails: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  accountName: {
+    color: "#293B35",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  accountEmail: {
+    color: "#71817C",
+    fontSize: 13,
+    marginTop: 3,
+  },
+  closeButton: {
+    padding: 7,
+  },
+  drawerItems: {
+    flex: 1,
+    paddingTop: 18,
+  },
+  drawerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEAE4",
+  },
+  drawerItemText: {
+    flex: 1,
+    color: "#293B35",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  deleteAccountItem: {
+    marginTop: 8,
+  },
+  drawerFooter: {
+    alignItems: "center",
+    gap: 10,
+  },
+  termsText: {
+    color: "#238575",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  footerBrand: {
+    color: "#8B9692",
+    fontSize: 12,
   },
 });

@@ -96,3 +96,46 @@ def delete_account_page():
 </body>
 </html>"""
     return Response(page, mimetype="text/html")
+
+
+@privacy_bp.get("/terms")
+def terms_and_conditions():
+    page = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pet Health Terms and Conditions</title>
+  <style>
+    body { margin: 0; background: #f8f7f3; color: #1f302c; font-family: Arial, sans-serif; line-height: 1.6; }
+    main { max-width: 760px; margin: 40px auto; padding: 32px; background: #fff; border-radius: 14px; box-shadow: 0 2px 12px #00000012; }
+    h1, h2 { color: #087d69; line-height: 1.25; }
+    h1 { margin-top: 0; }
+    a { color: #087d69; }
+    .updated { color: #5c6966; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Pet Health Terms and Conditions</h1>
+    <p class="updated">Last updated: 12 November 2026</p>
+    <p>These terms govern your use of the Pet Health mobile app and related services.</p>
+
+    <h2>Using Pet Health</h2>
+    <p>You may use Pet Health to organise your pet records, set reminders and prepare information for veterinary visits. You are responsible for the information you add and for keeping your account credentials secure.</p>
+
+    <h2>Veterinary information</h2>
+    <p>Pet Health and its Assistant provide general information only. They do not diagnose conditions, prescribe treatment or replace a veterinarian. Contact a qualified veterinarian for medical advice, urgent concerns or emergencies.</p>
+
+    <h2>Your content</h2>
+    <p>You retain responsibility for pet profiles, photos and records that you add. Do not add content that is unlawful or infringes another person's rights.</p>
+
+    <h2>Accounts and availability</h2>
+    <p>You can delete your account in the app at any time. We may change or discontinue features when needed to maintain or improve the service.</p>
+
+    <h2>Contact</h2>
+    <p>For questions about these terms, email <a href="mailto:karamjeetsinghpb06@gmail.com">karamjeetsinghpb06@gmail.com</a>.</p>
+  </main>
+</body>
+</html>"""
+    return Response(page, mimetype="text/html")

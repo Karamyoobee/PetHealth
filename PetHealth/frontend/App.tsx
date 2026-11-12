@@ -57,13 +57,13 @@ type ScreenKey =
 
 type AuthMode = "welcome" | "signin" | "register";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "predictiveFlagging"];
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
-  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard">("petProfile");
+  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard" | "predictiveFlagging">("petProfile");
   const [recordReturnScreen, setRecordReturnScreen] = useState<"home" | "petProfile">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
@@ -122,6 +122,16 @@ export default function App() {
           setActiveScreen("weightDashboard");
         } else {
           setPetSelectionDestination("weightDashboard");
+          setActiveScreen("pets");
+        }
+        return;
+      }
+      if (screen === "predictiveFlagging") {
+        if (petId) {
+          setSelectedPetId(petId);
+          setActiveScreen("predictiveFlagging");
+        } else {
+          setPetSelectionDestination("predictiveFlagging");
           setActiveScreen("pets");
         }
         return;

@@ -12,6 +12,12 @@ const sdkPaths = [
 const adbName = process.platform === "win32" ? "adb.exe" : "adb";
 const adb = sdkPaths.filter(Boolean).map((sdk) => path.join(sdk, "platform-tools", adbName))
   .find((file) => existsSync(file)) || adbName;
+const androidStudioJavaHome = process.platform === "win32"
+  ? path.join(process.env.ProgramFiles || "C:\\Program Files", "Android", "Android Studio", "jbr")
+  : null;
+const javaHome = androidStudioJavaHome && existsSync(path.join(androidStudioJavaHome, "bin", "java.exe"))
+  ? androidStudioJavaHome
+  : process.env.JAVA_HOME;
 let checking = false;
 let stopping = false;
 let reportedError = false;
@@ -57,8 +63,15 @@ async function startAndroid() {
   await connectBackend();
   console.log("USB backend reconnection is active. Keep this terminal and your backend running.");
   const timer = setInterval(connectBackend, 3000);
+  // Prefer Android Studio's Java so a separate system Java installation cannot break Gradle.
+  const environment = javaHome ? {
+    ...process.env,
+    JAVA_HOME: javaHome,
+    PATH: `${path.join(javaHome, "bin")}${path.delimiter}${process.env.PATH || ""}`,
+  } : process.env;
   const expo = spawn(process.execPath, [expoCli, "run:android", ...process.argv.slice(2)], {
     cwd: path.resolve(__dirname, ".."),
+    env: environment,
     stdio: "inherit",
     windowsHide: true,
   });
