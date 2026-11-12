@@ -49,6 +49,13 @@ export type VetVisit = {
   followUpDate: string;
 };
 
+// One saved clinic and veterinarian pair for a pet.
+export type VeterinaryProvider = {
+  id: string;
+  clinicName: string;
+  veterinarianName: string;
+};
+
 export type Medication = {
   id: string;
   petId: string;
@@ -63,6 +70,14 @@ export type Medication = {
   reminderTimes?: string[];
   reminderEnabled?: boolean;
   doseLog: { status: "taken" | "missed"; takenAt: string; notes?: string }[];
+};
+
+// The reusable medication values shown in the dropdowns.
+export type MedicationTemplate = {
+  id: string;
+  name: string;
+  purpose: string;
+  dosage: string;
 };
 
 export type Reminder = {

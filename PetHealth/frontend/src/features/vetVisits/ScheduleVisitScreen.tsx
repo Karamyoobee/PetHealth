@@ -5,8 +5,9 @@ import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
+import SavedValueInput from "../../components/SavedValueInput";
 import { showToast } from "../../components/Toast";
-import type { Pet } from "../../types";
+import type { Pet, VeterinaryProvider } from "../../types";
 
 type Props = {
   onBack?: () => void;
@@ -28,6 +29,8 @@ const visitReasons = [
 const hourOptions = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 const today = new Date().toISOString().slice(0, 10);
+
+const uniqueValues = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 
 function addYears(dateString: string, years: number) {
   const date = new Date(`${dateString}T00:00:00`);
@@ -60,6 +63,9 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
   const [customReason, setCustomReason] = useState("");
   const [reasonOpen, setReasonOpen] = useState(false);
   const [clinicName, setClinicName] = useState("");
+  const [veterinarianName, setVeterinarianName] = useState("");
+  const [savedVeterinarians, setSavedVeterinarians] = useState<VeterinaryProvider[]>([]);
+  const [activeSavedField, setActiveSavedField] = useState<string | null>(null);
   const [appointmentDate, setAppointmentDate] = useState("");
   const [appointmentTime, setAppointmentTime] = useState("");
   const [notes, setNotes] = useState("");
@@ -73,6 +79,8 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
   const [saving, setSaving] = useState(false);
 
   const selectedReason = reason === "Other" ? customReason.trim() : reason;
+  const savedClinics = uniqueValues(savedVeterinarians.map((provider) => provider.clinicName));
+  const savedVeterinarianNames = uniqueValues(savedVeterinarians.map((provider) => provider.veterinarianName));
 
   useEffect(() => {
     let mounted = true;
@@ -84,9 +92,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
         setPets(savedPets);
         setSelectedPetId((currentPetId) => currentPetId || savedPets[0]?.id || "");
       } catch {
-        if (mounted) {
-          setPets([]);
-        }
+        if (mounted) setPets([]);
       }
     }
 
@@ -96,6 +102,25 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!selectedPetId) {
+      setSavedVeterinarians([]);
+      return () => { mounted = false; };
+    }
+
+    // Changing the pet also changes the saved clinic and veterinarian choices.
+    api.listVeterinarians(selectedPetId)
+      .then((providers) => {
+        if (mounted) setSavedVeterinarians(providers);
+      })
+      .catch(() => {
+        if (mounted) setSavedVeterinarians([]);
+      });
+
+    return () => { mounted = false; };
+  }, [selectedPetId]);
 
   const openCalendar = () => {
     // Reopen on the chosen appointment date so it is easy to adjust.
@@ -131,8 +156,8 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
       return;
     }
 
-    if (!clinicName.trim() || !appointmentDate || !appointmentTime) {
-      Alert.alert("Missing details", "Please add clinic, date, and time.");
+    if ((!clinicName.trim() && !veterinarianName.trim()) || !appointmentDate || !appointmentTime) {
+      Alert.alert("Missing details", "Please add a clinic or veterinarian name, date, and time.");
       return;
     }
 
@@ -148,12 +173,18 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
         appointmentDate,
         appointmentTime,
         clinicName: clinicName.trim(),
-        veterinarianName: "",
+        veterinarianName: veterinarianName.trim(),
         diagnosis: "",
         treatment: "",
         notes: notes.trim(),
         followUpDate: "",
       });
+
+      // Show the new choice straight away, without waiting for another screen load.
+      setSavedVeterinarians((current) => [
+        ...current,
+        { id: `saved-${Date.now()}`, clinicName: clinicName.trim(), veterinarianName: veterinarianName.trim() },
+      ]);
 
       await api.createReminder(selectedPetId, {
         type: "checkup",
@@ -172,6 +203,40 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
     }
   };
 
+  const selectClinic = (provider: VeterinaryProvider) => {
+    setClinicName(provider.clinicName);
+    if (provider.veterinarianName) setVeterinarianName(provider.veterinarianName);
+  };
+
+  const selectVeterinarian = (provider: VeterinaryProvider) => {
+    setVeterinarianName(provider.veterinarianName);
+    if (provider.clinicName) setClinicName(provider.clinicName);
+  };
+
+  const clearSavedVeterinarians = () => {
+    Alert.alert(
+      "Clear saved veterinarians?",
+      "This removes the saved dropdown choices only. Your existing vet visit records will stay.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear all",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (!selectedPetId) return;
+              await api.clearVeterinarians(selectedPetId);
+              setSavedVeterinarians([]);
+              setActiveSavedField(null);
+            } catch (error) {
+              Alert.alert("Could not clear saved veterinarians", error instanceof Error ? error.message : "Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -182,7 +247,10 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={setSelectedPetId} />
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(nextPetId) => {
+          setActiveSavedField(null);
+          setSelectedPetId(nextPetId);
+        }} />
 
         <Text style={styles.label}>TYPE OF VISIT</Text>
         <TouchableOpacity style={styles.selectBox} onPress={() => setReasonOpen((open) => !open)}>
@@ -216,14 +284,15 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
           />
         ) : null}
 
-        <Text style={styles.label}>CLINIC / VETERINARIAN</Text>
-        <TextInput
-          placeholder="Clinic or veterinarian name"
-          placeholderTextColor="#8B8B8B"
-          style={styles.input}
-          value={clinicName}
-          onChangeText={setClinicName}
-        />
+        <SavedValueInput label="CLINIC NAME" placeholder="Enter clinic name" value={clinicName} options={savedClinics} emptyMessage="No saved clinics for this pet yet." onChangeText={setClinicName} openKey="clinic" activeKey={activeSavedField} onOpenChange={setActiveSavedField} onSelect={(value) => {
+          const provider = savedVeterinarians.find((item) => item.clinicName === value);
+          if (provider) selectClinic(provider);
+        }} onClear={clearSavedVeterinarians} />
+
+        <SavedValueInput label="VETERINARIAN NAME" placeholder="Enter veterinarian name" value={veterinarianName} options={savedVeterinarianNames} emptyMessage="No saved veterinarians for this pet yet." onChangeText={setVeterinarianName} openKey="veterinarian" activeKey={activeSavedField} onOpenChange={setActiveSavedField} onSelect={(value) => {
+          const provider = savedVeterinarians.find((item) => item.veterinarianName === value);
+          if (provider) selectVeterinarian(provider);
+        }} onClear={clearSavedVeterinarians} />
 
         <View style={styles.dateTimeRow}>
           <View style={styles.dateTimeField}>
