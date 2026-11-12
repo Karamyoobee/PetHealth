@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   AppState,
   Image,
+  Linking,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -34,6 +35,8 @@ type Props = {
   onNavigate: (screen: HomeDestination, petId?: string) => void;
   onSignOut: () => void;
   signingOut: boolean;
+  onDeleteAccount: () => void;
+  deletingAccount: boolean;
 };
 
 type HomeCounts = {
@@ -42,7 +45,7 @@ type HomeCounts = {
   vetVisits: number;
 };
 
-export default function HomeScreen({ user, availableScreens, onNavigate, onSignOut, signingOut }: Props) {
+export default function HomeScreen({ user, availableScreens, onNavigate, onSignOut, signingOut, onDeleteAccount, deletingAccount }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [counts, setCounts] = useState<HomeCounts | null>(null);
   const [loading, setLoading] = useState(true);
@@ -166,9 +169,17 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
       >
         <View style={styles.greetingRow}>
           <Text numberOfLines={1} style={styles.greeting}>Hello{firstName ? `, ${firstName}` : ""} 👋</Text>
-          <TouchableOpacity accessibilityRole="button" disabled={signingOut} onPress={onSignOut}>
-            <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
-          </TouchableOpacity>
+          <View style={styles.accountActions}>
+            <TouchableOpacity accessibilityRole="button" disabled={signingOut || deletingAccount} onPress={onSignOut}>
+              <Text style={styles.signOutText}>{signingOut ? "Signing out..." : "Sign Out"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" disabled={signingOut || deletingAccount} onPress={onDeleteAccount}>
+              <Text style={styles.deleteAccountText}>{deletingAccount ? "Deleting..." : "Delete Account"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="link" onPress={() => void Linking.openURL("https://pethealth-backend-9hbs.onrender.com/privacy")}>
+              <Text style={styles.privacyText}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.subtitle}>How are your pets today?</Text>
 
@@ -291,11 +302,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  accountActions: {
+    alignItems: "flex-end",
+  },
   signOutText: {
     color: "#238575",
     fontSize: 13,
     fontWeight: "600",
     paddingVertical: 10,
+  },
+  deleteAccountText: {
+    color: "#A74337",
+    fontSize: 12,
+    fontWeight: "600",
+    paddingHorizontal: 10,
+    paddingTop: 2,
+  },
+  privacyText: {
+    color: "#5D706A",
+    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingTop: 7,
   },
   subtitle: {
     fontSize: 14,

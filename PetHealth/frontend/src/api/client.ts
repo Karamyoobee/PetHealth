@@ -113,6 +113,7 @@ export const api = {
   getCurrentUser: () => requestJson<User>("/api/users/me", {}, 15000),
   updateCurrentUser: (user: Partial<Pick<User, "name" | "email" | "phone">>) =>
   requestJson<User>("/api/users/me", { method: "PATCH", body: JSON.stringify(user) }),
+  deleteCurrentUser: () => requestJson<void>("/api/users/me", { method: "DELETE" }),
   listCurrentUserPets: () => requestJson<Pet[]>("/api/users/me/pets"),
 
   listPets: () => requestJson<Pet[]>("/api/pets"),

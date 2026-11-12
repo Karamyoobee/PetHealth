@@ -70,6 +70,7 @@ export default function App() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -268,6 +269,40 @@ export default function App() {
     }
   }, [notificationUserId]);
 
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently deletes your Pet Health account, pet records and reminders. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              setDeletingAccount(true);
+              try {
+                await api.deleteCurrentUser();
+                await clearReminderNotifications();
+                await clearSavedSession();
+                setCurrentUser(null);
+                setSelectedPetId(null);
+                setActiveScreen("home");
+                setSessionError(null);
+                setAuthError(null);
+                setAuthMode("signin");
+              } catch (error) {
+                Alert.alert("Could not delete account", error instanceof Error ? error.message : "Please try again.");
+              } finally {
+                setDeletingAccount(false);
+              }
+            })();
+          },
+        },
+      ]
+    );
+  }, []);
+
   if (authLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -327,6 +362,8 @@ export default function App() {
           onNavigate={navigateHome}
           onSignOut={handleSignOut}
           signingOut={signingOut}
+          onDeleteAccount={handleDeleteAccount}
+          deletingAccount={deletingAccount}
         />
       ) : activeScreen === "pets" ? (
         <MyPetsScreen
