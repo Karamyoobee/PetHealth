@@ -9,7 +9,10 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "pethealth.com",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
     },
     "plugins": [
       "expo-notifications"

@@ -112,7 +112,8 @@ export function syncReminderNotifications(userId: string): Promise<string | null
     } else {
       await unregisterPushInstallation();
     }
-    // Keep reminders on the phone as the dependable fallback when the server is unavailable.
+    // Keep reminders on the phone so they can arrive even when the server is unavailable.
+    // Android uses the exact-alarm permission declared in the app configuration for timely delivery.
     for (const [identifier, { reminder, leadMinutes, fireAt }] of desired) {
       if (activeUser !== userId) return null;
       await Notifications.scheduleNotificationAsync({
