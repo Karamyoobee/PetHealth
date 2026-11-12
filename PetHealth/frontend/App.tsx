@@ -430,6 +430,8 @@ export default function App() {
           onSubmit={(petId) => {
             setSelectedPetId(petId);
             setActiveScreen("vetVisits");
+            // Schedule the new appointment reminder on this phone straight away.
+            void refreshNotifications();
           }}
         />
       ) : activeScreen === "medications" ? (
@@ -446,6 +448,8 @@ export default function App() {
           onSubmit={(petId) => {
             setSelectedPetId(petId);
             setActiveScreen("medications");
+            // Schedule the new medication reminders on this phone straight away.
+            void refreshNotifications();
           }}
         />
       ) : activeScreen === "reminders" ? (
