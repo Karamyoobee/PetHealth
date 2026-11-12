@@ -1,0 +1,10 @@
+# Local dependencies and build output are recreated on the EAS build server.
+node_modules/
+.expo/
+
+# Android Studio and Gradle create these folders locally.
+android/.gradle/
+android/build/
+android/app/build/
+
+*.log

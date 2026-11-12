@@ -11,6 +11,7 @@
     }
   },
   "scripts": {
+    "postinstall": "node scripts/fix-expo-permissions.cjs",
     "start": "expo start",
     "android": "node scripts/android.cjs",
     "ios": "expo run:ios",
