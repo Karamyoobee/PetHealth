@@ -1,107 +1,179 @@
-# Pet Health
+﻿# Pet Health
 
-Mobile app setup for the Pet Health project proposal.
+Pet Health is a mobile app that helps pet owners keep their pet's health details in one place. Users can save records, set medicine reminders, prepare for vet visits, and download a pet health report.
 
-This codebase is scoped to Karamjeet's core responsibilities:
+## What the app can do
 
-- Google sign-in with JWT-backed sessions
-- Multi-pet health records
-- Vet visit log
-- Medication and treatment tracker
-- Reminder-ready data model
-- Vet-ready PDF export
-- AI-assisted pet health guidance through a backend Gemini integration
+- Create an account with an email and password, or sign in with Google.
+- Add one or more pets.
+- Save vaccinations, symptoms, weight, vet visits, medicines, and reminders for each pet.
+- Save clinic names, vet names, medicine names, purposes, and dosages to use again later for the same pet.
+- Track when medicine has been given and set reminders.
+- View a pet's timeline and weight changes.
+- Use the weight flagging tool for supported breeds.
+- Download a pet health report as a PDF.
+- Ask the Health Assistant for general pet-care information or find nearby vets.
+- Read the privacy policy and terms, or delete an account from the app.
 
-Symptom logging, weight tracking, predictive flags, and trends remain integration points for later project phases.
+Pet Health does not replace a veterinarian. For urgent symptoms or emergencies, contact a vet straight away.
 
-## Structure
+## Project folders
 
 ```text
-backend/     Flask API, MongoDB Atlas integration, Google auth, JWT, PDF reports
-frontend/    Expo React Native app for Pet Health
-docs/        Setup notes and API reference
+backend/     The Flask server, database code, reports, reminders, and Assistant
+frontend/    The Expo and React Native mobile app
+docs/        Project notes and API details
 ```
 
-## Backend
+## What you need before starting
 
-```bash
+- Node.js and npm
+- Python 3.11 or later
+- A MongoDB Atlas database or local MongoDB database
+- Android Studio and an Android phone or emulator
+
+## Run the backend on your computer
+
+Open PowerShell and run:
+
+```powershell
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env
+Copy-Item .env.example .env
 python -m flask --app app run --host 0.0.0.0 --port 5000
 ```
 
-Required backend environment values:
+Open `backend/.env` and add your real values. Do not upload or commit this file.
 
 ```env
-MONGODB_URI=mongodb+srv://...
+MONGODB_URI=mongodb+srv://username:password@cluster.example.mongodb.net/pet_health
 MONGODB_DB=pet_health
 MONGODB_CREATE_INDEXES=true
-JWT_SECRET=replace-this-for-production
+CORS_ORIGINS=http://localhost:8081
+JWT_SECRET=use-a-long-random-value-in-production
 JWT_EXPIRES_HOURS=168
 GOOGLE_CLIENT_IDS=your-android-client-id.apps.googleusercontent.com
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-Keep `GEMINI_API_KEY` in `backend/.env`. Never put it in `frontend/.env` or use an `EXPO_PUBLIC_` variable for it, because values bundled into the mobile app can be extracted.
+You can check that the backend is working by opening either link in a browser:
 
-## Frontend
+```text
+http://localhost:5000/health
+http://localhost:5000/health/db
+```
 
-```bash
+## Run the mobile app on your computer or phone
+
+Open a second PowerShell window and run:
+
+```powershell
 cd frontend
 npm install
+Copy-Item .env.example .env
 npm run android
 ```
 
-For the Android emulator, use this in `frontend/.env`:
+For an Android emulator, add this to `frontend/.env`:
 
 ```env
 EXPO_PUBLIC_API_URL=http://10.0.2.2:5000
 EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your-android-client-id.apps.googleusercontent.com
 ```
 
-For a physical Android device connected by USB, use `EXPO_PUBLIC_API_URL=http://localhost:5000` in `frontend/.env`. Keep the backend running, connect the phone with USB debugging allowed, and run `npm run android` from `frontend`. This command automatically restores backend port 5000 forwarding when a device reconnects, while the Android command stays running. No separate `adb reverse` command is needed for the backend. If you close the terminal, start `npm run android` again. This is development-only setup; a release build should use the hosted HTTPS backend.
+For a real Android phone connected with a USB cable, use this instead:
 
-For testing over Wi-Fi instead of USB, use your laptop's local network IP instead of `10.0.2.2`.
+```env
+EXPO_PUBLIC_API_URL=http://localhost:5000
+```
 
-## Phone notifications
+Turn on USB debugging on the phone before running `npm run android`. For Wi-Fi testing, use your computer's local IP address instead of `localhost`.
 
-Local notifications work with the existing app build and permission. Remote push delivery uses Expo Push Service and Android FCM. MongoDB remains the database.
+For the published app, use the hosted HTTPS backend address in `EXPO_PUBLIC_API_URL`. Never put database passwords, Gemini keys, email keys, or other backend secrets in `frontend/.env` or in a variable starting with `EXPO_PUBLIC_`.
 
-To activate remote push:
+## Set up Google sign-in
 
-1. Create or link an Expo/EAS project and a Firebase Android app using the existing package name `pethealth.com`.
-2. Follow [Expo's FCM credentials instructions](https://docs.expo.dev/push-notifications/fcm-credentials/). Upload the private FCM service-account key to EAS. Keep it out of Git and the mobile bundle. The separate Firebase `google-services.json` app configuration is used when building Android.
-3. In `frontend/.env`, set `EXPO_PUBLIC_EAS_PROJECT_ID` to the real project UUID and `GOOGLE_SERVICES_FILE` to the Firebase app configuration path, such as `./google-services.json`. Build and install the Android app with those settings. For an existing native Android directory, apply the Expo configuration plugins and review the native changes before rebuilding; JavaScript reload alone cannot apply Firebase configuration.
-4. Set the same UUID as `EXPO_PROJECT_ID` in `backend/.env`. Set `EXPO_PUSH_ENABLED=true` when the worker and credentials are ready. Set `EXPO_ACCESS_TOKEN` only if enhanced push security is enabled in Expo; this token stays on the backend.
-5. Run the API and this separate worker process from `backend`:
+Google sign-in needs to be set up in Google Cloud and on the backend.
+
+1. In Google Cloud, create an **Android** client.
+2. Enter this package name: `pethealth.com`.
+3. Copy the **App signing key certificate SHA-1** from Google Play Console: **Test and release → Setup → App integrity**.
+4. Open **Advanced settings**, turn on **Custom URI scheme**, and save. The app uses `pethealth.com:/oauthredirect` to return after sign-in.
+5. Put the Google client ID in `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` in `frontend/.env` and in Expo's Production environment variables.
+6. Put the same client ID in `GOOGLE_CLIENT_IDS` in the backend environment variables. If the backend is on Render, save the change and wait for Render to redeploy it.
+7. If the Google app is still in Testing, add every Google account that will sign in under **Google Auth Platform → Audience → Test users**.
+
+You do not need a new AAB when you only change the SHA-1 or Custom URI setting in Google Cloud. You need a new AAB if you change the Google client ID in the frontend settings.
+
+## Notifications
+
+Medicine reminders are saved with the pet's records. The Android app asks for notification permission and uses scheduled alarms for local reminders.
+
+Remote push notifications are optional. They need Expo, Firebase Cloud Messaging, and a separate backend worker. Add these only after you have set up those services:
+
+```env
+# frontend/.env
+EXPO_PUBLIC_EAS_PROJECT_ID=your-expo-project-id
+GOOGLE_SERVICES_FILE=./google-services.json
+
+# backend/.env
+EXPO_PUSH_ENABLED=true
+EXPO_PROJECT_ID=your-expo-project-id
+```
+
+Start the remote reminder worker in another PowerShell window:
 
 ```powershell
+cd backend
 .\.venv\Scripts\python.exe -m flask --app app send-reminders --watch
 ```
 
-For deployment, run the worker as a supervised service alongside the HTTPS API. The worker checks every 30 seconds and keeps preparing future occurrences without waiting for the phone to open the app. It sends alerts 4 hours before, 1 hour before and at the scheduled time. Medication reminders stop at the end date. Snooze sends only the chosen follow-up alert.
+Test reminders on a real Android phone, including while the app is closed. Battery saving settings, notification permission, and internet connection can affect notifications.
 
-Sign in once on the rebuilt phone app and allow notifications to register that installation. In push mode, local scheduled alerts are removed to avoid sending both versions. Sign-out unregisters that installation, including when its JWT has expired; if the phone is offline, sign-out asks the user to reconnect so registration can be stopped. Password reset invalidates earlier device registrations. With push disabled, the app continues using its existing limited local schedule.
+## Build an AAB for Google Play
 
-Delivery depends on the server, Expo/FCM, connectivity and phone settings. Accepted Expo tickets mean queued delivery, not proof that a notification appeared. The worker checks receipts, disables invalid tokens and retries temporary failures for up to five minutes. A lost response after Expo accepts a message can still cause a duplicate on retry; exact-once delivery is not guaranteed. Phone delivery must be tested after credential setup, including the app closed, early alerts, Snooze, completion and sign-out.
+Set the Production variables in Expo, then run:
 
-## Authentication
-
-Pet Health uses Google OAuth on the frontend. The app sends Google's ID token to `POST /api/auth/google`. The backend verifies the token, creates or updates the MongoDB user record, creates a JWT session, and returns that JWT to the app.
-
-After sign-in, API requests must include:
-
-```http
-Authorization: Bearer <jwt>
+```powershell
+cd frontend
+eas build --platform android --profile production
 ```
 
-## Health Assistant
+Expo creates an Android App Bundle file, called an `.aab` file. Upload it in Google Play Console under **Testing → Closed testing**. Every new upload needs a higher version code than the previous upload.
 
-The Assistant screen sends the selected pet ID, question, and short chat history to the authenticated Flask endpoint. The backend confirms that the pet belongs to the signed-in user and builds a limited context from that pet's recent records. Owner profile fields are not included in the Gemini request, and the Gemini API key never leaves the backend. Free-text pet notes can still contain information entered by a user.
+## Download and test the app from Google Play
 
-For a student demonstration, a Gemini free-tier key can be created in Google AI Studio. Free-tier prompts and responses may be used by Google to improve its products, so use synthetic pet records and do not submit personal, confidential, or sensitive information. Use a paid project and complete a privacy review before using real customer data.
+Only Google accounts added in the Google Play Console **Testers** tab can use the Closed testing app.
 
+1. Add the tester's Google email address to the tester list or Google Group.
+2. Share the Closed testing opt-in link with the tester.
+3. The tester opens the link using the same Google account and chooses **Become a tester**.
+4. The tester downloads Pet Health from the [Google Play app page](https://play.google.com/store/apps/details?id=pethealth.com).
+5. In the app, the tester can choose **Get Started** to register with an email and password. Google sign-in is optional.
+6. When a new test version is approved, existing testers can update it from **Google Play Store → Manage apps & device → Updates**. They do not need the opt-in link again.
+
+## Check the frontend before committing
+
+Run this command before committing frontend changes:
+
+```powershell
+cd frontend
+npm run typecheck
+```
+
+## Privacy links
+
+The live backend has these public pages:
+
+- Privacy policy: `/privacy`
+- Account deletion help: `/delete-account`
+- Terms and conditions: `/terms`
+
+Deleting an account permanently removes the account and its pet records. It cannot be undone.
+
+## Keep these files private
+
+Do not commit `.env` files, Firebase service-account files, or `google-services.json` to Git.
