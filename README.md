@@ -112,8 +112,9 @@ Note: View the line chart, change weight from kg/lb
 ---
 
 ### Weight Tracker Dashboard 
-1. Tap on any Pet inside the ""
-2. 
+1. Tap on any Pet inside the "My Pets Screen"
+2. View the Weight Dashboard line chart
+   
 ---
 
 ### Predicative Flagging Engine 
