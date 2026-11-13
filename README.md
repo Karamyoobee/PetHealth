@@ -126,10 +126,15 @@ Note: View the line chart, change weight from kg/lb
 6. Cat Breed: Ragdoll
 
 1. Tap on either the "Predictive Flagging" button from the Home Screen or from the "Pet's Profile" through the "My Pets" Screen
-2. 
+2. Select Pet from "My Pet's Screen"
+3. Under "Quick Actions" Section tap on "Predictive Flagging" button
+4. View information in regards to which pet breed's are available to use "Predictive Flagging Engine"
+5. Tap on button, "Run New Analysis"
+6. View "Predictive Flagging Engine" Screen - that shows pet's age 
+ 
 ---
-
 ### Export PDF 
+1. 
 
 ---
 
