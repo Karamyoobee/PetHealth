@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { api, setSessionToken } from "./src/api/client";
 import { clearSavedSession, restoreSavedSession, SESSION_TOKEN_KEY, SESSION_USER_KEY } from "./src/auth/session";
@@ -59,7 +60,7 @@ type AuthMode = "welcome" | "signin" | "register";
 
 const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "predictiveFlagging"];
 
-export default function App() {
+function PetHealthApp() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
@@ -487,6 +488,14 @@ export default function App() {
       ) : null}
       <Toast />
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <PetHealthApp />
+    </SafeAreaProvider>
   );
 }
 

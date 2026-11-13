@@ -24,6 +24,12 @@ import { api } from "../../../api/client";
 
 import PhotoHeader from "../components/Photoheader";
 
+// Show the saved value in a friendly form on the profile card.
+function formatGender(sex?: string) {
+    const value = sex?.trim();
+    return value ? `${value.charAt(0).toUpperCase()}${value.slice(1).toLowerCase()}` : "Not set";
+}
+
 //Props - useful for Parent Screen Menu
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
@@ -131,9 +137,6 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
 
             {/*Display Pet Breed & Pet Age*/}
             <Text style={styles.otherpetdetails}>{`${pet?.breed ?? "-"} • ${pet?.age ?? "-"} years`}</Text>
-            <View style={styles.statusPill}>
-                <Text style={styles.statusText}>{pet?.status ?? 'No status'}</Text>
-            </View>
 
             {/*Details Cards - Statistic of Pet*/}
             <View style={styles.statistics}>
@@ -155,11 +158,11 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
                 icon={<MaterialCommunityIcons name="cake-variant-outline" size={15} color="#3E4946" />}
             />
 
-            {/*Pet Health Status*/}
+            {/*Pet gender, saved with this pet's profile*/}
             <DetailCard
-                label="Status"//Label for Health Stats
-                value={`${pet?.status ?? "Unknown" }`}//Not connected to backend yet!
-                icon={<Feather name="heart" size={15} color="#087F70" />}
+                label="Gender"
+                value={formatGender(pet?.sex)}
+                icon={<FontAwesome5 name="venus-mars" size={15} color="#087F70" />}
             />
             </View>
 
@@ -285,20 +288,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color:'#3F4A42',
         marginTop: 4,
-    },
-    statusPill: {
-        alignItems: 'center',
-        alignSelf: 'center',
-        backgroundColor: '#E0F2EC',
-        borderRadius: 12,
-        marginTop: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-    },
-    statusText: {
-        color: '#087F70',
-        fontSize: 11,
-        fontWeight: '700',
     },
 })
 

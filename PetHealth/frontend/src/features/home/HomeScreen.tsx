@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import BottomNavBar from "../../components/BottomNavBar";
@@ -49,6 +50,7 @@ type HomeCounts = {
 };
 
 export default function HomeScreen({ user, availableScreens, onNavigate, onSignOut, signingOut, onDeleteAccount, deletingAccount }: Props) {
+  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<Pet[]>([]);
   const [counts, setCounts] = useState<HomeCounts | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +175,7 @@ export default function HomeScreen({ user, availableScreens, onNavigate, onSignO
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 90 + insets.bottom }]}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={loadHome} tintColor="#238575" />}
       >
         <View style={styles.greetingRow}>
