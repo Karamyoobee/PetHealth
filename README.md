@@ -134,7 +134,11 @@ Note: View the line chart, change weight from kg/lb
  
 ---
 ### Export PDF 
-1. 
+1. Tap "Pets" on the bottom navigation bar
+2. Tap any pet inside the "My Pet's Screen"
+3. Under the Quick Access Section, Tap the button named "Export PDF"
+4. Tap on "Export PDF"
+5. You should now be able to view the exported pdf, through your chosen mobile app
 
 ---
 
