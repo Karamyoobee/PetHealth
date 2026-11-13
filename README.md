@@ -162,4 +162,11 @@ Note: View the line chart, change weight from kg/lb
 4. If tapped "Cancel", the conversation and chat screen will still remain open
 5. If tapped "Clear", the user will see a refresh of their screen and a new chat will be opened 
 ---
+### Alerts / reminders 
+1. Tap on "Alerts"
+2. Select "Pet" by tapping on pet icon
+3. You should be able to view the upcoming reminders and overdue reminders
+4. The user should also be able to snooze the notification, and mark as read or done
+5. The user also has an another option to select the time and date for future reminders  
+---
 
