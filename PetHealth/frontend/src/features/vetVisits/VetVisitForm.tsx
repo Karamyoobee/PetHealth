@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
@@ -11,14 +11,17 @@ type Props = {
   onScheduleVisit?: () => void;
   petId?: string | null;
   onSelectPet?: (petId: string) => void;
+  onRecordsChanged?: () => Promise<void>;
 };
 
-export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Props) {
+export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet, onRecordsChanged }: Props) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [visits, setVisits] = useState<VetVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedVisitIds, setSelectedVisitIds] = useState<string[]>([]);
 
   const loadPets = useCallback(async () => {
     // Keep the selected pet when returning from scheduling a visit.
@@ -69,6 +72,37 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
     loadVisits(petId);
   };
 
+  const toggleSelection = (visitId: string) => {
+    // A second tap lets the user remove a visit from the current selection.
+    setSelectedVisitIds((current) => current.includes(visitId) ? current.filter((id) => id !== visitId) : [...current, visitId]);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (!selectedVisitIds.length) return;
+    Alert.alert("Delete selected vet visits?", "Their linked reminders will be deleted too. Deleted records stay in your history.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try {
+          await Promise.all(visits.filter((item) => selectedVisitIds.includes(item.id)).map((item) => api.deleteVetVisit(item.petId, item.id)));
+          // Remove the cards straight away so the screen matches the saved change.
+          setVisits((current) => current.filter((item) => !selectedVisitIds.includes(item.id)));
+          setSelectedVisitIds([]);
+          setSelectionMode(false);
+          try {
+            await onRecordsChanged?.();
+          } catch {
+            setMessage("The vet visit was deleted, but phone notifications could not refresh yet.");
+          }
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Could not delete the vet visit.");
+          Alert.alert("Could not delete vet visits", error instanceof Error ? error.message : "Please try again.");
+          setSelectedVisitIds([]);
+          setSelectionMode(false);
+        }
+      } },
+    ]);
+  };
+
   const { upcomingVisits, pastVisits } = useMemo(() => {
     // Use the appointment's local date and time to group the visit cards.
     const now = Date.now();
@@ -90,10 +124,13 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0F172A" />
+        <TouchableOpacity onPress={() => selectionMode ? (setSelectionMode(false), setSelectedVisitIds([])) : onBack?.()} style={styles.backButton}>
+          <Ionicons name={selectionMode ? "close" : "chevron-back"} size={24} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Vet Visits</Text>
+        <Text style={styles.headerTitle}>{selectionMode ? `${selectedVisitIds.length} selected` : "Vet Visits"}</Text>
+        <TouchableOpacity onPress={() => selectionMode ? confirmDeleteSelected() : setSelectionMode(true)} disabled={selectionMode && !selectedVisitIds.length} style={[styles.headerDelete, selectionMode && !selectedVisitIds.length && styles.disabledButton]}>
+          <Ionicons name="trash-outline" size={21} color="#B42318" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -107,7 +144,7 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
         {loading ? (
           <LoadingCard />
         ) : upcomingVisits.length > 0 ? (
-          upcomingVisits.map((visit) => <VisitCard key={visit.id} visit={visit} />)
+          upcomingVisits.map((visit) => <VisitCard key={visit.id} visit={visit} selected={selectedVisitIds.includes(visit.id)} selectionMode={selectionMode} onSelect={() => toggleSelection(visit.id)} onLongPress={() => { setSelectionMode(true); setSelectedVisitIds((current) => current.includes(visit.id) ? current : [...current, visit.id]); }} />)
         ) : (
           <EmptyState
             icon="calendar-outline"
@@ -120,7 +157,7 @@ export function VetVisitForm({ onBack, onScheduleVisit, petId, onSelectPet }: Pr
         {loading ? (
           <LoadingCard />
         ) : pastVisits.length > 0 ? (
-          pastVisits.map((visit) => <VisitCard key={visit.id} visit={visit} />)
+          pastVisits.map((visit) => <VisitCard key={visit.id} visit={visit} selected={selectedVisitIds.includes(visit.id)} selectionMode={selectionMode} onSelect={() => toggleSelection(visit.id)} onLongPress={() => { setSelectionMode(true); setSelectedVisitIds((current) => current.includes(visit.id) ? current : [...current, visit.id]); }} />)
         ) : (
           <EmptyState
             icon="document-text-outline"
@@ -141,9 +178,9 @@ function LoadingCard() {
   );
 }
 
-function VisitCard({ visit }: { visit: VetVisit }) {
+function VisitCard({ visit, selected, selectionMode, onSelect, onLongPress }: { visit: VetVisit; selected: boolean; selectionMode: boolean; onSelect: () => void; onLongPress: () => void }) {
   return (
-    <View style={styles.visitCard}>
+    <TouchableOpacity delayLongPress={2000} onLongPress={onLongPress} onPress={selectionMode ? onSelect : undefined} style={[styles.visitCard, selected && styles.selectedCard]}>
       <View style={styles.visitHeader}>
         <Ionicons name="calendar-outline" size={22} color="#00796B" />
         <View style={styles.visitTitleWrap}>
@@ -155,7 +192,7 @@ function VisitCard({ visit }: { visit: VetVisit }) {
       </View>
       <Text style={styles.detailText}>Clinic: {visit.clinicName || "Not added"}</Text>
       {visit.notes ? <Text style={styles.detailText}>Notes: {visit.notes}</Text> : null}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -271,6 +308,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
   },
+  headerDelete: { alignItems: "center", height: 40, justifyContent: "center", position: "absolute", right: 14, width: 40 },
+  selectedCard: { borderColor: "#00796B", borderWidth: 2 },
+  disabledButton: { opacity: 0.45 },
   detailText: {
     color: "#3E4946",
     fontSize: 13,

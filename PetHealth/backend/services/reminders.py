@@ -46,7 +46,7 @@ def iso_time(value):
 
 
 def linked_medication(reminder):
-    query = {"petId": reminder["petId"], "userId": reminder["userId"]}
+    query = {"petId": reminder["petId"], "userId": reminder["userId"], "deletedAt": {"$exists": False}}
     if reminder.get("medicationId"):
         try:
             query["_id"] = ObjectId(reminder["medicationId"])
@@ -91,6 +91,17 @@ def prepare_reminder(data, pet_id, user_id):
             raise ValueError("Choose the medication for this reminder")
         reminder["medicationId"] = medication["_id"]
         reminder["endsOn"] = medication.get("endDate")
+    if data.get("visitId"):
+        try:
+            visit = mongo.db.vet_visits.find_one({
+                "_id": ObjectId(data["visitId"]), "petId": pet_id, "userId": user_id,
+                "deletedAt": {"$exists": False},
+            })
+        except (InvalidId, TypeError):
+            visit = None
+        if not visit:
+            raise ValueError("Choose a valid vet visit for this reminder")
+        reminder["visitId"] = visit["_id"]
     return reminder
 
 

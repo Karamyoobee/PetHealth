@@ -57,7 +57,9 @@ async function requestJson<T>(path: string, options: RequestInit = {}, timeoutMs
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new ApiError(String(error.error ?? "Request failed"), response.status);
+      // Some hosting error pages have no JSON message. Always give the user a useful reason.
+      const message = String(error.error || error.message || response.statusText || `Request failed (${response.status})`);
+      throw new ApiError(message, response.status);
     }
 
     if (response.status === 204) {
@@ -127,6 +129,8 @@ export const api = {
   listVetVisits: (petId: string) => requestJson<VetVisit[]>(`/api/pets/${petId}/vet-visits`),
   createVetVisit: (petId: string, visit: Omit<VetVisit, "id" | "petId">) =>
     postJson<VetVisit>(`/api/pets/${petId}/vet-visits`, visit),
+  deleteVetVisit: (petId: string, visitId: string) =>
+    requestJson<void>(`/api/pets/${petId}/vet-visits/${visitId}`, { method: "DELETE" }),
   // These saved choices are requested for the selected pet only.
   listVeterinarians: (petId: string) => requestJson<VeterinaryProvider[]>(`/api/pets/${petId}/veterinarians`),
   clearVeterinarians: (petId: string) => requestJson<void>(`/api/pets/${petId}/veterinarians`, { method: "DELETE" }),
@@ -134,6 +138,8 @@ export const api = {
   listMedications: (petId: string) => requestJson<Medication[]>(`/api/pets/${petId}/medications`),
   createMedication: (petId: string, medication: Omit<Medication, "id" | "petId" | "doseLog">) =>
     postJson<Medication>(`/api/pets/${petId}/medications`, { ...reminderContext(), ...medication }),
+  deleteMedication: (petId: string, medicationId: string) =>
+    requestJson<void>(`/api/pets/${petId}/medications/${medicationId}`, { method: "DELETE" }),
   // Medication names, purposes, and dosages are saved per pet.
   listMedicationTemplates: (petId: string) => requestJson<MedicationTemplate[]>(`/api/pets/${petId}/medication-templates`),
   clearMedicationTemplates: (petId: string) => requestJson<void>(`/api/pets/${petId}/medication-templates`, { method: "DELETE" }),
@@ -155,11 +161,13 @@ export const api = {
   actOnReminder: (reminderId: string, action: "complete" | "snooze" | "read", snoozeMinutes?: number, snoozeUntil?: string) =>
     postJson<Reminder>(`/api/reminders/${reminderId}/actions`, { action, snoozeMinutes, snoozeUntil }),
   dismissReadReminders: (petId: string) => postJson<void>(`/api/pets/${petId}/reminders/dismiss-read`, {}),
+  deleteReminderHistory: (petId: string) => requestJson<void>(`/api/pets/${petId}/reminders/history`, { method: "DELETE" }),
   updateReminder: (reminderId: string, reminder: Partial<Omit<Reminder, "id" | "petId">>) =>
     requestJson<Reminder>(`/api/reminders/${reminderId}`, {
       method: "PATCH",
       body: JSON.stringify(reminder),
     }),
+  deleteReminder: (reminderId: string) => requestJson<void>(`/api/reminders/${reminderId}`, { method: "DELETE" }),
 
   listSymptoms: (petId: string) => requestJson<Symptom[]>(`/api/pets/${petId}/symptoms`),
   createSymptom: (petId: string, symptom: Omit<Symptom, "id" | "petId">) =>

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
@@ -57,6 +58,8 @@ function parseClockTime(time: string) {
 }
 
 export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [reason, setReason] = useState("");
@@ -168,7 +171,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
 
     setSaving(true);
     try {
-      await api.createVetVisit(selectedPetId, {
+      const savedVisit = await api.createVetVisit(selectedPetId, {
         reason: selectedReason,
         appointmentDate,
         appointmentTime,
@@ -189,6 +192,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
       await api.createReminder(selectedPetId, {
         type: "checkup",
         title: `Vet visit: ${selectedReason}`,
+        visitId: savedVisit.id,
         scheduledFor: `${appointmentDate}T${appointmentTime}:00`,
         repeat: "none",
         enabled: true,
@@ -238,7 +242,10 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.screen}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#0F172A" />
@@ -246,7 +253,12 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
         <Text style={styles.headerTitle}>Schedule Visit</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: 28 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(nextPetId) => {
           setActiveSavedField(null);
           setSelectedPetId(nextPetId);
@@ -325,10 +337,12 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
           textAlignVertical="top"
           value={notes}
           onChangeText={setNotes}
+          onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
         />
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Keep the save button above the phone navigation area. */}
+      <View style={[styles.footer, { paddingBottom: 20 + insets.bottom }]}>
         <TouchableOpacity style={[styles.submitButton, saving && styles.disabledButton]} onPress={scheduleVisit} disabled={saving}>
           <Text style={styles.submitText}>{saving ? "Scheduling..." : "Schedule Visit"}</Text>
         </TouchableOpacity>
@@ -437,7 +451,7 @@ export function ScheduleVisitScreen({ onBack, onSubmit, petId }: Props) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -168,7 +168,7 @@ def run_push_tick():
         if user_id not in expanded:
             pet_ids = [pet["_id"] for pet in mongo.db.pets.find({"userId": user_id})]
             try:
-                expanded[user_id] = expand_reminders({"userId": user_id, "petId": {"$in": pet_ids}}, device)
+                expanded[user_id] = expand_reminders({"userId": user_id, "petId": {"$in": pet_ids}, "deletedAt": {"$exists": False}}, device)
             except ValueError:
                 current_app.logger.warning("Could not prepare an account's reminder schedule; other accounts will still be checked")
                 expanded[user_id] = []
@@ -188,7 +188,7 @@ def run_push_tick():
 def register_push_command(app):
     @app.cli.command("send-reminders")
     @click.option("--watch", is_flag=True, help="Keep checking reminder schedules until stopped.")
-    @click.option("--interval", default=30, type=click.IntRange(10, 300), show_default=True)
+    @click.option("--interval", default=10, type=click.IntRange(10, 300), show_default=True)
     def send_reminders(watch, interval):
         from routes.notifications import push_configured
 

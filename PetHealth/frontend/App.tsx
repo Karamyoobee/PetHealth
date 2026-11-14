@@ -423,6 +423,7 @@ function PetHealthApp() {
           onSelectPet={setSelectedPetId}
           onBack={() => setActiveScreen(recordReturnScreen)}
           onScheduleVisit={() => setActiveScreen("scheduleVisit")}
+          onRecordsChanged={refreshNotifications}
         />
       ) : activeScreen === "scheduleVisit" ? (
         <ScheduleVisitScreen
@@ -441,6 +442,7 @@ function PetHealthApp() {
           onSelectPet={setSelectedPetId}
           onBack={() => setActiveScreen(recordReturnScreen)}
           onAddMedication={() => setActiveScreen("addMedication")}
+          onRecordsChanged={refreshNotifications}
         />
       ) : activeScreen === "addMedication" ? (
         <AddMedicationScreen

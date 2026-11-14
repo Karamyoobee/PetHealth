@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function ReportPanel({ onBack, petId }: Props) {
+  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export function ReportPanel({ onBack, petId }: Props) {
         <Text style={styles.headerTitle}>Export Report</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 90 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(petId) => { if (!exporting) setSelectedPetId(petId); }} />
 
         <View style={styles.emptyState}>
@@ -112,7 +114,7 @@ export function ReportPanel({ onBack, petId }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
         <TouchableOpacity
           disabled={!selectedPet || loading || exporting}
           style={[styles.exportButton, (!selectedPet || loading || exporting) && styles.disabledButton]}
@@ -173,7 +175,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 116,
   },
   emptyState: {
     alignItems: "center",
@@ -230,7 +231,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAF8F4",
     bottom: 0,
     left: 0,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     position: "absolute",
     right: 0,
   },

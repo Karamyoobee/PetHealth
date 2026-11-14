@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'; //React Use State Management
 import {StyleSheet, Text, View, FlatList} from 'react-native';//React Essential Imports for Components of Screen
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from '../components/header'; //Header for MyPets Screen
 import BottomNavBar from '../components/Tabbar';//Bottom Navbar File 
 import PetCard from '../components/PetCard';//PetCard to display Pet Owner Pet's from 
@@ -17,6 +18,7 @@ type MyPetsScreenProps = {
 
 //Main Component for Mypets Screen
 export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavigate }: MyPetsScreenProps){
+    const insets = useSafeAreaInsets();
     //State for loading flag and pet list
     const [pets, setPets] = useState<Pet[]>([]);//Pet list to store all pet
     const [loading, setLoading] = useState(true);//True - only when pets are in process of being fetched, also false until loading is completed (success or fail)
@@ -66,7 +68,7 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
                     renderItem={( {item} ) => <PetCard pet={item} onPress={ () => {
                         onSelectPet(item.id);
                     }}/>}
-                    contentContainerStyle={styles.petList}
+                    contentContainerStyle={[styles.petList, { paddingBottom: 96 + insets.bottom }]}
                 />
                 
 
@@ -112,7 +114,6 @@ const styles = StyleSheet.create({
     },
     petList: {
         paddingHorizontal: 20,
-        paddingBottom: 84,
     },
  
 });

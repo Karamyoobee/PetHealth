@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
@@ -47,6 +48,8 @@ function parseClockTime(time: string) {
 }
 
 export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [name, setName] = useState("");
@@ -235,7 +238,10 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.screen}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#0F172A" />
@@ -243,7 +249,12 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
         <Text style={styles.headerTitle}>Add Medication</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: 112 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(nextPetId) => {
           setActiveSavedField(null);
           setSelectedPetId(nextPetId);
@@ -344,11 +355,13 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
             textAlignVertical="top"
             value={instructions}
             onChangeText={setInstructions}
+            onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
           />
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Keep the save button above the phone navigation area. */}
+      <View style={[styles.footer, { paddingBottom: 20 + insets.bottom }]}>
         <TouchableOpacity style={[styles.addButton, saving && styles.disabledButton]} onPress={saveMedication} disabled={saving}>
           <Text style={styles.addText}>{saving ? "Saving..." : "Add Medication"}</Text>
         </TouchableOpacity>
@@ -466,7 +479,7 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
