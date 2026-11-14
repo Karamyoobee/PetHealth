@@ -201,7 +201,7 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
 
   const deleteAllHistory = () => {
     if (!selectedPetId || !historyReminders.length) return;
-    Alert.alert("Delete all history?", "This clears completed and dismissed reminders only. Your medications and vet visits will stay.", [
+    Alert.alert("Delete all history?", "This removes completed and dismissed reminders and their linked vet visits or medications.", [
       { text: "Cancel", style: "cancel" },
       { text: "Delete all", style: "destructive", onPress: async () => {
         try {
