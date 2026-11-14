@@ -9,5 +9,7 @@ __pycache__/
 /output/pdf/
 *.pyc
 frontend/android/local.properties
+frontend/android/keystore.properties
+frontend/android/app/*.jks
 **/*service-account*.json
 **/*firebase-adminsdk*.json
