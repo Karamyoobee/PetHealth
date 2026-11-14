@@ -124,9 +124,18 @@ export default function LogWeight({onBack, petId}:WeightProps){
         try{//Save entered weight - prepare data and send it to backend
             setSavingWeight(true)
 
+            //New Time Variable - for Accurate Weight Updated
+            //New Timestap required for the pet's weight entry, same-day weigh-in sorting
+            let recordedTime:string;
+            if (date=== getTodayDate()){//Today's real accurate time to log pet's weight
+                recordedTime = new Date().toISOString();
+            }else{
+                recordedTime = new Date(`${date}T12:00:00`).toISOString();//Past Date: 12:00 afternoon on the past day
+            }
+
             const weightData = {//Weight Data  - matching backend data stored 
                 weightKg: Math.round((unit === 'kg' ? weightNumber: weightNumber * 0.45359237) * 100) / 100,
-                recordedAt: buildRecordedAt(date, time),
+                recordedAt: time ? buildRecordedAt(date, time):recordedTime,
                 notes: notes.trim(),
             };
             //Send Saved Weight data to backend API and mongodb database
