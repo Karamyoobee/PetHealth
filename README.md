@@ -51,7 +51,8 @@ Disclaimer: Once the user has opened the app "Pet Health", they will directly be
  
 ### Pet's Profile 
 1. When the user clicks onto their pet log inside "My Pets", they will be able to view their pet's profile details
-2. The user will then be able to chose from the 6 main "Quick Access" Buttons which are 1. Log Symptom 2. Weigh-in 3. Vet Visits 4. Medications 5. Predictive Flagging Engine 6. Export PDF
+2. You should be able to view 3 main (un-clickable buttons) but detailed cards: 1. Pet Weight 2. Pet Age 3. Pet Gender  
+3. The user will then be able to chose from the 6 main "Quick Access" Buttons which are 1. Log Symptom 2. Weigh-in 3. Vet Visits 4. Medications 5. Predictive Flagging Engine 6. Export PDF
 ---
 
 ### Add New Pet 
@@ -131,7 +132,9 @@ Note: View the line chart, change weight from kg/lb
 3. Under "Quick Actions" Section tap on "Predictive Flagging" button
 4. View information in regards to which pet breed's are available to use "Predictive Flagging Engine"
 5. Tap on button, "Run New Analysis"
-6. View "Predictive Flagging Engine" Screen - that shows pet's age 
+6. View "Predictive Flagging Engine" Screen which should show the following
+
+Note: to be completed 
  
 ---
 ### Export PDF 
