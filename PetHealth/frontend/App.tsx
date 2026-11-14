@@ -353,7 +353,7 @@ export default function App() {
           accountEmail={currentUser.email}
           onBack={() => setActiveScreen("pets")}
           onUpdate={() => setActiveScreen("updatePet")}
-          onQuickLog={() => openPetRecords("quickLog")}
+          onQuickLog={() => openPetRecords("mylogSymptom")}
           onWeightLog={() => openPetRecords("weightDashboard")}
           onPredictiveFlag={() => openPetRecords("predictiveFlagging")}
           onVetVisits={() => openPetRecords("vetVisits")}
@@ -416,7 +416,7 @@ export default function App() {
           onBack={() => setActiveScreen(recordReturnScreen)}
           onSaved={(petId) => {
             setSelectedPetId(petId);
-            setActiveScreen("mylogSymptom");
+            setActiveScreen("quickLog");
           }}
         />
       ) : activeScreen === "weightLog" ? (
@@ -429,7 +429,7 @@ export default function App() {
           onNavigate={navigateHome}
         />
       ) : activeScreen === "mylogSymptom" ? (
-        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} />
+        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} onAddNewSymptomLog={() => setActiveScreen('quickLog')} />
       ) : activeScreen === "predictiveFlagging" ? (
         <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : null}

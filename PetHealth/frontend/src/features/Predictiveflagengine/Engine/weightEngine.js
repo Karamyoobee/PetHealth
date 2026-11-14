@@ -125,7 +125,7 @@ const weight_breed = {
         male: {min:4.1,max:7.7},
     },
 
-    domestic:{
+    domestic_shorthair:{
         female:{min:3.5, max:5.5},
         male: {min:3.5,max:5.5},
     },

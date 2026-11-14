@@ -44,26 +44,74 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                         Our advanced predictive models analyze your pet's historical data, 
                         however our analysis is only limited to predicting the health analysis of 
                         these 6 selective breeds: 
-                        Dog Breed
-                        1. Labrador Retriever 
-                        2. Huntaway
-                        3. Golden Retriever
-                        
-                        Cat Breed
-                        1. British Shorthair 
-                        2. Domestic Shorthair
-                        3. Ragdoll
                     </Text>
+                    <Text style={styles.heading_section}>Dog Breeds:</Text>
+                    <Text style={styles.card_body}>1. Labrador Retriever </Text>
+                    <Text style={styles.card_body}>2. Huntaway </Text>
+                    <Text style={styles.card_body}>3. Golden Retriever </Text>
+
+                    <Text style={styles.heading_section}> Cat Breeds:</Text>
+                    <Text style={styles.card_body}>1. British Shorthair  </Text>
+                    <Text style={styles.card_body}>2. Domestic Shorthair </Text>
+                    <Text style={styles.card_body}>3. Ragdoll </Text>
+                       
                 </View>
-                
-                {/*Information card for Predictive Flagging Engine Analysis*/}
+
+                 {/*Information card information for Predictive Flagging Engine (How it works:)*/}               
                 <View style={styles.card}>
-                    <Text style={styles.card_title}>Weight Tracking - 6 Animal Breeds only!</Text>
-                    <Text style={styles.card_body}>
-                        Real-time analysis - only for weight tracking though!   
-                        limited to only 6 breeds (3 dogs | 3 cats) 
-                    </Text>
+                    <Text style={styles.card_title}>Predictive Flagging Engine: Information</Text>
+                    
+                    
+                        <View style={styles.flag_style}>
+                            {/*Heading for Flag Level: TYPICAL */}
+                            <Text style={styles.flag_text}>
+                                <Text style={styles.flag_bold_heading} >
+                                    🟢Typical :
+                                </Text>
+                                    less than 5% (Healthy - normal range)           
+                            </Text>
+                        </View>
+
+                        <View style={styles.flag_style}>
+                            {/*Heading for Flag Level: WATCH */}
+                            <Text style={styles.flag_text}>
+                                <Text style={styles.flag_bold_heading} >
+                                    🟠Watch:
+                                </Text>
+                                    5% - 10% outside of expected weight (Warning!)         
+                            </Text>
+                        </View>
+
+                        <View style={styles.flag_style}>
+                            {/*Heading for Flag Level: ELEVATED*/}
+                            <Text style={styles.flag_text}>
+                                <Text style={styles.flag_bold_heading}>
+                                    🔴Elevated: 
+                                </Text>
+                                    10% or more outside of expected weight        
+                            </Text>
+                        </View>
+
+
+                    <View style={styles.viewstyle}>
+
+                    </View>
+                        <Text style={styles.card_title}>
+                            Dog & Cat Breeds
+                        </Text>
+
+                    {/*Expected Breed Weight based on Gender */}
+                    <Text style={styles.breed_style}>🐶 Labrador - Female: 25-32kg | Male: 29-36kg</Text>
+                    <Text style={styles.breed_style}>🐶 Huntaway: Female: 25-35kg | Male: 30-40kg</Text>
+                    <Text style={styles.breed_style}>🐶 Golden Retriever: Female: 25-29.5kg | Male: 29.5 - 34 kg</Text>
+                    
+
+                    <Text style={styles.breed_style}>🐱British Shorthair - Female: 3.2 - 5.4 kg |   Male: 4.1 - 7.7 kg</Text>    
+                    <Text style={styles.breed_style}>🐱Domestic Shorthair - Female: 2.5 - 5.5kg | Male: 3.5 - 5.5 kg</Text>
+                    <Text style={styles.breed_style}>🐱Ragdoll - Female: 3.6 - 6.8kg | Male: 5.4 - 9.1 kg</Text>
+
                 </View>
+
 
             </ScrollView>
         
@@ -77,6 +125,43 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
 }
 
 const styles = StyleSheet.create({
+
+    //flag_levels style
+    flag_style:{
+        alignItems: 'center',
+    },
+
+    flag_text:{
+        fontSize: 14,
+    },
+
+    flag_bold_heading:{
+        fontWeight: "bold",
+        fontSize: 14, 
+    },
+
+    breed_style:{
+        fontSize: 13,
+        lineHeight:19,
+        color:"#555",
+        marginBottom: 4,
+    },
+
+    //Heading Section Style : 
+    heading_section: {
+        fontSize: 13,
+        fontWeight: "bold",
+        color:'#444',
+        marginTop: 10,
+        marginBottom: 4,
+    },
+
+    //Breed Divider style 
+    viewstyle: {
+        height: 1,
+        backgroundColor: "#E8E4DC",
+        marginVertical: 10,
+    },
 
     //Run New Analysis Button
     Button: {

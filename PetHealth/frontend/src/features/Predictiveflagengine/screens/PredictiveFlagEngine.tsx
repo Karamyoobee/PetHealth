@@ -4,6 +4,7 @@ import NewAnalysis from "../components/RunNewAnalysisButton";
 import MainHeader from "../components/Header";
 import { retrieveWeightStatus, LEVEL_COLORS } from "../Engine/weightEngine";
 import Weightbar from "../components/Weighbar";
+import WeightAdviceCard from "../components/weightAdviceCard";
 import { api } from "../../../api/client";
 
 //Props for Predictive Flagging Engine 
@@ -27,7 +28,7 @@ const BREED_KEYS: Record<string, string> = {
     'Huntaway': 'huntaway',//Dog Breed 2
     'Golden Retriever': 'golden',//Dog Breed 3
     'British Shorthair':'british',//Cat Breed 1
-    'Domestic Short hair':'domestic',//Cat Breed 2
+    'Domestic Short hair':'domestic_shorthair',//Cat Breed 2
     'Ragdoll':'ragdoll',//Cat breed 3
 };
 
@@ -42,7 +43,6 @@ async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
     //3. Find pet which matches given Id
     const pet = pets.find((p) => p.id === petId);
     if(!pet) throw new Error('Pet has nt been found!');
-    if(weights.length === 0) throw new Error('No weight recorded yet!');
 
     //4. Sort out weight's from new first to oldest 
     const sorted = [...weights].sort(
@@ -98,13 +98,24 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             //Bar position 0 - Min 100 - MAX
             const Percentsize = Math.max(0, Math.min(100, rawdata));//Clamp from 0-100 for percent bar 
         
+            //Display inside Weight Advice Card Text
+            let diffText="Within the expected range"
+            //Pet weight comparision (if condition check)
+            if(result.position == "under"){//Result = Message to show if Pet's weight is under expected weight range
+                diffText=(result.idealMin-pet.currentKg).toFixed(1) + " Kg under the weight range"
+            } else if(result.position == "over"){//Result = Message to show if Pet's weight is over expected weight range
+                diffText=(pet.currentKg-result.idealMax).toFixed(1) + " Kg over the weight range"
+            }
         
         content=(//Main Predictive Flagging Engine Card
+        <View>
+
+            
             <View style={styles.main_card}>
                 <Text style={styles.title}>Comparison with {pet.breedLabel}</Text>
             {/*Display Comparison text between pet breed*/}            
 
-            {}
+            
             <View style={styles.row}>
                 <Text style={styles.label}>Weight:</Text>
                 <View style={{flex:1, marginHorizontal: 8}}>
@@ -118,6 +129,15 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             </View>
                 
             </View>
+
+            <WeightAdviceCard
+                level={result.level}
+                differenceText={diffText}
+            >
+            </WeightAdviceCard>
+
+        </View>
+
         );
 
     }
