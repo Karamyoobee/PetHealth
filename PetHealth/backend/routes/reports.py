@@ -27,7 +27,7 @@ def pet_report_pdf(pet_id):
     if pet is None:
         return _not_found()
 
-    query = {"petId": object_id}
+    query = {"petId": object_id, "deletedAt": {"$exists": False}}
     buffer = build_pet_report(
         pet,
         mongo.db.vet_visits.find(query).sort("appointmentDate", -1),

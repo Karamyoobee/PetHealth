@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {View, Text, StyleSheet,Alert, ScrollView, TouchableOpacity} from "react-native";//React - Native Libraries
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import NewAnalysis from "../components/RunNewAnalysisButton";
 import MainHeader from "../components/Header";
 import PredictiveFlaggingEngine from "./PredictiveFlagEngine";
@@ -13,6 +14,7 @@ type PredictiveFlaggProps = {
 
 //Main Function - Predictive Flagging Engine 
 export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps){
+    const insets = useSafeAreaInsets();
 
     const [showEngine, setShowEngine] = useState(false);
 
@@ -117,7 +119,7 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
         
 
             {/*Run New Analysis Button*/}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
                     <NewAnalysis onPress={handleRunAnalysis}/>
             </View>
         </View>

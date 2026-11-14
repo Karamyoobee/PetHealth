@@ -128,8 +128,10 @@ Start the remote reminder worker in another PowerShell window:
 
 ```powershell
 cd backend
-.\.venv\Scripts\python.exe -m flask --app app send-reminders --watch
+.\.venv\Scripts\python.exe -m flask --app app send-reminders --watch --interval 10
 ```
+
+The worker checks every 10 seconds by default. Keep it running continuously on the backend service so push reminders can be sent close to their saved time.
 
 Test reminders on a real Android phone, including while the app is closed. Battery saving settings, notification permission, and internet connection can affect notifications.
 

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import {View, Text, StyleSheet, Alert, Dimensions, ScrollView, Pressable} from "react-native";//React - Native Libraries
 import { LineChart as RNLineChart } from 'react-native-chart-kit';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ComponentType } from 'react';
 const LineChart = RNLineChart as unknown as ComponentType<any>;//Connection for LineChart used for weight chart (avoid type errors)
 
@@ -57,6 +58,7 @@ type WeightDashboardProps = {
 
 // - - - - - -  WEIGHT DASHBOARD SCREEN - - - - - 
 export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:WeightDashboardProps){
+    const insets = useSafeAreaInsets();
     
     //States: chosen UNIT and List of Weight Entries
     const [unit, setUnit] = useState<Unit>('kg');   //selected (kg/lb) unit
@@ -147,7 +149,7 @@ export default function WeightDashboard({onBack, onLogNew, petId, onNavigate}:We
             <WeightHeader onBack={onBack} label="Weight Tracker"/>
         
         {/*Scrollable View for Weight Entries */}
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}>
 
             {/*Weight Chart (simple)*/}
             <WeightCard
@@ -333,7 +335,6 @@ const styles = StyleSheet.create({
     //Scroll View Style
     scrollContent:{
         padding: 20,
-        paddingBottom: 92,
     },
 
     scrollView: {

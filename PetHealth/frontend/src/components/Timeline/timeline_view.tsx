@@ -2,6 +2,7 @@ import React from "react";
 import {useState, useEffect} from "react";
 import MainHeader from "./header";
 import {View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomNavBar from "../../features/HomeScreen/components/TabBar";
 import { api } from "../../api/client";
 import { Pet } from "../../types";
@@ -67,6 +68,7 @@ function toDisplayDate(raw? : string | null): string{
 
 //Main Reusable Components - for Timeline Screen with parameters (from Type TimelineProps)
 export default function Timeline({onBack, onHomePress, onPetsPress, onNavigate}: TimelineProps){
+    const insets = useSafeAreaInsets();
     
     //Use State 
     //when a chip is selected: e.g 'all' set as default for User
@@ -208,7 +210,7 @@ export default function Timeline({onBack, onHomePress, onPetsPress, onNavigate}:
             {/*Header - Text only: Pet Timeline*/}
             <MainHeader title="Pet Timeline"/>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 96 + insets.bottom }]}>
              
             {/*Timeline Heading: Timeline */}
             <Text style={styles.heading_text}>Timeline</Text>
@@ -301,7 +303,6 @@ const styles = StyleSheet.create({
     //ScrollView Style
     content: {
         padding: 16,
-        paddingBottom: 96,
     },
 
     //Main Screen 

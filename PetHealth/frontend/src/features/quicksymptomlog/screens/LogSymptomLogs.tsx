@@ -1,5 +1,6 @@
 import {View, Text, StyleSheet, Button, ScrollView,Image } from "react-native";//React - Native Libraries
 import {useEffect, useState} from 'react';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DetailCardSymptomLog from "../../../components/QuickLogSymptom/DetailCardSymptomlog";
 import SectionHeader from "../../../components/QuickLogSymptom/SectionHeader";
 import BottomNavBar from "../../HomeScreen/components/TabBar";
@@ -14,6 +15,7 @@ type MySymptomlog={
 }
 
 export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
+    const insets = useSafeAreaInsets();
 
     //Use States Declared
     const [logs, setLogs] = useState<Symptom[]>([]);//Symptom Logs
@@ -76,7 +78,7 @@ export default function MyLogSymptom({onBack, petId, onNavigate}: MySymptomlog){
                 <Text style={styles.totallogs_label}>Logs</Text>
             </View>
             </View>
-            <ScrollView style={styles.scrollview} contentContainerStyle={styles.scrollview_style}>
+            <ScrollView style={styles.scrollview} contentContainerStyle={[styles.scrollview_style, { paddingBottom: 96 + insets.bottom }]}>
 
                 {loading && <Text>Loading...</Text>}
 
@@ -151,7 +153,6 @@ const styles = StyleSheet.create({
     scrollview_style:{
         padding: 16,
         gap: 14,
-        paddingBottom: 72,
     },
 
     scrollview: {

@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { ActivityIndicator, AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import BottomNavBar from "../../components/BottomNavBar";
@@ -44,6 +45,7 @@ function localDateString(date: Date) {
 }
 
 export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificationMessage }: Props) {
+  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -60,6 +62,8 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
   const [snoozeClockOpen, setSnoozeClockOpen] = useState(false);
   const [snoozeMinutes, setSnoozeMinutes] = useState("");
   const [snoozeError, setSnoozeError] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedReminderIds, setSelectedReminderIds] = useState<string[]>([]);
   const working = useRef(false);
   const requestId = useRef(0);
 
@@ -156,6 +160,61 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
     if (reminder) void performAction(reminder, "snooze", minutes, until);
   };
 
+  const toggleReminderSelection = (reminderId: string) => {
+    // Tapping a selected reminder again takes it out of the delete list.
+    setSelectedReminderIds((current) => current.includes(reminderId) ? current.filter((id) => id !== reminderId) : [...current, reminderId]);
+  };
+
+  const deleteSelectedReminders = () => {
+    if (!selectedReminderIds.length) return;
+    Alert.alert("Delete selected reminders?", "Linked medications or vet visits will be deleted too. Deleted records stay in your history.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        if (working.current || !selectedPetId) return;
+        working.current = true;
+        setBusy(true);
+        setMessage(null);
+        try {
+          await Promise.all(selectedReminderIds.map((id) => api.deleteReminder(id)));
+          // Load the list again because one reminder can also remove a linked record.
+          await loadReminders(selectedPetId, true);
+          showToast(selectedReminderIds.length === 1 ? "Reminder deleted." : "Selected reminders deleted.");
+          setSelectedReminderIds([]);
+          setSelectionMode(false);
+          try {
+            await onRemindersChanged?.();
+          } catch {
+            setMessage("The record was deleted, but phone notifications could not refresh yet.");
+          }
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Could not delete the reminder.");
+          Alert.alert("Could not delete reminders", error instanceof Error ? error.message : "Please try again.");
+          setSelectedReminderIds([]);
+          setSelectionMode(false);
+        } finally {
+          working.current = false;
+          setBusy(false);
+        }
+      } },
+    ]);
+  };
+
+  const deleteAllHistory = () => {
+    if (!selectedPetId || !historyReminders.length) return;
+    Alert.alert("Delete all history?", "This removes completed and dismissed reminders and their linked vet visits or medications.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete all", style: "destructive", onPress: async () => {
+        try {
+          await api.deleteReminderHistory(selectedPetId);
+          await loadReminders(selectedPetId, true);
+          showToast("Reminder history deleted.");
+        } catch (error) {
+          Alert.alert("Could not delete history", error instanceof Error ? error.message : "Please try again.");
+        }
+      } },
+    ]);
+  };
+
   const confirmCustomSnooze = () => {
     // Keep typed snooze durations within the range accepted by the backend.
     if (!/^\d+$/.test(snoozeMinutes) || Number(snoozeMinutes) < 1 || Number(snoozeMinutes) > 1440) {
@@ -184,13 +243,21 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0F766E" />
+        <TouchableOpacity onPress={() => selectionMode ? (setSelectionMode(false), setSelectedReminderIds([])) : onBack?.()} style={styles.backButton}>
+          <Ionicons name={selectionMode ? "close" : "chevron-back"} size={24} color="#0F766E" />
         </TouchableOpacity>
-        <Text style={styles.brand}>Pet Health</Text>
+        <Text style={styles.brand}>{selectionMode ? `${selectedReminderIds.length} selected` : "Pet Health"}</Text>
+        <TouchableOpacity
+          onPress={() => selectionMode ? deleteSelectedReminders() : setSelectionMode(true)}
+          disabled={busy || (selectionMode && !selectedReminderIds.length)}
+          style={[styles.headerDelete, (busy || (selectionMode && !selectedReminderIds.length)) && styles.disabledButton]}
+          accessibilityLabel={selectionMode ? "Delete selected reminders" : "Select reminders to delete"}
+        >
+          <Ionicons name="trash-outline" size={22} color="#B42318" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 96 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Reminders</Text>
         <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(petId) => { if (!working.current) setSelectedPetId(petId); }} />
 
@@ -220,6 +287,10 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
                 setSnoozeError(null);
                 setSnoozeTarget(reminder);
               }}
+              selected={selectedReminderIds.includes(reminder.id)}
+              selectionMode={selectionMode}
+              onSelect={() => toggleReminderSelection(reminder.id)}
+              onLongPress={() => { setSelectionMode(true); setSelectedReminderIds((current) => current.includes(reminder.id) ? current : [...current, reminder.id]); }}
             />
           ))
         ) : (
@@ -242,9 +313,14 @@ export function ReminderForm({ onBack, onNavigate, onRemindersChanged, notificat
 
         {historyReminders.length > 0 ? (
           <>
-            <Text style={styles.historyTitle}>History</Text>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>History</Text>
+              <TouchableOpacity onPress={deleteAllHistory} disabled={busy}>
+                <Text style={styles.clearHistoryText}>Delete all history</Text>
+              </TouchableOpacity>
+            </View>
             {historyReminders.map((reminder) => (
-              <ReminderCard key={reminder.id} reminder={reminder} isHistory />
+              <ReminderCard key={reminder.id} reminder={reminder} isHistory busy={busy} selected={selectedReminderIds.includes(reminder.id)} selectionMode={selectionMode} onSelect={() => toggleReminderSelection(reminder.id)} onLongPress={() => { setSelectionMode(true); setSelectedReminderIds((current) => current.includes(reminder.id) ? current : [...current, reminder.id]); }} />
             ))}
           </>
         ) : null}
@@ -354,6 +430,10 @@ function ReminderCard({
   onDone,
   onSnooze,
   onRead,
+  selected = false,
+  selectionMode = false,
+  onSelect,
+  onLongPress,
   now = Date.now(),
   busy = false,
 }: {
@@ -362,6 +442,10 @@ function ReminderCard({
   onDone?: () => void;
   onSnooze?: () => void;
   onRead?: () => void;
+  selected?: boolean;
+  selectionMode?: boolean;
+  onSelect?: () => void;
+  onLongPress?: () => void;
   now?: number;
   busy?: boolean;
 }) {
@@ -370,9 +454,15 @@ function ReminderCard({
   const subtitle = `${reminder.type === "medication" ? "Medication" : reminder.type} - ${formatReminderTime(reminder.scheduledFor)}`;
 
   return (
-    <View style={styles.reminderCard}>
+    <TouchableOpacity
+      activeOpacity={selectionMode ? 0.8 : 1}
+      delayLongPress={2000}
+      onLongPress={onLongPress}
+      onPress={selectionMode ? onSelect : undefined}
+      style={[styles.reminderCard, selected && styles.selectedReminderCard]}
+    >
       <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
-      <TouchableOpacity disabled={busy || isHistory} onPress={onRead} style={styles.cardContent}>
+      <TouchableOpacity disabled={busy || isHistory || selectionMode} onPress={onRead} style={styles.cardContent}>
         <Text style={styles.reminderTitle}>{reminder.title}</Text>
         <Text style={styles.reminderMeta}>{subtitle}</Text>
         {!isHistory ? <Text style={styles.reminderMeta}>{reminder.readAt ? "Read" : "Unread"}</Text> : null}
@@ -393,7 +483,7 @@ function ReminderCard({
           </TouchableOpacity>
         </View>
       ) : null}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -466,6 +556,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 24,
   },
+  headerDelete: {
+    alignItems: "center",
+    height: 40,
+    justifyContent: "center",
+    position: "absolute",
+    right: 14,
+    width: 40,
+  },
   brand: {
     color: "#00796B",
     fontSize: 16,
@@ -473,7 +571,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 120,
   },
   title: {
     color: "#111827",
@@ -554,6 +651,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     paddingRight: 12,
   },
+  selectedReminderCard: {
+    borderColor: "#00796B",
+    borderWidth: 2,
+  },
   accentBar: {
     alignSelf: "stretch",
     width: 5,
@@ -577,6 +678,16 @@ const styles = StyleSheet.create({
     color: "#3E4946",
     fontSize: 11,
     marginTop: 8,
+  },
+  historyHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  clearHistoryText: {
+    color: "#B42318",
+    fontSize: 12,
+    fontWeight: "700",
   },
   doneButton: {
     alignItems: "center",

@@ -4,7 +4,7 @@ from bson import ObjectId
 from flask import Blueprint, jsonify, request
 
 from database import mongo
-from services.reminders import expand_reminders, prepare_reminder, reminder_action, reminder_timezone, validate_medication_times
+from services.reminders import expand_reminders, prepare_reminder, reminder_action, reminder_time, reminder_timezone, validate_medication_times
 from utils.auth import current_user_id
 from utils.mongo import serialize_doc, validate_object_id
 from utils.users import ensure_current_user
@@ -37,7 +37,7 @@ MEDICATION_FIELDS = (
     "timezone",
     "timezoneOffset",
 )
-REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled", "dismissedAt", "completedAt", "snoozedUntil")
+REMINDER_FIELDS = ("type", "title", "scheduledFor", "repeat", "enabled", "dismissedAt", "completedAt", "snoozedUntil", "visitId")
 SYMPTOM_FIELDS = ("name", "severity", "notes", "recordedAt")
 WEIGHT_FIELDS = ("weightKg", "recordedAt", "notes")
 FLAG_FIELDS = ("type", "title", "message", "severity", "createdAt", "resolved")
@@ -76,8 +76,31 @@ def list_collection(collection_name, pet_id, sort_field="createdAt", direction=-
     if get_pet_or_404(pet_id) is None:
         return error("Pet not found", 404)
 
-    docs = mongo.db[collection_name].find({"petId": ObjectId(pet_id)}).sort(sort_field, direction)
+    docs = mongo.db[collection_name].find({"petId": ObjectId(pet_id), "deletedAt": {"$exists": False}}).sort(sort_field, direction)
     return jsonify([serialize_doc(doc) for doc in docs])
+
+
+def soft_delete_record(collection_name, pet_id, record_id):
+    """Keep a deleted record for history, but hide it from the normal app screens."""
+    if get_pet_or_404(pet_id) is None or not validate_object_id(record_id):
+        return None
+
+    user_id = current_user_id()
+    record = mongo.db[collection_name].find_one({
+        "_id": ObjectId(record_id), "petId": ObjectId(pet_id), "userId": user_id,
+        "deletedAt": {"$exists": False},
+    })
+    if not record:
+        return None
+
+    now = utc_now().isoformat()
+    mongo.db[collection_name].update_one({"_id": record["_id"]}, {"$set": {"deletedAt": now, "updatedAt": utc_now()}})
+    source_field = "medicationId" if collection_name == "medications" else "visitId"
+    mongo.db.reminders.update_many(
+        {"userId": user_id, "petId": record["petId"], source_field: {"$in": [record["_id"], str(record["_id"])]}, "deletedAt": {"$exists": False}},
+        {"$set": {"deletedAt": now, "enabled": False, "updatedAt": utc_now()}},
+    )
+    return record
 
 
 def create_collection_item(collection_name, pet_id, fields):
@@ -169,7 +192,7 @@ def home_today():
         return parsed.date()
 
     pet_ids = [pet["_id"] for pet in mongo.db.pets.find({"userId": user_id})]
-    query = {"petId": {"$in": pet_ids}}
+    query = {"petId": {"$in": pet_ids}, "deletedAt": {"$exists": False}}
     counts = {"vaccinations": 0, "medications": 0, "vetVisits": 0}
     daily_doses = {"once a day": 1, "twice a day": 2, "three times a day": 3, "daily": 1}
 
@@ -310,6 +333,13 @@ def create_vet_visit(pet_id):
     return jsonify(serialize_doc(saved)), 201
 
 
+@pets_bp.delete("/pets/<pet_id>/vet-visits/<visit_id>")
+def delete_vet_visit(pet_id, visit_id):
+    if soft_delete_record("vet_visits", pet_id, visit_id) is None:
+        return error("Vet visit not found", 404)
+    return "", 204
+
+
 @pets_bp.get("/pets/<pet_id>/medications")
 def list_medications(pet_id):
     return list_collection("medications", pet_id, "createdAt", -1)
@@ -376,6 +406,13 @@ def create_medication(pet_id):
     return jsonify(serialize_doc(mongo.db.medications.find_one({"_id": result.inserted_id}))), 201
 
 
+@pets_bp.delete("/pets/<pet_id>/medications/<medication_id>")
+def delete_medication(pet_id, medication_id):
+    if soft_delete_record("medications", pet_id, medication_id) is None:
+        return error("Medication not found", 404)
+    return "", 204
+
+
 @pets_bp.patch("/medications/<medication_id>/doses")
 def add_dose_log(medication_id):
     if not validate_object_id(medication_id):
@@ -405,7 +442,7 @@ def list_reminders(pet_id):
     context = request.args.to_dict()
     try:
         reminder_timezone(context)
-        reminders = expand_reminders({"petId": ObjectId(pet_id), "userId": current_user_id()}, context)
+        reminders = expand_reminders({"petId": ObjectId(pet_id), "userId": current_user_id(), "deletedAt": {"$exists": False}}, context)
     except ValueError as exc:
         return error(str(exc))
     return jsonify([serialize_doc(reminder) for reminder in reminders])
@@ -418,7 +455,7 @@ def list_user_reminders():
     context = request.args.to_dict()
     try:
         reminder_timezone(context)
-        reminders = expand_reminders({"userId": user_id, "petId": {"$in": pet_ids}}, context)
+        reminders = expand_reminders({"userId": user_id, "petId": {"$in": pet_ids}, "deletedAt": {"$exists": False}}, context)
     except ValueError as exc:
         return error(str(exc))
     return jsonify([serialize_doc(reminder) for reminder in reminders])
@@ -460,6 +497,49 @@ def act_on_reminder(reminder_id):
     return jsonify(serialize_doc(updated))
 
 
+def delete_linked_record(reminder):
+    """Remove the saved visit or medication that created this reminder."""
+    if reminder.get("medicationId") and soft_delete_record("medications", str(reminder["petId"]), str(reminder["medicationId"])):
+        return True
+    if reminder.get("visitId") and soft_delete_record("vet_visits", str(reminder["petId"]), str(reminder["visitId"])):
+        return True
+
+    # Visits saved before visit IDs were linked can still be matched by their reason and appointment time.
+    if reminder.get("type") == "checkup" and str(reminder.get("title", "")).startswith("Vet visit: "):
+        try:
+            scheduled = reminder_time(reminder["scheduledFor"], reminder).astimezone(reminder_timezone(reminder))
+            matches = list(mongo.db.vet_visits.find({
+                "petId": reminder["petId"], "userId": current_user_id(),
+                "reason": str(reminder["title"])[11:], "appointmentDate": scheduled.date().isoformat(),
+                "appointmentTime": scheduled.strftime("%H:%M"), "deletedAt": {"$exists": False},
+            }))
+            if len(matches) == 1 and soft_delete_record("vet_visits", str(reminder["petId"]), str(matches[0]["_id"])):
+                return True
+        except ValueError:
+            pass
+    return False
+
+
+@pets_bp.delete("/reminders/<reminder_id>")
+def delete_reminder(reminder_id):
+    if not validate_object_id(reminder_id):
+        return error("Reminder not found", 404)
+
+    reminder = mongo.db.reminders.find_one({"_id": ObjectId(reminder_id), "userId": current_user_id()})
+    if not reminder or get_pet_or_404(str(reminder["petId"])) is None:
+        return error("Reminder not found", 404)
+    # A related record may already have removed this reminder in the same batch.
+    if reminder.get("deletedAt"):
+        return "", 204
+
+    # A reminder created from a record removes that record as well, so every screen stays in sync.
+    if delete_linked_record(reminder):
+        return "", 204
+
+    mongo.db.reminders.update_one({"_id": reminder["_id"]}, {"$set": {"deletedAt": utc_now().isoformat(), "enabled": False, "updatedAt": utc_now()}})
+    return "", 204
+
+
 @pets_bp.post("/pets/<pet_id>/reminders/dismiss-read")
 def dismiss_read_reminders(pet_id):
     if get_pet_or_404(pet_id) is None:
@@ -468,6 +548,22 @@ def dismiss_read_reminders(pet_id):
         "petId": ObjectId(pet_id), "userId": current_user_id(), "readAt": {"$ne": None},
         "dismissedAt": None, "enabled": {"$ne": False},
     }, {"$set": {"dismissedAt": utc_now().isoformat(), "updatedAt": utc_now()}})
+    return "", 204
+
+
+@pets_bp.delete("/pets/<pet_id>/reminders/history")
+def delete_reminder_history(pet_id):
+    if get_pet_or_404(pet_id) is None:
+        return error("Pet not found", 404)
+    query = {
+        "petId": ObjectId(pet_id), "userId": current_user_id(), "dismissedAt": {"$ne": None},
+        "deletedAt": {"$exists": False},
+    }
+    history = list(mongo.db.reminders.find(query))
+    # History is linked to visits and medications, so clear those matching records too.
+    for reminder in history:
+        delete_linked_record(reminder)
+    mongo.db.reminders.update_many(query, {"$set": {"deletedAt": utc_now().isoformat(), "enabled": False, "updatedAt": utc_now()}})
     return "", 204
 
 
@@ -534,8 +630,8 @@ def pet_summary(pet_id):
     summary = {
         "pet": serialize_doc(pet),
         "counts": {
-            "vetVisits": mongo.db.vet_visits.count_documents({"petId": object_id}),
-            "medications": mongo.db.medications.count_documents({"petId": object_id}),
+            "vetVisits": mongo.db.vet_visits.count_documents({"petId": object_id, "deletedAt": {"$exists": False}}),
+            "medications": mongo.db.medications.count_documents({"petId": object_id, "deletedAt": {"$exists": False}}),
             "reminders": mongo.db.reminders.count_documents({"petId": object_id}),
             "symptoms": mongo.db.symptoms.count_documents({"petId": object_id}),
             "weights": mongo.db.weight_entries.count_documents({"petId": object_id}),

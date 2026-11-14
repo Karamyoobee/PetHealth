@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
@@ -11,14 +12,18 @@ type Props = {
   onAddMedication?: () => void;
   petId?: string | null;
   onSelectPet?: (petId: string) => void;
+  onRecordsChanged?: () => Promise<void>;
 };
 
-export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: Props) {
+export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, onRecordsChanged }: Props) {
+  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(petId ?? "");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMedicationIds, setSelectedMedicationIds] = useState<string[]>([]);
 
   const loadPets = useCallback(async () => {
     // Keep the selected pet when returning from the add medication screen.
@@ -68,16 +73,51 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
     loadMedications(petId);
   };
 
+  const toggleSelection = (medicationId: string) => {
+    setSelectedMedicationIds((current) => current.includes(medicationId) ? current.filter((id) => id !== medicationId) : [...current, medicationId]);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (!selectedMedicationIds.length) return;
+    Alert.alert("Delete selected medications?", "Their linked reminders will be deleted too. Deleted records stay in your history.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try {
+          await Promise.all(medications.filter((item) => selectedMedicationIds.includes(item.id)).map((item) => api.deleteMedication(item.petId, item.id)));
+          setMedications((current) => current.filter((item) => !selectedMedicationIds.includes(item.id)));
+          setSelectedMedicationIds([]);
+          setSelectionMode(false);
+          try {
+            await onRecordsChanged?.();
+          } catch {
+            setMessage("The medication was deleted, but phone notifications could not refresh yet.");
+          }
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Could not delete the medication.");
+          Alert.alert("Could not delete medications", error instanceof Error ? error.message : "Please try again.");
+          setSelectedMedicationIds([]);
+          setSelectionMode(false);
+        }
+      } },
+    ]);
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0F172A" />
+        <TouchableOpacity onPress={() => selectionMode ? (setSelectionMode(false), setSelectedMedicationIds([])) : onBack?.()} style={styles.backButton}>
+          <Ionicons name={selectionMode ? "close" : "chevron-back"} size={24} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Medications</Text>
+        <Text style={styles.headerTitle}>{selectionMode ? `${selectedMedicationIds.length} selected` : "Medications"}</Text>
+        <TouchableOpacity onPress={() => selectionMode ? confirmDeleteSelected() : setSelectionMode(true)} disabled={selectionMode && !selectedMedicationIds.length} style={[styles.headerDelete, selectionMode && !selectedMedicationIds.length && styles.disabledButton]}>
+          <Ionicons name="trash-outline" size={21} color="#B42318" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 110 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={selectPet} />
 
         <Text style={styles.sectionLabel}>ACTIVE MEDICATIONS</Text>
@@ -87,7 +127,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
           </View>
         ) : medications.length > 0 ? (
           medications.map((medication) => (
-            <View key={medication.id} style={styles.medicationCard}>
+            <TouchableOpacity key={medication.id} delayLongPress={2000} onLongPress={() => { setSelectionMode(true); setSelectedMedicationIds((current) => current.includes(medication.id) ? current : [...current, medication.id]); }} onPress={selectionMode ? () => toggleSelection(medication.id) : undefined} style={[styles.medicationCard, selectedMedicationIds.includes(medication.id) && styles.selectedCard]}>
               <View style={styles.cardHeader}>
                 <Ionicons name="medkit-outline" size={22} color="#00796B" />
                 <View style={styles.cardTitleWrap}>
@@ -102,7 +142,7 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
                 Dates: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}
               </Text>
               {medication.instructions ? <Text style={styles.detailText}>Notes: {medication.instructions}</Text> : null}
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyState}>
@@ -115,7 +155,8 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet }: 
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Keep this fixed action above Android's navigation buttons. */}
+      <View style={[styles.footer, { paddingBottom: 20 + insets.bottom }]}>
         <TouchableOpacity style={styles.addButton} onPress={onAddMedication}>
           <Text style={styles.addText}>+ Add Medication</Text>
         </TouchableOpacity>
@@ -211,6 +252,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
   },
+  headerDelete: { alignItems: "center", height: 40, justifyContent: "center", position: "absolute", right: 14, width: 40 },
+  selectedCard: { borderColor: "#00796B", borderWidth: 2 },
+  disabledButton: { opacity: 0.45 },
   detailText: {
     color: "#3E4946",
     fontSize: 13,

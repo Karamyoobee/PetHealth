@@ -89,6 +89,7 @@ export type Reminder = {
   repeat: "none" | "daily" | "weekly" | "monthly";
   enabled: boolean;
   medicationId?: string;
+  visitId?: string;
   readAt?: string;
   timezone?: string;
   timezoneOffset?: number;

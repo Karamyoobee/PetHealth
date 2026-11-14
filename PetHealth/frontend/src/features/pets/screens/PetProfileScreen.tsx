@@ -2,6 +2,7 @@ import React from "react";
 import { useState } from "react";
 import { useEffect } from "react"; // check petId for pet being used here
 import { Alert, StyleSheet, Text, ScrollView, View} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 //All Icons Set - For Statistic Cards and Quick Access Buttons
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Feather from '@expo/vector-icons/Feather';
@@ -49,6 +50,7 @@ type PetHeaderProps = {
 
 //Main Function for Pet Profile Screen - (Call Props inside function [Parameters])
 export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate, onQuickLog, onWeightLog,onPredictiveFlag, onVetVisits, onMedications, onExportReport, onDeleted, onNavigate }: PetHeaderProps){
+    const insets = useSafeAreaInsets();
     const [pet, setPet] = useState<Pet|null>(null);//Select pet's data
     const [error, setError] = useState<string|null>(null);//Display error message if fails to load
     const [loading, setLoading] = useState(true)//True - during the fetch of pet details
@@ -120,7 +122,7 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
         <View style={styles.root}>
         {/*Scrollable Profile Content Style*/}
         <ScrollView style={{ flex: 1}}
-            contentContainerStyle={{ paddingBottom: 92}}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
             >
 
             {/*Pet Photo Cover*/}
@@ -226,6 +228,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F8F8F6',
     },
+
+    // Leave room for the app navigation and the phone navigation controls.
+    scrollContent: {},
 
     //Quick Access Container
     Container: {
