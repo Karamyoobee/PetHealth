@@ -15,6 +15,30 @@ type Props = {
   onRecordsChanged?: () => Promise<void>;
 };
 
+function localDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function expectedDosesPerDay(medication: Medication) {
+  // Use the saved reminder times when they are available.
+  if (medication.reminderTimes?.length) return medication.reminderTimes.length;
+  const schedule = medication.schedule.toLowerCase();
+  if (schedule.includes("three")) return 3;
+  if (schedule.includes("twice")) return 2;
+  return 1;
+}
+
+function isMedicationCompleted(medication: Medication) {
+  // A medicine stays active until its end date and all of today's doses are given.
+  if (!medication.endDate) return false;
+  const today = localDate(new Date());
+  if (medication.endDate < today) return true;
+  if (medication.endDate > today) return false;
+
+  const dosesGivenToday = medication.doseLog.filter((dose) => dose.status === "taken" && localDate(new Date(dose.takenAt)) === today).length;
+  return dosesGivenToday >= expectedDosesPerDay(medication);
+}
+
 export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, onRecordsChanged }: Props) {
   const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<Pet[]>([]);
@@ -102,6 +126,30 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, on
     ]);
   };
 
+  // Show finished treatment separately so it does not look like an active medicine.
+  const activeMedications = medications.filter((medication) => !isMedicationCompleted(medication));
+  const completedMedications = medications.filter(isMedicationCompleted);
+
+  const medicationCard = (medication: Medication, completed = false) => (
+    <TouchableOpacity key={medication.id} delayLongPress={2000} onLongPress={() => { setSelectionMode(true); setSelectedMedicationIds((current) => current.includes(medication.id) ? current : [...current, medication.id]); }} onPress={selectionMode ? () => toggleSelection(medication.id) : undefined} style={[styles.medicationCard, selectedMedicationIds.includes(medication.id) && styles.selectedCard]}>
+      <View style={styles.cardHeader}>
+        <Ionicons name="medkit-outline" size={22} color="#00796B" />
+        <View style={styles.cardTitleWrap}>
+          <Text style={styles.medicationName}>{medication.name}</Text>
+        </View>
+      </View>
+      {completed ? <Text style={styles.completedText}>Status: Medicine given / completed</Text> : null}
+      <Text style={styles.detailText}>Dosage: {medication.dosage || "Not added"}</Text>
+      {medication.purpose ? <Text style={styles.detailText}>Purpose: {medication.purpose}</Text> : null}
+      <Text style={styles.detailText}>Frequency: {medication.schedule || "Not set"}</Text>
+      <Text style={styles.detailText}>Time: {medication.reminderTimes?.join(", ") || medication.reminderTime || "Not set"}</Text>
+      <Text style={styles.detailText}>
+        Dates: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}
+      </Text>
+      {medication.instructions ? <Text style={styles.detailText}>Notes: {medication.instructions}</Text> : null}
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -125,25 +173,8 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, on
           <View style={styles.emptyState}>
             <ActivityIndicator color="#00796B" />
           </View>
-        ) : medications.length > 0 ? (
-          medications.map((medication) => (
-            <TouchableOpacity key={medication.id} delayLongPress={2000} onLongPress={() => { setSelectionMode(true); setSelectedMedicationIds((current) => current.includes(medication.id) ? current : [...current, medication.id]); }} onPress={selectionMode ? () => toggleSelection(medication.id) : undefined} style={[styles.medicationCard, selectedMedicationIds.includes(medication.id) && styles.selectedCard]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="medkit-outline" size={22} color="#00796B" />
-                <View style={styles.cardTitleWrap}>
-                  <Text style={styles.medicationName}>{medication.name}</Text>
-                  <Text style={styles.medicationMeta}>{medication.dosage || "No dosage added"}</Text>
-                </View>
-              </View>
-              {medication.purpose ? <Text style={styles.detailText}>Purpose: {medication.purpose}</Text> : null}
-              <Text style={styles.detailText}>Frequency: {medication.schedule || "Not set"}</Text>
-              <Text style={styles.detailText}>Time: {medication.reminderTimes?.join(", ") || medication.reminderTime || "Not set"}</Text>
-              <Text style={styles.detailText}>
-                Dates: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}
-              </Text>
-              {medication.instructions ? <Text style={styles.detailText}>Notes: {medication.instructions}</Text> : null}
-            </TouchableOpacity>
-          ))
+        ) : activeMedications.length > 0 ? (
+          activeMedications.map((medication) => medicationCard(medication))
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="medkit-outline" size={32} color="#00796B" />
@@ -153,6 +184,13 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, on
             </Text>
           </View>
         )}
+
+        {!loading && completedMedications.length > 0 ? (
+          <>
+            <Text style={[styles.sectionLabel, styles.completedSectionLabel]}>COMPLETED MEDICATIONS</Text>
+            {completedMedications.map((medication) => medicationCard(medication, true))}
+          </>
+        ) : null}
       </ScrollView>
 
       {/* Keep this fixed action above Android's navigation buttons. */}
@@ -203,6 +241,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1,
     marginBottom: 14,
+  },
+  completedSectionLabel: {
+    // Leave a clear gap between the active and completed treatment sections.
+    marginTop: 16,
   },
   emptyState: {
     alignItems: "center",
@@ -255,6 +297,7 @@ const styles = StyleSheet.create({
   headerDelete: { alignItems: "center", height: 40, justifyContent: "center", position: "absolute", right: 14, width: 40 },
   selectedCard: { borderColor: "#00796B", borderWidth: 2 },
   disabledButton: { opacity: 0.45 },
+  completedText: { color: "#00796B", fontSize: 13, fontWeight: "700", marginBottom: 6 },
   detailText: {
     color: "#3E4946",
     fontSize: 13,
