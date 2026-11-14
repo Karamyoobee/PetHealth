@@ -281,6 +281,7 @@ export default function Timeline({onBack, onHomePress, onPetsPress, onNavigate}:
                 active="timeline"
                 onHomePress={onHomePress}
                 onPetsPress={onPetsPress}
+                onAlertsPress={() => onNavigate?.('reminders')}
                 onTimelinePress={() => {}}
             />
 
