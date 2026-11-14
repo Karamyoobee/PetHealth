@@ -27,7 +27,7 @@ const BREED_KEYS: Record<string, string> = {
     'Huntaway': 'huntaway',//Dog Breed 2
     'Golden Retriever': 'golden',//Dog Breed 3
     'British Shorthair':'british',//Cat Breed 1
-    'Domestic Short hair':'domestic',//Cat Breed 2
+    'Domestic Short hair':'domestic_shorthair',//Cat Breed 2
     'Ragdoll':'ragdoll',//Cat breed 3
 };
 

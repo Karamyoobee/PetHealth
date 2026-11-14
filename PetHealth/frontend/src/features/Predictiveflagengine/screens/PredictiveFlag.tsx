@@ -44,74 +44,72 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                         Our advanced predictive models analyze your pet's historical data, 
                         however our analysis is only limited to predicting the health analysis of 
                         these 6 selective breeds: 
-                        Dog Breed
-                        1. Labrador Retriever 
-                        2. Huntaway
-                        3. Golden Retriever
-                        
-                        Cat Breed
-                        1. British Shorthair 
-                        2. Domestic Shorthair
-                        3. Ragdoll
                     </Text>
-                </View>
-                
-                {/*Information card for Predictive Flagging Engine Analysis*/}
-                <View style={styles.card}>
-                    <Text style={styles.card_title}>Weight Tracking - 6 Animal Breeds only!</Text>
-                    <Text style={styles.card_body}>
-                        Real-time analysis - only for weight tracking though!   
-                        limited to only 6 breeds (3 dogs | 3 cats) 
-                    </Text>
+                    <Text style={styles.heading_section}>Dog Breeds:</Text>
+                    <Text style={styles.card_body}>1. Labrador Retriever </Text>
+                    <Text style={styles.card_body}>2. Huntaway </Text>
+                    <Text style={styles.card_body}>3. Golden Retriever </Text>
+
+                    <Text style={styles.heading_section}> Cat Breeds:</Text>
+                    <Text style={styles.card_body}>1. British Shorthair  </Text>
+                    <Text style={styles.card_body}>2. Domestic Shorthair </Text>
+                    <Text style={styles.card_body}>3. Ragdoll </Text>
+                       
                 </View>
 
                  {/*Information card information for Predictive Flagging Engine (How it works:)*/}               
                 <View style={styles.card}>
                     <Text style={styles.card_title}>Predictive Flagging Engine: Information</Text>
-                    <Text style={styles.card_body}>
+                    
+                    
                         <View style={styles.flag_style}>
-                            {/*Heading for Flag Level */}
-                            <Text style={styles.flag_bold_heading} >
-                                    🟢  Typical :
-                                <Text style={styles.flag_text}>
-                                    less than 5% (Healthy - normal range)
+                            {/*Heading for Flag Level: TYPICAL */}
+                            <Text style={styles.flag_text}>
+                                <Text style={styles.flag_bold_heading} >
+                                    🟢Typical :
                                 </Text>
+                                    less than 5% (Healthy - normal range)           
                             </Text>
                         </View>
-                       
-                       <View style={styles.flag_style}>
-                                <Text style={styles.flag_bold_heading} >
-                                    🟠  Watch:  
-                                 </Text>
-                                 <Text style={styles.flag_text}>
-                                    5% - 10% outside of expected weight (Warning!)
-                                 </Text>
-                       </View>
 
-                        
                         <View style={styles.flag_style}>
+                            {/*Heading for Flag Level: WATCH */}
+                            <Text style={styles.flag_text}>
                                 <Text style={styles.flag_bold_heading} >
-                                    🔴  Elevated: 
+                                    🟠Watch:
                                 </Text>
-                                <Text style={styles.flag_text}>
-                                    10% or more outside of expected weight range 
+                                    5% - 10% outside of expected weight (Warning!)         
+                            </Text>
+                        </View>
+
+                        <View style={styles.flag_style}>
+                            {/*Heading for Flag Level: ELEVATED*/}
+                            <Text style={styles.flag_text}>
+                                <Text style={styles.flag_bold_heading}>
+                                    🔴Elevated: 
                                 </Text>
-                       </View>
+                                    10% or more outside of expected weight        
+                            </Text>
+                        </View>
 
 
                     <View style={styles.viewstyle}>
 
                     </View>
-                        🐶 Labrador - Female: 25-32kg | Male: 29-36kg
-                        🐶 Huntaway: Female: 25-35kg | Male: 30-40kg 
-                        🐶 Golden Retriever: Female: 25-29.5kg | Male: 29.5 - 34 kg
+                        <Text style={styles.card_title}>
+                            Dog & Cat Breeds
+                        </Text>
 
+                    {/*Expected Breed Weight based on Gender */}
+                    <Text style={styles.breed_style}>🐶 Labrador - Female: 25-32kg | Male: 29-36kg</Text>
+                    <Text style={styles.breed_style}>🐶 Huntaway: Female: 25-35kg | Male: 30-40kg</Text>
+                    <Text style={styles.breed_style}>🐶 Golden Retriever: Female: 25-29.5kg | Male: 29.5 - 34 kg</Text>
+                    
 
-                        🐱 British Shorthair - Female: 3.2 - 5.4 kg |   Male: 4.1 - 7.7 kg
-                        🐱 Domestic Shorthair - Female: 2.5 - 5.5kg | Male: 3.5 - 5.5 kg
-                        🐱 Ragdoll - Female: 2.6 - 6.8 kg | Male: 5.4 - 9.1 kg
+                    <Text style={styles.breed_style}>🐱British Shorthair - Female: 3.2 - 5.4 kg |   Male: 4.1 - 7.7 kg</Text>    
+                    <Text style={styles.breed_style}>🐱Domestic Shorthair - Female: 2.5 - 5.5kg | Male: 3.5 - 5.5 kg</Text>
+                    <Text style={styles.breed_style}>🐱Ragdoll - Female: 3.6 - 6.8kg | Male: 5.4 - 9.1 kg</Text>
 
-                    </Text>
                 </View>
 
 
@@ -130,9 +128,7 @@ const styles = StyleSheet.create({
 
     //flag_levels style
     flag_style:{
-        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
     },
 
     flag_text:{
@@ -144,10 +140,27 @@ const styles = StyleSheet.create({
         fontSize: 14, 
     },
 
+    breed_style:{
+        fontSize: 13,
+        lineHeight:19,
+        color:"#555",
+        marginBottom: 4,
+    },
+
+    //Heading Section Style : 
+    heading_section: {
+        fontSize: 13,
+        fontWeight: "bold",
+        color:'#444',
+        marginTop: 10,
+        marginBottom: 4,
+    },
+
     //Breed Divider style 
     viewstyle: {
         height: 1,
-        borderColor: "#E8E4DC",
+        backgroundColor: "#E8E4DC",
+        marginVertical: 10,
     },
 
     //Run New Analysis Button
