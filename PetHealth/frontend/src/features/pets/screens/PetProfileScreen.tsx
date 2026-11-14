@@ -24,6 +24,12 @@ import { api } from "../../../api/client";
 
 import PhotoHeader from "../components/Photoheader";
 
+// Show the saved value in a friendly form on the profile card.
+function formatGender(sex?: string) {
+    const value = sex?.trim();
+    return value ? `${value.charAt(0).toUpperCase()}${value.slice(1).toLowerCase()}` : "Not set";
+}
+
 //Props - useful for Parent Screen Menu
 type PetHeaderProps = {
     onBack: () => void;//Return to previous Screen
@@ -114,7 +120,7 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
         <View style={styles.root}>
         {/*Scrollable Profile Content Style*/}
         <ScrollView style={{ flex: 1}}
-            contentContainerStyle={{ paddingBottom: 114}}
+            contentContainerStyle={{ paddingBottom: 92}}
             >
 
             {/*Pet Photo Cover*/}
@@ -142,21 +148,21 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
             <DetailCard
                 label="Weight"
                 value={`${latestweight ?? pet?.weightKg ?? 0} kg`}
-                icon={<FontAwesome6 name="weight-scale" size={24} color="black" />}
+                icon={<FontAwesome6 name="weight-scale" size={15} color="#3E4946" />}
             />
 
             {/*Pet Age*/}
             <DetailCard
                 label="Age"//Age Declared
                 value={`${pet?.age ?? 0 } yrs`}//Value Declared and collected from real database stored
-                icon={<MaterialCommunityIcons name="cake-variant-outline" size={24} color="black" />}
+                icon={<MaterialCommunityIcons name="cake-variant-outline" size={15} color="#3E4946" />}
             />
 
-            {/*Pet Health Status*/}
+            {/*Pet gender, saved with this pet's profile*/}
             <DetailCard
-                label="Status"//Label for Health Stats
-                value={`${pet?.status ?? "Unknown" }`}//Not connected to backend yet!
-                icon={<Feather name="heart" size={24} color="#90EE90" />}
+                label="Gender"
+                value={formatGender(pet?.sex)}
+                icon={<FontAwesome5 name="venus-mars" size={15} color="#087F70" />}
             />
             </View>
 
@@ -167,35 +173,35 @@ export default function PetProfileScreen({ onBack, petId, accountEmail, onUpdate
             {/*Quick Access: Log Symptom Button*/}
             <QuickButton onPress={onQuickLog}
                 label="Log Symptom"
-                icon={<FontAwesome5 name="briefcase-medical" size={24} color="#2F7B6D" />}
+                icon={<FontAwesome5 name="briefcase-medical" size={16} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Weigh-in Button*/}
             <QuickButton onPress={onWeightLog}
                 label="Weigh-in"
-                icon={<FontAwesome5 name="weight" size={24} color="#2F7B6D" />}
+                icon={<FontAwesome5 name="weight" size={16} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Vet Visits Button*/}
             <QuickButton onPress={onVetVisits}
                 label="Vet Visits"
-                icon={<FontAwesome name="calendar" size={24} color="#2F7B6D" />}
+                icon={<FontAwesome name="calendar" size={16} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Medications*/}
             <QuickButton onPress={onMedications}
                 label="Medications"
-                icon={<MaterialCommunityIcons name="pill" size={24} color="#2F7B6D" />}
+                icon={<MaterialCommunityIcons name="pill" size={16} color="#2F7B6D" />}
             />
 
             {/*Quick Access: Predictive Flagging Engine Button*/}
             <QuickButton onPress={onPredictiveFlag}
                 label="Predictive Flagging Engine"
-                icon={<Entypo name="flag" size={24} color="#2F7B6D" />}
+                icon={<Entypo name="flag" size={16} color="#2F7B6D" />}
             />
             <QuickButton onPress={onExportReport}
                 label="Export PDF"
-                icon={<Feather name="download" size={24} color="black" />}
+                icon={<Feather name="download" size={16} color="#2F7B6D" />}
             />
         </View>
 
@@ -226,16 +232,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
+        paddingHorizontal: 20,
     },
 
     //Quick Access Heading
     quickaccessheading:{
-        marginLeft:10,
-        fontWeight: '500',
-        fontSize: 30,
-        top:20,
-        color:'black',
-        paddingHorizontal: 16,
+        marginTop: 22,
+        marginBottom: 10,
+        fontWeight: '700',
+        fontSize: 14,
+        color:'#263330',
+        paddingHorizontal: 20,
     },
 
     //Main Style for Background Screen of PetProfile
@@ -249,9 +256,9 @@ const styles = StyleSheet.create({
     //Statistics - using DetailCard.tsx file Components (Style)
     statistics: {
         flexDirection: 'row',
-        gap: 8, 
-        paddingHorizontal: 16,
-        marginTop: 12,
+        gap: 8,
+        paddingHorizontal: 20,
+        marginTop: 14,
     },
 
     section1: {
@@ -268,17 +275,19 @@ const styles = StyleSheet.create({
 
     //Display Real Pet Name
     petname: {
-        fontSize: 35,
+        fontSize: 22,
         fontStyle:"normal",
         textAlign: 'center',
-        fontWeight: '600',
+        fontWeight: '700',
+        marginTop: 28,
     },
     
     //Display Other Pet Details - Breed & Age
     otherpetdetails:{
-        fontSize: 25,
+        fontSize: 12,
         textAlign: 'center',
         color:'#3F4A42',
-    }
+        marginTop: 4,
+    },
 })
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View, Pressable} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Feather from '@expo/vector-icons/Feather';
 
 export default function Header({ onBack }: { onBack: () => void }) { 
     return(
@@ -12,15 +11,7 @@ export default function Header({ onBack }: { onBack: () => void }) {
                 <FontAwesome name="paw" size={24} color="#1F7A66" />                    
                 </Pressable>
                 <Text style={styles.headerText}>PetHealth</Text>
-                
-                
             </View>
-                {/*Notification Button*/}
-                <Pressable>
-                    <Feather name="bell" size={24} color="black" />
-                </Pressable>
-
-            
         </View>
 
 

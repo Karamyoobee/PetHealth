@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { api, setSessionToken } from "./src/api/client";
 import { clearSavedSession, restoreSavedSession, SESSION_TOKEN_KEY, SESSION_USER_KEY } from "./src/auth/session";
@@ -57,19 +58,20 @@ type ScreenKey =
 
 type AuthMode = "welcome" | "signin" | "register";
 
-const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders"];
+const availableHomeScreens: HomeDestination[] = ["pets", "addPet", "symptoms", "weights", "medications", "vetVisits", "assistant", "timeline", "reminders", "predictiveFlagging"];
 
-export default function App() {
+function PetHealthApp() {
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [addPetReturnScreen, setAddPetReturnScreen] = useState<"home" | "pets">("home");
-  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard">("petProfile");
+  const [petSelectionDestination, setPetSelectionDestination] = useState<"petProfile" | "weightDashboard" | "predictiveFlagging">("petProfile");
   const [recordReturnScreen, setRecordReturnScreen] = useState<"home" | "petProfile">("home");
   const [authMode, setAuthMode] = useState<AuthMode>("welcome");
   const [authLoading, setAuthLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -121,6 +123,16 @@ export default function App() {
           setActiveScreen("weightDashboard");
         } else {
           setPetSelectionDestination("weightDashboard");
+          setActiveScreen("pets");
+        }
+        return;
+      }
+      if (screen === "predictiveFlagging") {
+        if (petId) {
+          setSelectedPetId(petId);
+          setActiveScreen("predictiveFlagging");
+        } else {
+          setPetSelectionDestination("predictiveFlagging");
           setActiveScreen("pets");
         }
         return;
@@ -268,6 +280,40 @@ export default function App() {
     }
   }, [notificationUserId]);
 
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently deletes your Pet Health account, pet records and reminders. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              setDeletingAccount(true);
+              try {
+                await api.deleteCurrentUser();
+                await clearReminderNotifications();
+                await clearSavedSession();
+                setCurrentUser(null);
+                setSelectedPetId(null);
+                setActiveScreen("home");
+                setSessionError(null);
+                setAuthError(null);
+                setAuthMode("signin");
+              } catch (error) {
+                Alert.alert("Could not delete account", error instanceof Error ? error.message : "Please try again.");
+              } finally {
+                setDeletingAccount(false);
+              }
+            })();
+          },
+        },
+      ]
+    );
+  }, []);
+
   if (authLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -327,6 +373,8 @@ export default function App() {
           onNavigate={navigateHome}
           onSignOut={handleSignOut}
           signingOut={signingOut}
+          onDeleteAccount={handleDeleteAccount}
+          deletingAccount={deletingAccount}
         />
       ) : activeScreen === "pets" ? (
         <MyPetsScreen
@@ -383,6 +431,8 @@ export default function App() {
           onSubmit={(petId) => {
             setSelectedPetId(petId);
             setActiveScreen("vetVisits");
+            // Schedule the new appointment reminder on this phone straight away.
+            void refreshNotifications();
           }}
         />
       ) : activeScreen === "medications" ? (
@@ -399,6 +449,8 @@ export default function App() {
           onSubmit={(petId) => {
             setSelectedPetId(petId);
             setActiveScreen("medications");
+            // Schedule the new medication reminders on this phone straight away.
+            void refreshNotifications();
           }}
         />
       ) : activeScreen === "reminders" ? (
@@ -414,10 +466,11 @@ export default function App() {
         <LogSymptom
           petId={selectedPetId}
           onBack={() => setActiveScreen(recordReturnScreen)}
-          onSaved={(petId) => {
+          onViewLogs={(petId) => {
             setSelectedPetId(petId);
-            setActiveScreen("quickLog");
+            setActiveScreen("mylogSymptom");
           }}
+          onComplete={() => setActiveScreen("home")}
         />
       ) : activeScreen === "weightLog" ? (
         <LogWeight petId={selectedPetId} onBack={() => setActiveScreen("weightDashboard")} />
@@ -429,12 +482,20 @@ export default function App() {
           onNavigate={navigateHome}
         />
       ) : activeScreen === "mylogSymptom" ? (
-        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} onAddNewSymptomLog={() => setActiveScreen('quickLog')} />
+        <MyLogSymptom petId={selectedPetId} onBack={() => setActiveScreen(recordReturnScreen)} onNavigate={navigateHome} />
       ) : activeScreen === "predictiveFlagging" ? (
         <PredictiveFlagging petId={selectedPetId} onBack={() => setActiveScreen("petProfile")} />
       ) : null}
       <Toast />
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <PetHealthApp />
+    </SafeAreaProvider>
   );
 }
 

@@ -74,7 +74,6 @@ export function syncReminderNotifications(userId: string): Promise<string | null
       permission = await Notifications.requestPermissionsAsync();
     }
     const pushEnabled = permission.granted && pushConfig.enabled && Boolean(pushConfig.projectId);
-    if (!pushEnabled) await unregisterPushInstallation();
     const active = reminders.filter((item) => item.enabled !== false && !item.dismissedAt);
     const upcoming = active.flatMap((reminder) => {
       const scheduled = new Date(reminder.scheduledFor).getTime();
@@ -91,7 +90,6 @@ export function syncReminderNotifications(userId: string): Promise<string | null
     for (const item of existing) {
       if (activeUser !== userId) return null;
       if (!notificationData(item.content)?.petHealthReminder) continue;
-      if (pushEnabled) continue;
       if (permission.granted && desired.has(item.identifier)) desired.delete(item.identifier);
       else await Notifications.cancelScheduledNotificationAsync(item.identifier);
     }
@@ -104,18 +102,18 @@ export function syncReminderNotifications(userId: string): Promise<string | null
       }
     }
     if (!permission.granted) return "Notifications are off. Enable Pet Health notifications in your phone settings.";
+    let pushMessage: string | null = null;
     if (pushEnabled && pushConfig.projectId) {
       try {
-        await registerPushInstallation(pushConfig.projectId, async () => {
-          for (const item of await Notifications.getAllScheduledNotificationsAsync()) {
-            if (notificationData(item.content)?.petHealthReminder) await Notifications.cancelScheduledNotificationAsync(item.identifier);
-          }
-        }, () => activeUser === userId);
+        await registerPushInstallation(pushConfig.projectId, async () => undefined, () => activeUser === userId);
       } catch {
-        return "Could not refresh phone notifications. Check your connection and reopen the app.";
+        pushMessage = "Phone reminders are scheduled, but server push could not refresh.";
       }
-      return null;
+    } else {
+      await unregisterPushInstallation();
     }
+    // Keep reminders on the phone so they can arrive even when the server is unavailable.
+    // Android uses the exact-alarm permission declared in the app configuration for timely delivery.
     for (const [identifier, { reminder, leadMinutes, fireAt }] of desired) {
       if (activeUser !== userId) return null;
       await Notifications.scheduleNotificationAsync({
@@ -129,7 +127,7 @@ export function syncReminderNotifications(userId: string): Promise<string | null
         trigger: { date: new Date(fireAt), channelId: "pet-health-reminders" },
       });
     }
-    return null;
+    return pushMessage;
   });
 }
 

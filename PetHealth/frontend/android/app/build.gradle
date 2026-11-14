@@ -115,7 +115,8 @@ android {
         applicationId 'pethealth.com'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // Play Console requires every uploaded Android build to have a new number.
+        versionCode 20
         versionName "0.1.0"
     }
     signingConfigs {

@@ -51,10 +51,8 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
                 {/* Display Title for Users - Mypets screen */}
                 <View style={styles.greetingBlock}>
                     <Text style={styles.greeting}>My Pets</Text>
+                    <AddButton onPress={onAddNewPet} />
                 </View>
-
-                {/*Add Pet - New Button*/}
-                <AddButton onPress={onAddNewPet} />
 
                 {/*Pet List Display: 
                     1. Only shows current user pets: 
@@ -68,7 +66,7 @@ export default function MyPetsScreen({ onBack, onSelectPet, onAddNewPet, onNavig
                     renderItem={( {item} ) => <PetCard pet={item} onPress={ () => {
                         onSelectPet(item.id);
                     }}/>}
-                    
+                    contentContainerStyle={styles.petList}
                 />
                 
 
@@ -98,14 +96,23 @@ const styles = StyleSheet.create({
  
     //Greeting section - Main Screen Heading
     greetingBlock:{
-        padding: 20,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 14,
     },
  
     //Main Greeting Section
     greeting: {
         color: "#000000",
-        fontSize: 35,
+        fontSize: 28,
         fontWeight: "800",
+    },
+    petList: {
+        paddingHorizontal: 20,
+        paddingBottom: 84,
     },
  
 });

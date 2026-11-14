@@ -14,15 +14,14 @@ export default function SectionHeader({ onBack, title }: PetHeaderProps) {
 
     return(
         <View style={styles.header}>
-                    <Text style={styles.headerText}>{title}</Text>
+            <Text style={styles.headerText}>{title}</Text>
 
-            {/*Main Style - Display Header for Screen*/}
+            {/* Main Style - Display Header for Screen */}
             <View style={styles.innerheader}>
-        <Pressable onPress={onBack} >
-            <AntDesign name="arrowleft" size={24} color="black" />
-        </Pressable>   
-                
-            </View>{/*Header Text - Text Centered inside Header Section */}        
+                <Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+                    <AntDesign name="arrowleft" size={22} color="#23332F" />
+                </Pressable>
+            </View>
         </View>
 
 
@@ -36,7 +35,10 @@ const styles = StyleSheet.create({
     innerheader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+    },
+
+    backButton: {
+        padding: 6,
     },
 
     //Header Bar Style - White Background with thin bottom border
@@ -48,16 +50,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderBottomWidth: 1,
         borderBottomColor: "#E4E2DA",
-        paddingVertical: 12,
+        minHeight: 60,
     },
 
     //Title Text - stretched for full width and center position
     headerText: {
-        fontWeight: '600',
-        fontSize: 17,
-        color: '#333',
+        fontWeight: '700',
+        fontSize: 16,
+        color: '#23332F',
         position:'absolute',
-        width: '100%',
+        left: 60,
+        right: 60,
         textAlign: 'center',
         pointerEvents: 'none',
     }

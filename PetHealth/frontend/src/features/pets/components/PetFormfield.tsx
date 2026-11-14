@@ -35,28 +35,27 @@ const PetFormField = ({ label, value, onChangeText, placeholder, keyboardType }:
 //style sheet
 const styles = StyleSheet.create({
     container:{
-        padding: 20, 
+        marginBottom: 16,
     },
     
     //label on top of 
     label:{
-        fontSize: 14,
-        color: '#555', 
+        fontSize: 13,
+        color: '#3E4946',
         marginBottom: 6,
+        fontWeight: '600',
     },
 
     //User Input Field 
     input: {
-        borderColor: '#ddd',
+        borderColor: '#E2DED7',
         borderWidth: 1,
-        borderRadius: 12, 
-        padding: 10, 
-        marginBottom: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        fontSize: 16,
-        width:200,
-        height:67,
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 14,
+        fontSize: 15,
+        height: 50,
+        width: '100%',
     },
 
     //Displayed Message for user
@@ -67,8 +66,8 @@ const styles = StyleSheet.create({
     },
 
     smallInput: {
-        height: 60,
-        width: 155,
+        height: 50,
+        width: '100%',
     }
 
 });

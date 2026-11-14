@@ -5,8 +5,9 @@ import { Calendar } from "react-native-calendars";
 
 import { api } from "../../api/client";
 import PetSelector from "../../components/PetSelector";
+import SavedValueInput from "../../components/SavedValueInput";
 import { showToast } from "../../components/Toast";
-import type { Pet } from "../../types";
+import type { MedicationTemplate, Pet } from "../../types";
 
 type Props = {
   onBack?: () => void;
@@ -18,6 +19,8 @@ const frequencyOptions = ["Once a day", "Twice a day", "Three times a day"];
 const hourOptions = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 const today = new Date().toISOString().slice(0, 10);
+
+const uniqueValues = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 
 function addYears(dateString: string, years: number) {
   const date = new Date(`${dateString}T00:00:00`);
@@ -49,6 +52,8 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [dosage, setDosage] = useState("");
+  const [savedMedications, setSavedMedications] = useState<MedicationTemplate[]>([]);
+  const [activeSavedField, setActiveSavedField] = useState<string | null>(null);
   const [frequency, setFrequency] = useState("");
   const [reminderTimes, setReminderTimes] = useState(["", "", ""]);
   const [timeIndex, setTimeIndex] = useState(0);
@@ -76,9 +81,7 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
         setPets(savedPets);
         setSelectedPetId((currentPetId) => currentPetId || savedPets[0]?.id || "");
       } catch {
-        if (mounted) {
-          setPets([]);
-        }
+        if (mounted) setPets([]);
       }
     }
 
@@ -89,8 +92,30 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    if (!selectedPetId) {
+      setSavedMedications([]);
+      return () => { mounted = false; };
+    }
+
+    // Each pet has its own saved medication details.
+    api.listMedicationTemplates(selectedPetId)
+      .then((templates) => {
+        if (mounted) setSavedMedications(templates);
+      })
+      .catch(() => {
+        if (mounted) setSavedMedications([]);
+      });
+
+    return () => { mounted = false; };
+  }, [selectedPetId]);
+
   const doseCount = frequency === "Three times a day" ? 3 : frequency === "Twice a day" ? 2 : 1;
   const selectedTimes = reminderTimes.slice(0, doseCount);
+  const savedNames = uniqueValues(savedMedications.map((template) => template.name));
+  const savedPurposes = uniqueValues(savedMedications.map((template) => template.purpose));
+  const savedDosages = uniqueValues(savedMedications.map((template) => template.dosage));
 
   const openClock = (index: number) => {
     // Remember which dose is being edited so the other times stay unchanged.
@@ -119,6 +144,36 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
     const selectedDate = target === "start" ? startDate : endDate;
     setCalendarMonth(selectedDate || today);
     setCalendarTarget(target);
+  };
+
+  const selectSavedMedication = (template: MedicationTemplate) => {
+    setName(template.name);
+    setPurpose(template.purpose);
+    setDosage(template.dosage);
+  };
+
+  const clearSavedMedications = () => {
+    Alert.alert(
+      "Clear saved medications?",
+      "This removes saved dropdown choices only. Existing medication records will stay.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear all",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (!selectedPetId) return;
+              await api.clearMedicationTemplates(selectedPetId);
+              setSavedMedications([]);
+              setActiveSavedField(null);
+            } catch (error) {
+              Alert.alert("Could not clear saved medications", error instanceof Error ? error.message : "Please try again.");
+            }
+          },
+        },
+      ],
+    );
   };
 
   const saveMedication = async () => {
@@ -164,6 +219,12 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
         reminderEnabled,
       });
 
+      // Add this choice now so it is ready when the user opens the dropdown again.
+      setSavedMedications((current) => [
+        ...current,
+        { id: `saved-${Date.now()}`, name: name.trim(), purpose: purpose.trim(), dosage: dosage.trim() },
+      ]);
+
       showToast("Medication saved successfully.");
       onSubmit?.(selectedPetId);
     } catch (error) {
@@ -183,37 +244,22 @@ export function AddMedicationScreen({ onBack, onSubmit, petId }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={setSelectedPetId} />
+        <PetSelector pets={pets} selectedPetId={selectedPetId} onSelectPet={(nextPetId) => {
+          setActiveSavedField(null);
+          setSelectedPetId(nextPetId);
+        }} />
 
         <View style={styles.formCard}>
-          <Text style={styles.label}>Medication Name</Text>
-          <TextInput
-            placeholder="Medication name"
-            placeholderTextColor="#3E4946"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-          />
+          <SavedValueInput label="Medication Name" placeholder="Medication name" value={name} options={savedNames} emptyMessage="No saved medication names for this pet yet." onChangeText={setName} openKey="name" activeKey={activeSavedField} onOpenChange={setActiveSavedField} onSelect={(value) => {
+            const template = savedMedications.find((item) => item.name === value);
+            if (template) selectSavedMedication(template);
+          }} onClear={clearSavedMedications} />
 
-          <Text style={styles.label}>Purpose</Text>
-          <TextInput
-            placeholder="Treatment purpose"
-            placeholderTextColor="#3E4946"
-            style={styles.input}
-            value={purpose}
-            onChangeText={setPurpose}
-          />
+          <SavedValueInput label="Purpose" placeholder="Treatment purpose" value={purpose} options={savedPurposes} emptyMessage="No saved purposes for this pet yet." onChangeText={setPurpose} openKey="purpose" activeKey={activeSavedField} onOpenChange={setActiveSavedField} onSelect={setPurpose} onClear={clearSavedMedications} />
 
           <View style={styles.twoColumn}>
             <View style={styles.column}>
-              <Text style={styles.label}>Dosage</Text>
-              <TextInput
-                placeholder="Dosage"
-                placeholderTextColor="#3E4946"
-                style={styles.input}
-                value={dosage}
-                onChangeText={setDosage}
-              />
+              <SavedValueInput label="Dosage" placeholder="Dosage" value={dosage} options={savedDosages} emptyMessage="No saved dosages for this pet yet." onChangeText={setDosage} openKey="dosage" activeKey={activeSavedField} onOpenChange={setActiveSavedField} onSelect={setDosage} onClear={clearSavedMedications} />
             </View>
             <View style={styles.column}>
               <Text style={styles.label}>Frequency</Text>

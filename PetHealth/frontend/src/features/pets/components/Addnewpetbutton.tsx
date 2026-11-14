@@ -16,26 +16,24 @@ export default function AddButton({ onPress}: AddButtonProps){
         onPress={onPress}
          style={({ pressed }) => [style.button, pressed && {opacity: 0.8}]}
         >
-            <Text style={style.text}>+Add</Text>
+            <Text style={style.text}>+ Add</Text>
         </Pressable>
     )
 }
 
 const style = StyleSheet.create({
     button: {
-        backgroundColor: "orange",
-        borderRadius: 30,
-        width:100,
-        height:50,
+        backgroundColor: "#F59E42",
+        borderRadius: 18,
+        minWidth:76,
+        height:36,
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "flex-start",
-        marginLeft:280, 
-        marginTop: -60,
     },
 
     text: {
-        fontSize: 15,
+        fontSize: 13,
+        fontWeight: '700',
         color: '#FFFFFF',
     },
 })

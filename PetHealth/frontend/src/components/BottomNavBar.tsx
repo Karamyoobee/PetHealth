@@ -1,6 +1,7 @@
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type BottomNavKey = "home" | "pets" | "action" | "timeline" | "alerts";
 
@@ -21,8 +22,11 @@ export function BottomNavBar({
   onTimelinePress,
   onAlertsPress,
 }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.bottomNav}>
+    // Keep the buttons above Android's gesture or three-button navigation area.
+    <View style={[styles.bottomNav, { height: 64 + insets.bottom, paddingBottom: insets.bottom }]}>
       <BottomNavItem icon="home-outline" label="Home" active={active === "home"} onPress={onHomePress} />
       <BottomNavItem icon="paw" label="Pets" active={active === "pets"} onPress={onPetsPress} />
       <TouchableOpacity style={styles.centerAction} onPress={onActionPress} disabled={!onActionPress}>

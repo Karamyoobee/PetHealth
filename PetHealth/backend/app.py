@@ -11,6 +11,7 @@ from routes.reports import reports_bp
 from routes.users import users_bp
 from routes.breeds import breeds_bp #Breed list - from database
 from routes.notifications import notifications_bp
+from routes.privacy import privacy_bp
 from services.push_notifications import register_push_command
 
 
@@ -29,6 +30,7 @@ def create_app():
     app.register_blueprint(reports_bp)
     app.register_blueprint(breeds_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(privacy_bp)
     register_push_command(app)
 
     return app

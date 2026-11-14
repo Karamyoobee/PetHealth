@@ -3,11 +3,13 @@ import type {
   AssistantReply,
   AuthSession,
   Medication,
+  MedicationTemplate,
   Pet,
   PredictiveFlag,
   Reminder,
   Symptom,
   User,
+  VeterinaryProvider,
   VetVisit,
   WeightEntry,
 } from "../types";
@@ -113,6 +115,7 @@ export const api = {
   getCurrentUser: () => requestJson<User>("/api/users/me", {}, 15000),
   updateCurrentUser: (user: Partial<Pick<User, "name" | "email" | "phone">>) =>
   requestJson<User>("/api/users/me", { method: "PATCH", body: JSON.stringify(user) }),
+  deleteCurrentUser: () => requestJson<void>("/api/users/me", { method: "DELETE" }),
   listCurrentUserPets: () => requestJson<Pet[]>("/api/users/me/pets"),
 
   listPets: () => requestJson<Pet[]>("/api/pets"),
@@ -124,10 +127,16 @@ export const api = {
   listVetVisits: (petId: string) => requestJson<VetVisit[]>(`/api/pets/${petId}/vet-visits`),
   createVetVisit: (petId: string, visit: Omit<VetVisit, "id" | "petId">) =>
     postJson<VetVisit>(`/api/pets/${petId}/vet-visits`, visit),
+  // These saved choices are requested for the selected pet only.
+  listVeterinarians: (petId: string) => requestJson<VeterinaryProvider[]>(`/api/pets/${petId}/veterinarians`),
+  clearVeterinarians: (petId: string) => requestJson<void>(`/api/pets/${petId}/veterinarians`, { method: "DELETE" }),
 
   listMedications: (petId: string) => requestJson<Medication[]>(`/api/pets/${petId}/medications`),
   createMedication: (petId: string, medication: Omit<Medication, "id" | "petId" | "doseLog">) =>
     postJson<Medication>(`/api/pets/${petId}/medications`, { ...reminderContext(), ...medication }),
+  // Medication names, purposes, and dosages are saved per pet.
+  listMedicationTemplates: (petId: string) => requestJson<MedicationTemplate[]>(`/api/pets/${petId}/medication-templates`),
+  clearMedicationTemplates: (petId: string) => requestJson<void>(`/api/pets/${petId}/medication-templates`, { method: "DELETE" }),
   addDoseLog: (medicationId: string, dose: Medication["doseLog"][number]) =>
     requestJson<Medication>(`/api/medications/${medicationId}/doses`, {
       method: "PATCH",

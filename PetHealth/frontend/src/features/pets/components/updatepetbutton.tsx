@@ -1,7 +1,6 @@
 import React from "react";
-import {
-    View, Image, Text, Pressable, StyleSheet, 
-} from "react-native";
+import { Pressable, StyleSheet } from "react-native";
+import Feather from '@expo/vector-icons/Feather';
 import { Pet } from "../../../types";
 import { api } from "../../../api/client";
 
@@ -16,26 +15,25 @@ export default function UpdatePet({ onPress}: UpdatePetButtonProps){
         onPress={onPress}
          style={({ pressed }) => [style.button, pressed && {opacity: 0.8}]}
         >
-            <Text style={style.text}>Update</Text>
+            <Feather name="edit-2" size={17} color="#087F70" />
         </Pressable>
     )
 }
 
 const style = StyleSheet.create({
     button: {
-        backgroundColor: "#238B45",
-        borderRadius: 34,
-        width:100,
-        height:50,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 18,
+        width:36,
+        height:36,
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "flex-start",
-        marginLeft:280, 
-        marginTop: -60,
+        alignSelf: "flex-end",
+        marginRight:18,
+        marginTop: -54,
+        borderWidth: 1,
+        borderColor: '#E2DED7',
+        elevation: 2,
     },
 
-    text: {
-        fontSize: 15,
-        color: '#FFFFFF',
-    },
 })

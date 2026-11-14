@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Pet Health",
+    "icon": "./src/features/pets/assets/pet_health_logo.png",
     "slug": "pet-health",
     "scheme": "pethealth.com",
     "version": "0.1.0",
@@ -8,7 +9,10 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "pethealth.com",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
     },
     "plugins": [
       "expo-notifications"

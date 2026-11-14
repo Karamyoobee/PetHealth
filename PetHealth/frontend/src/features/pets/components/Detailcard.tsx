@@ -29,20 +29,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'white',
-        borderRadius: 15,
-        paddingVertical: 5,
+        borderRadius: 9,
+        borderColor: '#E5E1DB',
+        borderWidth: 1,
+        minHeight: 66,
+        paddingVertical: 8,
     },
 
     //Display rendered Pet Detail from (Mongodb Database)
     value: {
         fontStyle: 'normal',
-        fontSize: 20,
+        fontSize: 13,
         fontWeight: '700',
     },
 
     //Heading - Statistics Card
     label: {
-        fontSize: 15,
-        color:'grey',
+        fontSize: 10,
+        color:'#6B7280',
+        marginTop: 2,
     },
 })

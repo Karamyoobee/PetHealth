@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {View, Text, StyleSheet, Alert, ScrollView } from "react-native";//React - Native Libraries
+import {View, Text, StyleSheet, Alert, Keyboard } from "react-native";//React - Native Libraries
 import DescriptionSymptomInput from "../../../components/QuickLogSymptom/DescriptionSymptomInput";
 import { SaveLog } from "../../../components/QuickLogSymptom/SaveLogButton";
 import { SymptomTextField } from "../../../components/QuickLogSymptom/DescriptionSymptomInput";
@@ -15,7 +15,8 @@ import { api } from "../../../api/client";
 type LogSymptomProps = { 
   onBack: () => void;
   petId: string | null;
-  onSaved: (petId: string) => void;
+  onViewLogs: (petId: string) => void;
+  onComplete: () => void;
 }; 
 
 const CategoryOptions:Symptom['category'][] = ['Digestive', 'Skin', 'Mobility', 'Appetite'];
@@ -31,7 +32,7 @@ const durationtoDaysformat = (d: string): number => {
 
 }
 
-export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
+export default function LogSymptom({onBack, petId, onViewLogs, onComplete}:LogSymptomProps){
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<'Digestive' | 'Skin' | 'Mobility' | 'Appetite'>('Digestive');
     const [severity, setSeverity] = useState<'Mild' | 'Moderate' | 'Severe' >('Mild'); //Toggle Button - Spayed/Neutured or Intact
@@ -43,6 +44,7 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
 
     //Handle Save Button 
     const handleSave = async () => {
+        Keyboard.dismiss();
         if (saving) return;// if pet symptom log is saved 
         if (!selectedPetId){
             Alert.alert('No pet has been selected','Please choose a pet');
@@ -67,7 +69,10 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
             console.log('Quick Log Symptom sent', JSON.stringify(symptomData));
             const saved = await api.createSymptom(selectedPetId, symptomData);
             console.log('Quick Log Symptom returned to backend: ', saved);
-            Alert.alert('Saved', 'Symptom logged!', [{text: 'OK', onPress: () => onSaved(selectedPetId)}]);
+            Alert.alert('Symptoms saved', 'Your symptom entry has been saved.', [
+                { text: 'View Logs', onPress: () => onViewLogs(selectedPetId) },
+                { text: 'OK', onPress: onComplete },
+            ]);
         } catch(error){
             console.error(error);
             Alert.alert('Symptom was unable to be saved!','Please, try again !');
@@ -83,9 +88,10 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
     const selectedName = pets.find((p) => p.id === selectedPetId)?.name ?? '';
 
     return(
-        <View style={styles.container}>
+        <View style={styles.screen}>
             <SectionHeader onBack={onBack} title="Log New Symptom"/>
 
+            <View style={styles.container}>
             {/* 1. Pet Selector (select from their different pets) */}
             <View style={styles.Pet}>
             <SelectPet
@@ -115,6 +121,9 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
               value={description}
               onChangeText={setDescription}
               placeholder="Vommiting after eating, reduced appetite for 2 days..."
+              returnKeyType="done"
+              blurOnSubmit
+              onSubmitEditing={Keyboard.dismiss}
               />
 
             {/*4. Severity (select from options) - Segment Control Button */}
@@ -140,9 +149,10 @@ export default function LogSymptom({onBack, petId, onSaved}:LogSymptomProps){
             </View>
 
             <View style={styles.Button}>
-                    <SaveLog label="Save Entry" onPress={handleSave}/>
+                    <SaveLog label={saving ? "Saving..." : "Save Entry"} disabled={saving} onPress={handleSave}/>
             </View>
 
+            </View>
         </View>
     );
 }
@@ -163,9 +173,13 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
 
+    screen: {
+        flex: 1,
+        backgroundColor: '#FDFCF9',
+    },
+
     container: {
         padding: 20,
-        backgroundColor: '#FDFCF9',
     },
     
     //Main Save Button Style
@@ -186,7 +200,7 @@ const styles = StyleSheet.create({
     },
 
     Pet:{
-        marginTop: 20,
+        marginTop: 16,
         marginBottom: 18,
     },
 

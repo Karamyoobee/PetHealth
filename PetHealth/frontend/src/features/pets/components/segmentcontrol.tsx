@@ -56,39 +56,39 @@ const styles = StyleSheet.create({
     //Active Pill: Fill with green  
     pillisActive: {
         flex: 1, 
-        height: 44, 
+        height: 48,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#1F7A6C',
-        borderRadius:10,
+        backgroundColor: '#087F70',
+        borderRadius:9,
         borderWidth: 1,
-        borderColor: '#1F7A6C',
+        borderColor: '#087F70',
     },
 
     //Active Pill Text - White
     activepilltext: {
         color: '#fff',
         fontWeight: '600',
-        fontSize: 15,
+        fontSize: 14,
     },
 
     //Inactive Pill - Style
     Inactivepill: {
         flex: 1,
-        height: 44,
+        height: 48,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#fff',
-        borderRadius:10,
+        borderRadius:9,
         borderWidth: 1,
-        borderColor: '#1F7A6C',
+        borderColor: '#E2DED7',
     },
 
     //TextInactive
     inactivepilltext: {
-        color: '#000',
+        color: '#3E4946',
         fontWeight: '600',
-        fontSize: 15,
+        fontSize: 14,
     },
 
     //row

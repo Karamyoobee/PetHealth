@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "../../api/client";
 import type { AssistantHistoryMessage, Pet, SavedAssistantMessage } from "../../types";
@@ -63,6 +64,7 @@ function savedMessages(messages: SavedAssistantMessage[]): ChatMessage[] {
 }
 
 export function HealthAssistantScreen({ onBack }: Props) {
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const chatRequest = useRef(0);
   const contentHeight = useRef(0);
@@ -269,7 +271,7 @@ export function HealthAssistantScreen({ onBack }: Props) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       style={styles.screen}
     >
@@ -308,7 +310,18 @@ export function HealthAssistantScreen({ onBack }: Props) {
             <Ionicons name="alert-circle-outline" size={20} color="#8B5A2B" />
           </View>
           <View style={styles.emergencyContent}>
-            <Text style={styles.emergencyTitle}>Possible pet emergency</Text>
+            <View style={styles.emergencyHeader}>
+              <Text style={styles.emergencyTitle}>Possible pet emergency</Text>
+              <TouchableOpacity
+                accessibilityLabel="Close emergency notice"
+                accessibilityRole="button"
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                onPress={() => setEmergency(false)}
+                style={styles.dismissEmergencyButton}
+              >
+                <Ionicons name="close" size={18} color="#5B6763" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.emergencyText}>
               Contact an emergency vet now. Call ahead to confirm the clinic is open and can help.
             </Text>
@@ -420,7 +433,8 @@ export function HealthAssistantScreen({ onBack }: Props) {
         ) : null}
       </ScrollView>
 
-      <View style={styles.composerArea}>
+      {/* Leave room for the phone navigation area when the keyboard is closed. */}
+      <View style={[styles.composerArea, { paddingBottom: 8 + insets.bottom }]}>
         <View style={styles.petContextRow}>
           <Text style={styles.contextLabel}>CONSULTING FOR</Text>
           {loadingPets ? <ActivityIndicator color="#087F70" size="small" /> : null}
@@ -543,6 +557,17 @@ const styles = StyleSheet.create({
   emergencyContent: {
     flex: 1,
     gap: 8,
+  },
+  emergencyHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  dismissEmergencyButton: {
+    alignItems: "center",
+    height: 28,
+    justifyContent: "center",
+    width: 28,
   },
   emergencyTitle: {
     color: "#24312E",
@@ -739,7 +764,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingBottom: Platform.OS === "ios" ? 10 : 8,
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
   },
   petContextRow: {
     alignItems: "center",
@@ -758,8 +783,8 @@ const styles = StyleSheet.create({
   },
   petOptions: {
     gap: 8,
-    paddingBottom: 9,
-    paddingTop: 7,
+    paddingBottom: 6,
+    paddingTop: 4,
   },
   petChip: {
     alignItems: "center",
@@ -770,7 +795,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   petChipSelected: {
     backgroundColor: "#087F70",
@@ -816,18 +841,18 @@ const styles = StyleSheet.create({
     color: "#24312E",
     flex: 1,
     fontSize: 14,
-    maxHeight: 96,
-    minHeight: 44,
+    maxHeight: 80,
+    minHeight: 42,
     paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   sendButton: {
     alignItems: "center",
     backgroundColor: "#F29A4A",
     borderRadius: 8,
-    height: 44,
+    height: 42,
     justifyContent: "center",
-    width: 44,
+    width: 42,
   },
   sendButtonDisabled: {
     backgroundColor: "#D8B899",
