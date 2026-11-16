@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {View, Text, StyleSheet,Alert, ScrollView, TouchableOpacity} from "react-native";//React - Native Libraries
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Entypo from '@expo/vector-icons/Entypo';
 import NewAnalysis from "../components/RunNewAnalysisButton";
 import MainHeader from "../components/Header";
 import PredictiveFlaggingEngine from "./PredictiveFlagEngine";
@@ -40,23 +41,12 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
 
             <ScrollView contentContainerStyle={styles.content_style}>
                 <View style={styles.card}>
-                    {/*Add Icon - leaf! */}
+                    <Entypo name="leaf" size={24} color="#90EE90" />
                     <Text style={styles.card_title}>AI-Driven Health Insights</Text>
                     <Text style={styles.card_body}>
-                        Our advanced predictive models analyze your pet's historical data, 
-                        however our analysis is only limited to predicting the health analysis of 
-                        these 6 selective breeds: 
+                        Our simple pet weight prediction, will show and give you an estimated 
+                        analysis on your pet's weight but this is only for pet's aged 2 years old!
                     </Text>
-                    <Text style={styles.heading_section}>Dog Breeds:</Text>
-                    <Text style={styles.card_body}>1. Labrador Retriever </Text>
-                    <Text style={styles.card_body}>2. Huntaway </Text>
-                    <Text style={styles.card_body}>3. Golden Retriever </Text>
-
-                    <Text style={styles.heading_section}> Cat Breeds:</Text>
-                    <Text style={styles.card_body}>1. British Shorthair  </Text>
-                    <Text style={styles.card_body}>2. Domestic Shorthair </Text>
-                    <Text style={styles.card_body}>3. Ragdoll </Text>
-                       
                 </View>
 
                  {/*Information card information for Predictive Flagging Engine (How it works:)*/}               
@@ -80,7 +70,7 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                                 <Text style={styles.flag_bold_heading} >
                                     🟠Watch:
                                 </Text>
-                                    5% - 10% outside of expected weight (Warning!)         
+                                    5% - 10% slightly outside of expected weight (Warning!)         
                             </Text>
                         </View>
 
@@ -98,19 +88,6 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                     <View style={styles.viewstyle}>
 
                     </View>
-                        <Text style={styles.card_title}>
-                            Dog & Cat Breeds
-                        </Text>
-
-                    {/*Expected Breed Weight based on Gender */}
-                    <Text style={styles.breed_style}>🐶 Labrador - Female: 25-32kg | Male: 29-36kg</Text>
-                    <Text style={styles.breed_style}>🐶 Huntaway: Female: 25-35kg | Male: 30-40kg</Text>
-                    <Text style={styles.breed_style}>🐶 Golden Retriever: Female: 25-29.5kg | Male: 29.5 - 34 kg</Text>
-                    
-
-                    <Text style={styles.breed_style}>🐱British Shorthair - Female: 3.2 - 5.4 kg |   Male: 4.1 - 7.7 kg</Text>    
-                    <Text style={styles.breed_style}>🐱Domestic Shorthair - Female: 2.5 - 5.5kg | Male: 3.5 - 5.5 kg</Text>
-                    <Text style={styles.breed_style}>🐱Ragdoll - Female: 3.6 - 6.8kg | Male: 5.4 - 9.1 kg</Text>
 
                 </View>
 
@@ -134,7 +111,7 @@ const styles = StyleSheet.create({
     },
 
     flag_text:{
-        fontSize: 14,
+        fontSize: 16,
     },
 
     flag_bold_heading:{
@@ -186,16 +163,17 @@ const styles = StyleSheet.create({
         marginBottom: 10
     },
 
-    //Title
+    //Card Title
     card_title:{
-        fontSize: 13,
+        fontSize: 20,
         color:"#444",
         marginBottom: 10,
+        fontWeight:'bold',
     },
 
     //Body Card Style
     card_body:{
-        fontSize: 13,
+        fontSize: 15,
         lineHeight: 19,
         color:'#555',
     },

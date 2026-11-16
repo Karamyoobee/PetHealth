@@ -24,12 +24,37 @@ type PetWeightData = {
 
 //Key Breeds from Dogs and Cats that will be used for predictive flagging engine
 const BREED_KEYS: Record<string, string> = {
-    'Labrador Retriever': 'labrador',//Dog Breed 1
-    'Huntaway': 'huntaway',//Dog Breed 2
-    'Golden Retriever': 'golden',//Dog Breed 3
-    'British Shorthair':'british',//Cat Breed 1
-    'Domestic Short hair':'domestic_shorthair',//Cat Breed 2
-    'Ragdoll':'ragdoll',//Cat breed 3
+    'Labrador Retriever': 'labrador',
+    'Huntaway': 'huntaway',
+    'Golden Retriever': 'golden',
+    'Border Collie':'border_collie',
+    'Staffordshire Bull Terrier': 'staffordshire_bull_terrier',
+    'Miniature Schnauzer': 'miniature_schnauzer',
+    'Jack Russell Terrier': 'jack_russell_terrier',
+    'German Shepherd': 'german_shepherd',
+    'Fox Terrier': 'fox_terrier',
+    'Cocker Spaniel': 'cocker_spaniel',
+    'Shih Tzu': 'shih_tzu',
+    'Rottweiler': 'rottweiler',
+    'Bichon Frise': 'bichon_frise',
+    'Cavalier King Charles Spaniel': 'cavalier_king_charles_spaniel',
+    
+
+    //All Cat Breeds
+    'British Shorthair':'british_shorthair',
+    'Domestic Short hair':'domestic_shorthair',
+    'Ragdoll':'ragdoll',
+    'Maine Coon': 'maine_coon',
+    'Burmese': 'burmese',
+    'Siamese': 'siamese',
+    'Persian': 'persian',
+    'Devon Rex': 'devon_rex',
+    'Sphnyx': 'sphynx',
+    'Russian Blue': 'russian_blue',
+    'Birman': 'birman',
+    'Abyssinian': 'abyssinian',
+    'Norwegian Forest Cat': 'norwegian_forest_cat',
+    'Exotic Shorthair': 'exotic_shorthair',
 };
 
 //Function - used to fecth pet and weights from the abckend and prepare data for engine
@@ -131,10 +156,10 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             </View>
             {/*Weight Advice Card*/}
             <WeightAdviceCard
-                level={result.level}
+                level={result.level as "Typical" | "Watch" | "Elevated"}
+                position={result.position as "within"|"under"|"over"}
                 differenceText={diffText}
-            >
-            </WeightAdviceCard>
+            />
 
         </View>
 
