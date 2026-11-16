@@ -1,7 +1,7 @@
 //Weight - Predictive Flagging Engine 
 //Only accepts 2 year old age range
 
-//Check pet weight against estimated expected pet weight based on breed & sex of animal (only those below accepted)
+//Check pet weight against estimated expected pet weight based on breed & sex of animal (only under / over weight range)
 //Return 1 of 3 levels : 
 // 1. Typical
 // 2. Watch 
@@ -43,7 +43,7 @@ function retrieveWeightStatus(breed,sex,currentKg){
     const {min, max} = getIdealPetrange(breed, sex);
 
     //Step 3: Identify how far the pet's weight is outside of the range the pet is 
-    //Difference = fraction 0.05 == 5% outside or expected weight range
+    //Difference = percentage outside of the weight range (5=5%)
     //position reads: "within", "under" , "over"
 
     //Difference weight check
@@ -79,7 +79,7 @@ function retrieveWeightStatus(breed,sex,currentKg){
     //If pet's weight range is 5%-10%
     } else if(difference >= WATCH_THRESHOLD){ 
         Level = "Watch";
-    }else{
+    }else{//if weight is below 5% of weight or within the weight's min and max range
         Level="Typical";
     }
 
@@ -92,16 +92,18 @@ function retrieveWeightStatus(breed,sex,currentKg){
 
     //If pet's weight is inside min/max weight range for it's breed and sex
     if (position === 'within'){
-        message = 'Current Weight is within expcted range'
+        message = currentKg + ' kg is within expcted range'
     //Typical Level - slightly outside of weight range (less than 5%)
     } else if(Level === 'Typical'){
         message = currentKg + 'kg '+'Weight is ' + position + ' the expected range.'
     //Watch Level - 5%-10% outside of weight range 
     } else if(Level === 'Watch'){
-        message = currentKg + 'kg '+'Weight is ' + position + ' remains within the expected range.';
+        message = currentKg + 'kg is slightly ' + position + ' outside of the expected range.';
     //Elevated Level - 10% outside of expected weight range
     } else if(Level ==='Elevated'){
-        message = currentKg + 'kg '+ 'Weight is ' + position + ' has exceeded the expected range!, Vet check is recommended!';
+        message = currentKg + 'kg is well ' + position + ' over the expected range!, Vet check is recommended!';
+    } else{
+        message='Unable to help with weight.'
     }
 
     return{

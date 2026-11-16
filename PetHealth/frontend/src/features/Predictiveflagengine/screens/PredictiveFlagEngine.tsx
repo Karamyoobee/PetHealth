@@ -158,6 +158,9 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             <WeightAdviceCard
                 level={result.level as "Typical" | "Watch" | "Elevated"}
                 position={result.position as "within"|"under"|"over"}
+                currentKg={result.currentKg}
+                idealMin={result.idealMin}
+                idealMax={result.idealMax}
                 differenceText={diffText}
             />
 
