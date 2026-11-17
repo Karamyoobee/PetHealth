@@ -8,8 +8,10 @@ import PetDurationDropdownmenu from "../../../components/QuickLogSymptom/Duratio
 import SelectPet from "../../../components/QuickLogSymptom/SelectPet";
 import SelectCategory from "../../../components/QuickLogSymptom/SelectCategory";
 import SeveritySegmentButton from "../../../components/QuickLogSymptom/Severity";
+import PetSelector from "../../../components/PetSelector";
 import { Pet,Symptom } from "../../../types";
 import { api } from "../../../api/client";
+
 
 //Log Symptom Props
 type LogSymptomProps = { 
@@ -94,10 +96,10 @@ export default function LogSymptom({onBack, petId, onViewLogs, onComplete}:LogSy
             <View style={styles.container}>
             {/* 1. Pet Selector (select from their different pets) */}
             <View style={styles.Pet}>
-            <SelectPet
-                options={pets.map((p) => p.name)}
-                value={selectedName}
-                onChange={(name) => setSelectedPetId(pets.find((p) => p.name === name)?.id??null)}//Button
+            <PetSelector 
+                pets={pets}
+                selectedPetId={selectedPetId ?? ""}
+                onSelectPet={setSelectedPetId}
             />
             </View>
 
@@ -201,7 +203,6 @@ const styles = StyleSheet.create({
 
     Pet:{
         marginTop: 16,
-        marginBottom: 18,
     },
 
     title: {
