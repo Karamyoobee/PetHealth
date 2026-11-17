@@ -14,9 +14,9 @@ import { WeightEntry } from "../../../types";
 
 //Lookup Object for Weight Position Message
 const WeightPosition:Record<"within"|"under"|"over",string>={
-    within:"kg: within expected range",//Typical
-    under:"kg: slightly under expected range",//Watch
-    over:'kg: over expected range' //Elevated
+    within:"kg: current weight is within expected range",//Typical
+    under:"kg: current weight is slightly under expected range",//Watch
+    over:'kg: current weight is over expected range' //Elevated
 }
 
 //Lookup Object for Weight Advice Card based on 3 Levels of Predictive Flagging Engine 
@@ -77,7 +77,7 @@ export default function WeightAdviceCard({level,position, differenceText, curren
 
             {/*Expected Pet Weight Range */}
             <Text style={styles.difference_style}>
-                Expected Weight Range + {idealMin}kg - {idealMax}kg
+                Expected Weight Range : {idealMin}kg - {idealMax}kg
             </Text>
 
             {/*Difference text: from Engine screen e.g "2.3 kg over the weight range" */}

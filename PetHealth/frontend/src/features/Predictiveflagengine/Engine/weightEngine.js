@@ -34,7 +34,13 @@ function getIdealPetrange(breed, sex){
 //return level, under/over/within
 //Breed and sex match the keys 
 //Second Function (Main Function & Validation check of pet selected or checked through predictive flagging engine)
-function retrieveWeightStatus(breed,sex,currentKg){
+function retrieveWeightStatus(breed,sex,currentKg, ageyears =2){
+
+    //Only accept 2 year old pets
+    if (ageyears !== 2){
+        throw new Error("2 Year-old pets are only supported at this stage of our App!")
+    }
+
     //Step 1: ensure that the weight is a real number above 0
     if(typeof currentKg !== "number" || currentKg <= 0)
     {throw new Error("Weight must be a positive number only!");}
@@ -127,11 +133,10 @@ const LEVEL_COLORS = {
 
 
 //Checked on all Dog & Cat Breeds
-//Check process 1. Breed 2. Sex 3. Min/Max Weight Check
-//Research and check all pet weight
+//Check process 1. Breed 2. Sex 3. Min/Max Weight Check 4. Display Weight Advice & Weight Level
 const weight_breed = {
     //  ---- DOG BREEDS --- 
-    labrador:{//Correct
+    labrador:{
         female:{min: 25, max: 32},//2 Year old range 
         male: {min: 29, max:36}//2 Year old range
     },
@@ -270,6 +275,11 @@ const weight_breed = {
     exotic_shorthair:{
         female:{min:3.2,max:5.4},
         male: {min:3.6,max:6.8},
+    },
+
+    bengal:{
+        female:{min:3.5,max:5},
+        male:{min:4.5,max:7},
     },
 
 };

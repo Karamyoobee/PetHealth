@@ -20,6 +20,7 @@ type PetWeightData = {
     sex: 'male'| 'female';
     currentKg: number;
     previousKg?:number;
+    ageYears:number;
 }
 
 //Key Breeds from Dogs and Cats that will be used for predictive flagging engine
@@ -55,6 +56,7 @@ const BREED_KEYS: Record<string, string> = {
     'Abyssinian': 'abyssinian',
     'Norwegian Forest Cat': 'norwegian_forest_cat',
     'Exotic Shorthair': 'exotic_shorthair',
+    'Bengal':'bengal'
 };
 
 //Function - used to fecth pet and weights from the abckend and prepare data for engine
@@ -79,8 +81,16 @@ async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
     if(!breedKey) throw new Error('Breed is not supported yet!' + pet.breed);
     //Show error message - if current pet is not supported yet by this feature!
 
-    //Add comment here: 
+    //Latest current weight of pet: use new weight log, or fall back to weight alread saved
     const currentKg = sorted.length > 0 ? Number(sorted[0].weightKg): Number(pet.weightKg);
+
+    //Sex/Gender: lowecase in order to match engine keys ('male'/'female')
+    const sex = String(pet.sex).toLowerCase() as 'male'|'female';
+    
+    const ageYears = Number(pet.age);//Pet Age: (Number) protect again text being stored as text ("2")
+
+    //Validate pet age: If pet is not aged 2 years old (engine will return error to user)
+    retrieveWeightStatus(breedKey, sex, currentKg, ageYears);
 
     //6. Provide Flagging Engine with expected data
     //Number() - protects agains weights stored as text format 
@@ -90,6 +100,7 @@ async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
         sex: String(pet.sex).toLowerCase() as 'male' | 'female',
         currentKg: currentKg, 
         previousKg: sorted[1] ? Number(sorted[1].weightKg): undefined,
+        ageYears: ageYears,
     };
 }
 
