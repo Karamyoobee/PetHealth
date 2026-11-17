@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import {View, Text, StyleSheet,Alert, ScrollView, TouchableOpacity} from "react-native";//React - Native Libraries
+import { useState } from "react";
+import {View, Text, StyleSheet,Alert, ScrollView} from "react-native";//React - Native Libraries
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Entypo from '@expo/vector-icons/Entypo';
 import NewAnalysis from "../components/RunNewAnalysisButton";
@@ -7,20 +7,19 @@ import MainHeader from "../components/Header";
 import PredictiveFlaggingEngine from "./PredictiveFlagEngine";
 
 //Predictive Flagging Engine Props
-type PredictiveFlaggProps = { 
+type PredictiveFlaggingProps = { 
   onBack: () => void;
   petId: string | null;
 }; 
 
 
-//Main Function - Predictive Flagging Engine 
-export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps){
+//Intro Screen - Predictive Flagging Engine #1
+export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggingProps){
     const insets = useSafeAreaInsets();
 
     const [showEngine, setShowEngine] = useState(false);
 
-    //Placeholder for Template of Predictive Flagging Engine First Screen.
-
+    //Launches the second screen to the analysis engine screen
     const handleRunAnalysis = () => {
         setShowEngine(true);
     };
@@ -44,50 +43,39 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
                     <Entypo name="leaf" size={24} color="#90EE90" />
                     <Text style={styles.card_title}>AI-Driven Health Insights</Text>
                     <Text style={styles.card_body}>
-                        Our simple pet weight prediction, will show and give you an estimated 
-                        analysis on your pet's weight but this is only for pet's aged 2 years old!
+                        Our simple pet weight prediction, provides you with an estimated 
+                        analysis on your pet's weight. That is only currently available for pets aged 2 years old!.
                     </Text>
                 </View>
 
                  {/*Information card information for Predictive Flagging Engine (How it works:)*/}               
                 <View style={styles.card}>
-                    <Text style={styles.card_title}>Predictive Flagging Engine: Information</Text>
+                    <Text style={styles.card_title}>Predictive Flagging Engine:</Text>
                     
                     
                         <View style={styles.flag_style}>
                             {/*Heading for Flag Level: TYPICAL */}
                             <Text style={styles.flag_text}>
-                                <Text style={styles.flag_bold_heading} >
-                                    🟢Typical :
-                                </Text>
-                                    less than 5% (Healthy - normal range)           
+                                <Text style={styles.flag_bold_heading}>🟢Typical :</Text>{" "}
+                                current pet weight is within the expected pet weight range (Healthy!)
                             </Text>
                         </View>
 
                         <View style={styles.flag_style}>
                             {/*Heading for Flag Level: WATCH */}
                             <Text style={styles.flag_text}>
-                                <Text style={styles.flag_bold_heading} >
-                                    🟠Watch:
-                                </Text>
-                                    5% - 10% slightly outside of expected weight (Warning!)         
+                                <Text style={styles.flag_bold_heading}>🟠Watch: </Text> {" "}
+                                    under expected weight range or near 10% over maximum (Warning!)        
                             </Text>
                         </View>
 
                         <View style={styles.flag_style}>
                             {/*Heading for Flag Level: ELEVATED*/}
                             <Text style={styles.flag_text}>
-                                <Text style={styles.flag_bold_heading}>
-                                    🔴Elevated: 
-                                </Text>
+                                <Text style={styles.flag_bold_heading}>🔴Elevated:</Text>{" "}
                                     10% or more outside of expected weight        
                             </Text>
                         </View>
-
-
-                    <View style={styles.viewstyle}>
-
-                    </View>
 
                 </View>
 
@@ -103,27 +91,23 @@ export default function PredictiveFlagging({onBack, petId}:PredictiveFlaggProps)
     )
 }
 
+//Style Sheet
 const styles = StyleSheet.create({
 
-    //flag_levels style
+    //Aligned rows for flag content
     flag_style:{
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
 
+    //Flag Text 
     flag_text:{
         fontSize: 16,
     },
 
+    //Flag Heading 
     flag_bold_heading:{
         fontWeight: "bold",
         fontSize: 14, 
-    },
-
-    breed_style:{
-        fontSize: 13,
-        lineHeight:19,
-        color:"#555",
-        marginBottom: 4,
     },
 
     //Heading Section Style : 
@@ -133,13 +117,6 @@ const styles = StyleSheet.create({
         color:'#444',
         marginTop: 10,
         marginBottom: 4,
-    },
-
-    //Breed Divider style 
-    viewstyle: {
-        height: 1,
-        backgroundColor: "#E8E4DC",
-        marginVertical: 10,
     },
 
     //Run New Analysis Button
