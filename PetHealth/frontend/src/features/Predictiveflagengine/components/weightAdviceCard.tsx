@@ -1,12 +1,25 @@
 import {View, Text, StyleSheet} from "react-native";
+import { api } from "../../../api/client";
+import { WeightEntry } from "../../../types";
 
-//
+//Weight Advice Card Props
  type WeightAdviceProps={
-    level: string;
-    differenceText: string;
+    level: "Typical"|"Watch"|"Elevated";//3 levels of Predictive Flagging Engine Warning
+    position: "within"|"under"|"over";//position message 
+    differenceText: string; //Difference calculated
+    currentKg: number;//Current Pet Weight
+    idealMin:number;//Minimum Pet Weight 
+    idealMax:number;//Maximum pet weight - based on breed / sex
 };
 
+//Lookup Object for Weight Position Message
+const WeightPosition:Record<"within"|"under"|"over",string>={
+    within:"kg: current weight is within expected range",//Typical
+    under:"kg: current weight is slightly under expected range",//Watch
+    over:'kg: current weight is over expected range' //Elevated
+}
 
+//Lookup Object for Weight Advice Card based on 3 Levels of Predictive Flagging Engine 
 const WeightAdvice: Record<string, {level: string; advice: string[]; color:string;}>={
     //Typical - Pet's Weight is in expected weight range
     Typical:{
@@ -37,11 +50,12 @@ const WeightAdvice: Record<string, {level: string; advice: string[]; color:strin
 }
 
 //Pet Weight Advice Function
-export default function WeightAdviceCard({level, differenceText}:WeightAdviceProps){
+export default function WeightAdviceCard({level,position, differenceText, currentKg, idealMax, idealMin}:WeightAdviceProps){
     //Variable to store weight advice by level
     //Level name from predictive flagging engine used here: (1.Typical, 2. Watch, 3, Elevated)
     //Spelling is crucial in order to match engine.js content exactly
-    const info = WeightAdvice[level];
+    const info = WeightAdvice[level];//Display Level Messages - Weight Advice
+    const weight_info = WeightPosition[position];//Display Position Messages with currentKg of Pet
 
     //if info is not valid; return null
     if (!info) 
@@ -56,6 +70,16 @@ export default function WeightAdviceCard({level, differenceText}:WeightAdvicePro
                 {info.level}
             </Text>
 
+            {/*Message: Position Weight Notice*/}
+            <Text style={styles.difference_style}>
+                {currentKg}{" "}{weight_info}
+            </Text>
+
+            {/*Expected Pet Weight Range */}
+            <Text style={styles.difference_style}>
+                Expected Weight Range : {idealMin}kg - {idealMax}kg
+            </Text>
+
             {/*Difference text: from Engine screen e.g "2.3 kg over the weight range" */}
             <Text style={styles.difference_style}>
                 {differenceText}
@@ -64,7 +88,7 @@ export default function WeightAdviceCard({level, differenceText}:WeightAdvicePro
             {/*Advice for Pet Owners - steps are in fixed order*/}
             {info.advice.map((step, index)=>(
                 <Text key={index} style={styles.advice}>
-                    {index+1}.{step}
+                    {index+1}. {step}
                 </Text>
             ))}
 

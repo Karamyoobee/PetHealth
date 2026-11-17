@@ -20,16 +20,43 @@ type PetWeightData = {
     sex: 'male'| 'female';
     currentKg: number;
     previousKg?:number;
+    ageYears:number;
 }
 
 //Key Breeds from Dogs and Cats that will be used for predictive flagging engine
 const BREED_KEYS: Record<string, string> = {
-    'Labrador Retriever': 'labrador',//Dog Breed 1
-    'Huntaway': 'huntaway',//Dog Breed 2
-    'Golden Retriever': 'golden',//Dog Breed 3
-    'British Shorthair':'british',//Cat Breed 1
-    'Domestic Short hair':'domestic_shorthair',//Cat Breed 2
-    'Ragdoll':'ragdoll',//Cat breed 3
+    'Labrador Retriever': 'labrador',
+    'Huntaway': 'huntaway',
+    'Golden Retriever': 'golden',
+    'Border Collie':'border_collie',
+    'Staffordshire Bull Terrier': 'staffordshire_bull_terrier',
+    'Miniature Schnauzer': 'miniature_schnauzer',
+    'Jack Russell Terrier': 'jack_russell_terrier',
+    'German Shepherd': 'german_shepherd',
+    'Fox Terrier': 'fox_terrier',
+    'Cocker Spaniel': 'cocker_spaniel',
+    'Shih Tzu': 'shih_tzu',
+    'Rottweiler': 'rottweiler',
+    'Bichon Frise': 'bichon_frise',
+    'Cavalier King Charles Spaniel': 'cavalier_king_charles_spaniel',
+    
+
+    //All Cat Breeds
+    'British Shorthair':'british_shorthair',
+    'Domestic Short hair':'domestic_shorthair',
+    'Ragdoll':'ragdoll',
+    'Maine Coon': 'maine_coon',
+    'Burmese': 'burmese',
+    'Siamese': 'siamese',
+    'Persian': 'persian',
+    'Devon Rex': 'devon_rex',
+    'Sphnyx': 'sphynx',
+    'Russian Blue': 'russian_blue',
+    'Birman': 'birman',
+    'Abyssinian': 'abyssinian',
+    'Norwegian Forest Cat': 'norwegian_forest_cat',
+    'Exotic Shorthair': 'exotic_shorthair',
+    'Bengal':'bengal'
 };
 
 //Function - used to fecth pet and weights from the abckend and prepare data for engine
@@ -54,8 +81,16 @@ async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
     if(!breedKey) throw new Error('Breed is not supported yet!' + pet.breed);
     //Show error message - if current pet is not supported yet by this feature!
 
-    //Add comment here: 
+    //Latest current weight of pet: use new weight log, or fall back to weight alread saved
     const currentKg = sorted.length > 0 ? Number(sorted[0].weightKg): Number(pet.weightKg);
+
+    //Sex/Gender: lowecase in order to match engine keys ('male'/'female')
+    const sex = String(pet.sex).toLowerCase() as 'male'|'female';
+    
+    const ageYears = Number(pet.age);//Pet Age: (Number) protect again text being stored as text ("2")
+
+    //Validate pet age: If pet is not aged 2 years old (engine will return error to user)
+    retrieveWeightStatus(breedKey, sex, currentKg, ageYears);
 
     //6. Provide Flagging Engine with expected data
     //Number() - protects agains weights stored as text format 
@@ -65,6 +100,7 @@ async function fetchPetWeigh(petId: string | null):Promise<PetWeightData>{
         sex: String(pet.sex).toLowerCase() as 'male' | 'female',
         currentKg: currentKg, 
         previousKg: sorted[1] ? Number(sorted[1].weightKg): undefined,
+        ageYears: ageYears,
     };
 }
 
@@ -131,10 +167,13 @@ export default function PredictiveFlaggingEngine({onBack, petId}:PredictiveEngin
             </View>
             {/*Weight Advice Card*/}
             <WeightAdviceCard
-                level={result.level}
+                level={result.level as "Typical" | "Watch" | "Elevated"}
+                position={result.position as "within"|"under"|"over"}
+                currentKg={result.currentKg}
+                idealMin={result.idealMin}
+                idealMax={result.idealMax}
                 differenceText={diffText}
-            >
-            </WeightAdviceCard>
+            />
 
         </View>
 
