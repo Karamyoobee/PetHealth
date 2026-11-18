@@ -90,10 +90,10 @@ function retrieveWeightStatus(breed,sex,currentKg, ageYears =2){
         message = currentKg + ' kg is within expected range'
     //Watch Level - Any weight under the expected weight & less than 10% of overweight range before 10%
     } else if(Level === 'Watch'){
-        message = currentKg + 'kg is ' + position + ' the expected range.';
+        message = currentKg + ' kg is ' + position + ' the expected range.';
     //Elevated Level - 10% or more over than expected weight range
     } else if(Level ==='Elevated'){
-        message = currentKg + 'kg is well ' + position + ' outside the expected range!, Vet check is recommended!';
+        message = currentKg + ' kg is well ' + position + ' the expected range!, Vet check is recommended!';
     } else{
         message='Unable to help with weight.'
     }
