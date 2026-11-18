@@ -1,30 +1,21 @@
 //Weight - Predictive Flagging Engine 
-//Only accepts 2 year old age range
+//limitation: Only accepts 2 year old age range!
 
 //Check pet weight against estimated expected pet weight based on breed & sex of animal (only under / over weight range)
 //Return 1 of 3 levels : 
-// 1. Typical
-// 2. Watch 
-// 3. Elevated
-
-//Under 5% outside the range for expected minimum pet weight -> "Typical"
-//5% - 10% outside of range                      -> "Watch"
-//10% or more outside                            -> "Elevated"
+// 1. Typical = Within expected weight range
+// 2. Watch  = any weight under the expected weight range or over less than 10% of maximum expected pet weight range
+// 3. Elevated = 10% over expected weight
 
 //Set main threshold's for weight flagging check..
-const WATCH_THRESHOLD = 5; //5% if current pet weight goes over 5% of expected weight of the specific breed only
-const ELEVATED_THRESHOLD = 10;//10% if current pet weight goes well over 10% of expected weight of pet 
-
-//Search for estimated {min, max} weight (kg) for breed and sex of animal 
+const ELEVATED_THRESHOLD = 10;//10% Percentage over maximum weight range a pet goes into "Elevated" Flag!
 
 //Search function for breed and sex of pet (matching the below pet breeds...)
-function getIdealPetrange(breed, sex){
+function getIdealPetRange(breed, sex){
     const range = weight_breed[breed]?.[sex];//Search for breed and sex inside dataset below
 
-    //If condition check
-    //if pet is not supported for the specific weight analaysis checker
     if(!range){
-        throw new Error('Unkown breed or sex: '+ breed + " " + sex);
+        throw new Error('Unknown breed or sex: '+ breed + " " + sex);
     }
     
     return range;
@@ -34,21 +25,23 @@ function getIdealPetrange(breed, sex){
 //return level, under/over/within
 //Breed and sex match the keys 
 //Second Function (Main Function & Validation check of pet selected or checked through predictive flagging engine)
-function retrieveWeightStatus(breed,sex,currentKg, ageyears =2){
+function retrieveWeightStatus(breed,sex,currentKg, ageYears =2){
 
+    //FUTURE_PROOF TO-DO: support other ages in future
     //Only accept 2 year old pets
-    if (ageyears !== 2){
+    if (ageYears !== 2){
         throw new Error("2 Year-old pets are only supported at this stage of our App!")
     }
 
-    //Step 1: ensure that the weight is a real number above 0
+    //***Step 1***: ensure that the weight is a real number above 0
     if(typeof currentKg !== "number" || currentKg <= 0)
     {throw new Error("Weight must be a positive number only!");}
 
-    //Setp 2: get estimated min and max for this breed and it's sex (gender)
-    const {min, max} = getIdealPetrange(breed, sex);
+    //Returns (min,max) in kg. Only throws an error if breed / sex is not in weight_breed
+    //***Step 2***: get estimated min and max for this breed and its sex (gender)
+    const {min, max} = getIdealPetRange(breed, sex);
 
-    //Step 3: Identify how far the pet's weight is outside of the range the pet is 
+    //***Step 3***: Identify how far pet's weight is outside of expected weight range
     //Difference = percentage outside of the weight range (5=5%)
     //position reads: "within", "under" , "over"
 
@@ -66,48 +59,41 @@ function retrieveWeightStatus(breed,sex,currentKg, ageyears =2){
         position = "over";
         difference = ((currentKg - max) / max) * 100;
     } 
-    
-    {/*Typical = Current Pet's Weight below the expected Weight*/}
-    {/*Watch = Current Pet's Weight is over the expected weight of the pet*/}
 
+    
     //Difference value converted into level display
     let Level;//Declare level
 
-    //3 Levels below 
-    //Typical - inside expected weight range, or less than 5% outside the weight range 
-    //Watch - 5% = 10% outside of expected pet weight range 
-    //Elevated = 10% or more outside of range, worth a vet check
+    //***Step 4***: Conversion of position and difference into a level for flagging purpose
+    //Note: "over" only applies for Elevated / Any "under" is classified as "Watch"
 
-    //Step 4: Turn Difference number into level range
-    //If pet's weight is 10%+ outside of expected pet weight range (under/over)
-    if (difference >= ELEVATED_THRESHOLD){
-        Level = "Elevated";
-    //If pet's weight range is 5%-10%
-    } else if(difference >= WATCH_THRESHOLD){ 
-        Level = "Watch";
-    }else{//if weight is below 5% of weight or within the weight's min and max range
-        Level="Typical";
+
+    //Pet's weight has to be within the weight boundary
+    if (position === "within"){
+        Level = "Typical";
+    //Pet's weight is over the elevated threshold of 10%
+    } else if(position === "over" && difference >= ELEVATED_THRESHOLD){
+        Level="Elevated";
+    }
+    else{//Any pet that has weight less than expected pet weight range
+        Level="Watch";
     }
 
-    //Return Pet Predictive Analysis Result (Simple)
-    //Step 5:  Send Result of Predictive Flagging engine back to Screen
+    //***Step 5***:  Send Result of Predictive Flagging engine back to Screen
 
     //Message for position based on level
     //Variable to store message based on position of pet's weight
     let message;
 
-    //If pet's weight is inside min/max weight range for it's breed and sex
+    //Typical Level - If pet's weight is inside min/max weight range for its breed and sex
     if (position === 'within'){
-        message = currentKg + ' kg is within expcted range'
-    //Typical Level - slightly outside of weight range (less than 5%)
-    } else if(Level === 'Typical'){
-        message = currentKg + 'kg '+'Weight is ' + position + ' the expected range.'
-    //Watch Level - 5%-10% outside of weight range 
+        message = currentKg + ' kg is within expected range'
+    //Watch Level - Any weight under the expected weight & less than 10% of overweight range before 10%
     } else if(Level === 'Watch'){
-        message = currentKg + 'kg is slightly ' + position + ' outside of the expected range.';
-    //Elevated Level - 10% outside of expected weight range
+        message = currentKg + ' kg is ' + position + ' the expected range.';
+    //Elevated Level - 10% or more over than expected weight range
     } else if(Level ==='Elevated'){
-        message = currentKg + 'kg is well ' + position + ' over the expected range!, Vet check is recommended!';
+        message = currentKg + ' kg is well ' + position + ' the expected range!, Vet check is recommended!';
     } else{
         message='Unable to help with weight.'
     }
@@ -124,7 +110,6 @@ function retrieveWeightStatus(breed,sex,currentKg, ageyears =2){
 }
 
 //LEVEL COLORS FOR WEIGHT CHECK - ANALYSIS
-//Typical - green | Watch - orange | Elevated - red
 const LEVEL_COLORS = {
     Typical: '#2E7D6B',
     Watch: '#FF9F00',
@@ -132,18 +117,17 @@ const LEVEL_COLORS = {
 }
 
 
-//Checked on all Dog & Cat Breeds
-//Check process 1. Breed 2. Sex 3. Min/Max Weight Check 4. Display Weight Advice & Weight Level
+//Expected Weight Ranges for Dog & Cat Breeds (kg) at 2 Years old only!
 const weight_breed = {
     //  ---- DOG BREEDS --- 
     labrador:{
-        female:{min: 25, max: 32},//2 Year old range 
-        male: {min: 29, max:36}//2 Year old range
+        female:{min: 25, max: 32},
+        male: {min: 29, max:36}
     },
     
-    huntaway:{//Correct
-        female:{min:25, max:35},//2 Year's old
-        male: {min:30,max:40},//2 Year's old range
+    huntaway:{
+        female:{min:25, max:35},
+        male: {min:30,max:40},
     },
 
     golden:{
@@ -286,6 +270,6 @@ const weight_breed = {
 
 
 // ----- Final Export -----
-//Allow other files use the below exports
+//Allow other files to use the below exports
 module.exports = {retrieveWeightStatus, LEVEL_COLORS}
 
