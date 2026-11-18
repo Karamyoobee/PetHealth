@@ -452,6 +452,9 @@ function ReminderCard({
   const isOverdue = !isHistory && new Date(reminder.scheduledFor).getTime() < now;
   const accentColor = isHistory ? "#9CA3AF" : reminderAccent(reminder.type);
   const subtitle = `${reminder.type === "medication" ? "Medication" : reminder.type} - ${formatReminderTime(reminder.scheduledFor)}`;
+  const medicationSchedule = reminder.type === "medication" && reminder.endsOn
+    ? `Repeats daily until ${reminder.endsOn.slice(0, 10)}`
+    : null;
 
   return (
     <TouchableOpacity
@@ -465,6 +468,7 @@ function ReminderCard({
       <TouchableOpacity disabled={busy || isHistory || selectionMode} onPress={onRead} style={styles.cardContent}>
         <Text style={styles.reminderTitle}>{reminder.title}</Text>
         <Text style={styles.reminderMeta}>{subtitle}</Text>
+        {medicationSchedule ? <Text style={styles.reminderMeta}>{medicationSchedule}</Text> : null}
         {!isHistory ? <Text style={styles.reminderMeta}>{reminder.readAt ? "Read" : "Unread"}</Text> : null}
         {isOverdue ? <Text style={styles.overdueText}>Overdue</Text> : null}
         {isHistory ? (

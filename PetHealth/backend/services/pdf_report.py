@@ -26,6 +26,38 @@ def _line(story, styles, label, value):
     story.append(Paragraph(f"<b>{escape(label)}:</b> {_text(value)}", styles["BodyText"]))
 
 
+def _saved_day(value):
+    # Show the weekday from the saved visit date when it is available.
+    try:
+        return datetime.fromisoformat(str(value)[:10]).strftime("%A")
+    except (TypeError, ValueError):
+        return None
+
+
+def _course_length(record):
+    # Count both the first and last day of a medication course.
+    try:
+        start = datetime.fromisoformat(str(record.get("startDate"))[:10]).date()
+        end = datetime.fromisoformat(str(record.get("endDate"))[:10]).date()
+    except (TypeError, ValueError):
+        return None
+
+    if end < start:
+        return None
+    days = (end - start).days + 1
+    return f"{days} day" if days == 1 else f"{days} days"
+
+
+def _report_value(record, field):
+    if field == "visitDay":
+        return _saved_day(record.get("appointmentDate"))
+    if field == "courseLength":
+        return _course_length(record)
+    if field == "reminderTime" and record.get("reminderTimes"):
+        return ", ".join(record["reminderTimes"])
+    return record.get(field)
+
+
 def _section(story, styles, title, records, fields):
     section = [Paragraph(title, styles["Heading2"])]
     found = False
@@ -33,8 +65,7 @@ def _section(story, styles, title, records, fields):
         found = True
         section.append(Paragraph(f"Record {index}", styles["Heading3"]))
         for label, field in fields:
-            value = ", ".join(record["reminderTimes"]) if field == "reminderTime" and record.get("reminderTimes") else record.get(field)
-            _line(section, styles, label, value)
+            _line(section, styles, label, _report_value(record, field))
         for dose in record.get("doseLog", []) or []:
             _line(section, styles, "Dose", f"{_value(dose.get('takenAt'))} - {_value(dose.get('status'))}")
             if dose.get("notes"):
@@ -75,14 +106,15 @@ def build_pet_report(pet, vet_visits, medications, reminders, symptoms=None, wei
         _line(story, styles, label, pet.get(field))
 
     _section(story, styles, "Vet Visits", vet_visits, (
-        ("Date", "appointmentDate"), ("Time", "appointmentTime"), ("Reason", "reason"),
+        ("Day", "visitDay"), ("Date", "appointmentDate"), ("Time", "appointmentTime"), ("Reason", "reason"),
         ("Clinic", "clinicName"), ("Veterinarian", "veterinarianName"), ("Diagnosis", "diagnosis"),
         ("Treatment", "treatment"), ("Notes", "notes"), ("Follow-up date", "followUpDate"),
     ))
     _section(story, styles, "Medications and Treatment", medications, (
         ("Name", "name"), ("Purpose", "purpose"), ("Dosage", "dosage"), ("Schedule", "schedule"),
         ("Instructions", "instructions"), ("Start date", "startDate"), ("End date", "endDate"),
-        ("Reminder time", "reminderTime"),
+        ("Treatment length", "courseLength"), ("Reminder time", "reminderTime"),
+        ("Status", "status"), ("Completed", "completedAt"),
     ))
     _section(story, styles, "Reminder Schedule", reminders, (
         ("Title", "title"), ("Type", "type"), ("Scheduled for", "scheduledFor"), ("Repeat", "repeat"),

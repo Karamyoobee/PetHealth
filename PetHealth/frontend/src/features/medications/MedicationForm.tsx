@@ -28,6 +28,13 @@ function expectedDosesPerDay(medication: Medication) {
   return 1;
 }
 
+function courseDays(medication: Medication) {
+  const start = new Date(`${medication.startDate}T00:00:00`);
+  const end = new Date(`${medication.endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+  return Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+}
+
 function isMedicationCompleted(medication: Medication) {
   // A medicine stays active until its end date and all of today's doses are given.
   if (!medication.endDate) return false;
@@ -143,9 +150,11 @@ export function MedicationForm({ onBack, onAddMedication, petId, onSelectPet, on
       {medication.purpose ? <Text style={styles.detailText}>Purpose: {medication.purpose}</Text> : null}
       <Text style={styles.detailText}>Frequency: {medication.schedule || "Not set"}</Text>
       <Text style={styles.detailText}>Time: {medication.reminderTimes?.join(", ") || medication.reminderTime || "Not set"}</Text>
-      <Text style={styles.detailText}>
-        Dates: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}
+      <Text style={styles.courseText}>
+        Daily plan: {expectedDosesPerDay(medication)} {expectedDosesPerDay(medication) === 1 ? "dose" : "doses"} each day
+        {courseDays(medication) ? ` for ${courseDays(medication)} ${courseDays(medication) === 1 ? "day" : "days"}` : ""}.
       </Text>
+      <Text style={styles.detailText}>Course: {medication.startDate || "Not set"} to {medication.endDate || "Not set"}</Text>
       {medication.instructions ? <Text style={styles.detailText}>Notes: {medication.instructions}</Text> : null}
     </TouchableOpacity>
   );
@@ -301,6 +310,12 @@ const styles = StyleSheet.create({
   detailText: {
     color: "#3E4946",
     fontSize: 13,
+    lineHeight: 20,
+  },
+  courseText: {
+    color: "#00796B",
+    fontSize: 13,
+    fontWeight: "700",
     lineHeight: 20,
   },
   footer: {

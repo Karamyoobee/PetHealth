@@ -179,21 +179,54 @@ function LoadingCard() {
 }
 
 function VisitCard({ visit, selected, selectionMode, onSelect, onLongPress }: { visit: VetVisit; selected: boolean; selectionMode: boolean; onSelect: () => void; onLongPress: () => void }) {
+  const { day, date, time } = formatVisitSchedule(visit);
+
   return (
     <TouchableOpacity delayLongPress={2000} onLongPress={onLongPress} onPress={selectionMode ? onSelect : undefined} style={[styles.visitCard, selected && styles.selectedCard]}>
       <View style={styles.visitHeader}>
         <Ionicons name="calendar-outline" size={22} color="#00796B" />
         <View style={styles.visitTitleWrap}>
           <Text style={styles.visitTitle}>{visit.reason || "Vet visit"}</Text>
-          <Text style={styles.visitMeta}>
-            {visit.appointmentDate} {visit.appointmentTime || ""}
-          </Text>
+          <Text style={styles.visitMeta}>{day}, {date}</Text>
         </View>
       </View>
-      <Text style={styles.detailText}>Clinic: {visit.clinicName || "Not added"}</Text>
+      <View style={styles.visitDetails}>
+        {time ? <VisitDetail icon="time-outline" text={`Time: ${time}`} /> : null}
+        <VisitDetail icon="medical-outline" text={`Purpose: ${visit.reason || "Vet visit"}`} />
+        {visit.clinicName ? <VisitDetail icon="business-outline" text={`Clinic: ${visit.clinicName}`} /> : null}
+        {visit.veterinarianName ? <VisitDetail icon="person-outline" text={`Veterinarian: ${visit.veterinarianName}`} /> : null}
+      </View>
       {visit.notes ? <Text style={styles.detailText}>Notes: {visit.notes}</Text> : null}
     </TouchableOpacity>
   );
+}
+
+function VisitDetail({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  return (
+    <View style={styles.detailRow}>
+      <Ionicons name={icon} size={16} color="#00796B" />
+      <Text style={styles.detailText}>{text}</Text>
+    </View>
+  );
+}
+
+function formatVisitSchedule(visit: VetVisit) {
+  // Turn the saved date and time into wording that is easy to read on the card.
+  const [year, month, day] = visit.appointmentDate.split("-").map(Number);
+  const [hours, minutes] = (visit.appointmentTime || "00:00").split(":").map(Number);
+  const scheduledAt = new Date(year, Math.max(0, month - 1), day, hours || 0, minutes || 0);
+
+  if (Number.isNaN(scheduledAt.getTime())) {
+    return { day: "Scheduled", date: visit.appointmentDate, time: visit.appointmentTime || null };
+  }
+
+  return {
+    day: new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(scheduledAt),
+    date: new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(scheduledAt),
+    time: visit.appointmentTime
+      ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(scheduledAt)
+      : null,
+  };
 }
 
 function EmptyState({ icon, title, text }: { icon: keyof typeof Ionicons.glyphMap; title: string; text: string }) {
@@ -307,6 +340,15 @@ const styles = StyleSheet.create({
     color: "#3E4946",
     fontSize: 13,
     marginTop: 2,
+  },
+  visitDetails: {
+    gap: 7,
+    marginBottom: 8,
+  },
+  detailRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
   },
   headerDelete: { alignItems: "center", height: 40, justifyContent: "center", position: "absolute", right: 14, width: 40 },
   selectedCard: { borderColor: "#00796B", borderWidth: 2 },

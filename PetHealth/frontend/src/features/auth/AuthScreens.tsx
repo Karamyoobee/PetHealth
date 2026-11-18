@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
@@ -157,6 +157,7 @@ type RegistrationProps = {
 };
 
 function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
+  const formScrollRef = useRef<ScrollView>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -220,7 +221,13 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={styles.keyboardScreen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView
+        ref={formScrollRef}
+        contentContainerStyle={[styles.scrollContent, styles.registrationContent]}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
       <BackButton onPress={() => { if (!working) onModeChange("welcome"); }} />
       <View style={styles.centerHeader}>
         <PawMark size={74} />
@@ -290,6 +297,8 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
               autoComplete="new-password"
               placeholder="Create a password"
               placeholderTextColor="#66716D"
+              returnKeyType="next"
+              onSubmitEditing={() => formScrollRef.current?.scrollToEnd({ animated: true })}
             />
             {!hasSpecialCharacter(password) ? <Text accessibilityLiveRegion="polite" style={styles.messageText}>{passwordRequirement}</Text> : null}
             <Text style={styles.inputLabel}>Confirm password</Text>
@@ -305,6 +314,9 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
               autoComplete="new-password"
               placeholder="Repeat your password"
               placeholderTextColor="#66716D"
+              returnKeyType="done"
+              onFocus={() => formScrollRef.current?.scrollToEnd({ animated: true })}
+              onSubmitEditing={() => void register()}
             />
           </>
         )}
@@ -330,7 +342,8 @@ function RegistrationScreen({ onModeChange, onComplete }: RegistrationProps) {
 
       <LegalText />
       <AuthFooter text="Already have an account?" action="Sign In" onPress={() => { if (!working) onModeChange("signin"); }} />
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -610,6 +623,9 @@ function ErrorText({ error }: { error?: string | null }) {
 }
 
 const styles = StyleSheet.create({
+  keyboardScreen: {
+    flex: 1,
+  },
   passwordForm: {
     gap: spacing.sm,
     marginBottom: 24,
@@ -648,6 +664,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 28,
     paddingVertical: 26,
+  },
+  registrationContent: {
+    // Leave enough scroll room so the password confirmation fields stay above the keyboard.
+    justifyContent: "flex-start",
+    paddingBottom: 56,
   },
   heroHeader: {
     alignItems: "center",
